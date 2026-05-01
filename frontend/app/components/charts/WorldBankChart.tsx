@@ -64,13 +64,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 // Readable category names
 const CATEGORY_LABELS: Record<string, string> = {
-  economic: "Economic",
-  social: "Social",
-  infrastructure: "Infrastructure",
-  governance: "Governance",
-  environment: "Environment",
-  conflict_risk: "Conflict Risk",
-  other: "Other",
+  economic: "经济",
+  social: "社会",
+  infrastructure: "基础设施",
+  governance: "治理",
+  environment: "环境",
+  conflict_risk: "冲突风险",
+  other: "其他",
 };
 
 // Determine unit type from indicator code and formatted value
@@ -133,13 +133,13 @@ function groupByUnitType(data: ChartDataItem[]): UnitGroup[] {
   });
 
   const unitLabels: Record<UnitType, { label: string; suffix: string }> = {
-    percentage: { label: "Percentages", suffix: "%" },
-    currency_large: { label: "Economic Value (USD)", suffix: "" },
-    currency_small: { label: "Economic Value (Millions USD)", suffix: "" },
-    index: { label: "Governance Indices", suffix: "" },
-    count: { label: "Population & Counts", suffix: "" },
-    rate: { label: "Rates (per capita/100)", suffix: "" },
-    other: { label: "Other Indicators", suffix: "" },
+    percentage: { label: "百分比", suffix: "%" },
+    currency_large: { label: "经济价值（美元）", suffix: "" },
+    currency_small: { label: "经济价值（百万美元）", suffix: "" },
+    index: { label: "治理指数", suffix: "" },
+    count: { label: "人口与计数", suffix: "" },
+    rate: { label: "比率（人均/每百）", suffix: "" },
+    other: { label: "其他指标", suffix: "" },
   };
 
   return Object.entries(groups)
@@ -160,8 +160,8 @@ const CustomTooltip = ({ active, payload }: any) => {
       <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs z-50">
         <p className="font-semibold text-sm text-gray-900 mb-1">{data.name}</p>
         <p className="text-lg font-bold text-blue-600">{data.formatted_value}</p>
-        <p className="text-xs text-gray-500 mt-1">Year: {data.year}</p>
-        <p className="text-xs text-gray-400">Code: {data.code}</p>
+        <p className="text-xs text-gray-500 mt-1">年份：{data.year}</p>
+        <p className="text-xs text-gray-400">代码：{data.code}</p>
       </div>
     );
   }
@@ -208,7 +208,7 @@ const UnitGroupChart: React.FC<{ group: UnitGroup }> = ({ group }) => {
         <span className="w-2 h-2 rounded-full bg-blue-500"></span>
         {group.label}
         <span className="text-xs font-normal text-gray-400">
-          ({group.items.length} indicator{group.items.length > 1 ? "s" : ""})
+          （{group.items.length} 个指标）
         </span>
       </h4>
       <div style={{ height: chartHeight }} className="w-full">
@@ -278,7 +278,7 @@ const WorldBankChart: React.FC<WorldBankChartProps> = ({
   if (!chartData || chartData.length === 0) {
     return (
       <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
-        No chart data available
+        暂无图表数据
       </div>
     );
   }
@@ -288,10 +288,10 @@ const WorldBankChart: React.FC<WorldBankChartProps> = ({
       {/* Header */}
       <div className="mb-4">
         <h3 className="text-lg font-bold text-gray-900">
-          📊 World Bank Indicators - {country}
+          世界银行指标 - {country}
         </h3>
         {dataPeriod && (
-          <p className="text-sm text-gray-500">Data period: {dataPeriod}</p>
+          <p className="text-sm text-gray-500">数据周期：{dataPeriod}</p>
         )}
       </div>
 
@@ -305,7 +305,7 @@ const WorldBankChart: React.FC<WorldBankChartProps> = ({
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           }`}
         >
-          All ({chartData.length})
+          全部（{chartData.length}）
         </button>
         {categories.map((category) => (
           <button
@@ -357,23 +357,23 @@ const WorldBankChart: React.FC<WorldBankChartProps> = ({
       {/* Data table for details */}
       <details className="mt-4">
         <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
-          View detailed data table
+          查看详细数据表
         </summary>
         <div className="mt-2 overflow-x-auto">
           <table className="min-w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-2 py-1 text-left font-medium text-gray-600">
-                  Indicator
+                  指标
                 </th>
                 <th className="px-2 py-1 text-right font-medium text-gray-600">
-                  Value
+                  数值
                 </th>
                 <th className="px-2 py-1 text-center font-medium text-gray-600">
-                  Year
+                  年份
                 </th>
                 <th className="px-2 py-1 text-left font-medium text-gray-600">
-                  Category
+                  类别
                 </th>
               </tr>
             </thead>

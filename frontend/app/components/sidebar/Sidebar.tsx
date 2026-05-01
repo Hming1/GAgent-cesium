@@ -34,7 +34,7 @@ const toggleFullscreen = () => {
 const handleReset = () => {
   if (
     !window.confirm(
-      "Are you sure you want to reset the app? This will clear all chat history, layers, and settings."
+      "确定要重置应用吗？这会清空所有聊天记录、图层和设置。"
     )
   ) {
     return;
@@ -68,8 +68,8 @@ const handleReset = () => {
     // Reload the page to ensure clean state
     window.location.reload();
   } catch (error) {
-    console.error("Error during reset:", error);
-    alert("An error occurred while resetting the app. Please try refreshing the page.");
+    console.error("重置时出错:", error);
+    alert("重置应用时发生错误，请尝试刷新页面。");
   }
 };
 
@@ -86,7 +86,7 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
     <>
       <Head>
         <title>NaLaMapAI</title>
-        <meta name="description" content="geospatial insights, with ease" />
+        <meta name="description" content="轻松获取地理空间洞察" />
       </Head>
       {/* Top Icon Section */}
       <div className="flex flex-col md:flex-col items-center justify-start md:py-4 py-2 md:space-y-4 space-y-3 h-full w-full bg-primary-800">
@@ -94,10 +94,10 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
         <Link href="/map">
           <button
             className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
-            title="Home"
+            title="首页"
           >
             <Home className="w-6 h-6 md:mr-0 mr-3" />
-            <span className="md:hidden text-base">Home</span>
+            <span className="md:hidden text-base">首页</span>
           </button>
         </Link>
         {/* Layer Management Icon */}
@@ -105,10 +105,10 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
           <button
             onClick={onLayerToggle}
             className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
-            title="Layer Management"
+            title="图层管理"
           >
             <Layers className="w-6 h-6 md:mr-0 mr-3" />
-            <span className="md:hidden text-base">Layer Management</span>
+            <span className="md:hidden text-base">图层管理</span>
           </button>
         )}
         {/* Sign out */}
@@ -116,10 +116,10 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
           <button
             onClick={handleSignOut}
             className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
-            title={`Sign out ${user.email}`}
+            title={`退出登录 ${user.email}`}
           >
             <LogOut className="w-6 h-6 md:mr-0 mr-3" />
-            <span className="md:hidden text-base">Sign out</span>
+            <span className="md:hidden text-base">退出登录</span>
           </button>
         )}
 
@@ -127,31 +127,31 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
         <button
           onClick={toggleFullscreen}
           className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
-          title="Fullscreen Mode"
+          title="全屏模式"
         >
           <Maximize className="w-6 h-6 md:mr-0 mr-3" />
-          <span className="md:hidden text-base">Fullscreen Mode</span>
+          <span className="md:hidden text-base">全屏模式</span>
         </button>
 
         {/* Reset Icon */}
         <button
           onClick={handleReset}
           className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
-          title="Reset App"
+          title="重置应用"
           data-testid="reset-button"
         >
           <RefreshCcw className="w-6 h-6 md:mr-0 mr-3" />
-          <span className="md:hidden text-base">Reset App</span>
+          <span className="md:hidden text-base">重置应用</span>
         </button>
 
         {/* Settings Icon */}
         <Link href="/settings">
           <button
             className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
-            title="Settings"
+            title="设置"
           >
             <Settings className="w-6 h-6 md:mr-0 mr-3" />
-            <span className="md:hidden text-base">Settings</span>
+            <span className="md:hidden text-base">设置</span>
           </button>
         </Link>
       </div>

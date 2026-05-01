@@ -80,7 +80,7 @@ export default function MCPServerSettingsComponent() {
         className="w-full flex items-center justify-between px-4 py-3 bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 transition-colors"
       >
         <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-          MCP Servers
+          MCP 服务器
         </h2>
         {collapsed ? (
           <ChevronDown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -95,10 +95,10 @@ export default function MCPServerSettingsComponent() {
           {availableExampleMCPServers && availableExampleMCPServers.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-                Example MCP Servers
+                示例 MCP 服务器
               </h3>
               <p className="text-sm text-primary-800 dark:text-primary-300">
-                Choose from example Model Context Protocol servers to extend the agent with additional tools.
+                从示例模型上下文协议（MCP）服务器中选择，为智能体扩展更多工具。
               </p>
               <div className="flex space-x-2 mb-4">
                 <select
@@ -107,7 +107,7 @@ export default function MCPServerSettingsComponent() {
                   className="border border-primary-300 dark:border-primary-700 rounded p-2 flex-grow bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
                 >
                   <option value="" className="bg-primary-50 text-primary-900">
-                    Select an example MCP server
+                    选择一个示例 MCP 服务器
                   </option>
                   {availableExampleMCPServers.map((server) => (
                     <option
@@ -129,7 +129,7 @@ export default function MCPServerSettingsComponent() {
                       : "var(--second-primary-600)",
                   }}
                 >
-                  Add Example Server
+                  添加示例服务器
                 </button>
               </div>
               {availableExampleMCPServers.map((server) => (
@@ -154,10 +154,10 @@ export default function MCPServerSettingsComponent() {
           {/* Custom MCP Server Section */}
           <div className={`space-y-4 ${availableExampleMCPServers && availableExampleMCPServers.length > 0 ? 'border-t border-primary-200 pt-6' : ''}`}>
             <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-              Add Custom MCP Server
+              添加自定义 MCP 服务器
             </h3>
             <p className="text-sm text-primary-800 dark:text-primary-300">
-              Add a Model Context Protocol (MCP) server to provide additional tools and capabilities to the agent.
+              添加模型上下文协议（MCP）服务器，为智能体提供更多工具和能力。
             </p>
             <div className="space-y-3">
               <input
@@ -165,7 +165,7 @@ export default function MCPServerSettingsComponent() {
                 onChange={(e) =>
                   setNewMCPServer({ ...newMCPServer, url: e.target.value })
                 }
-                placeholder="MCP Server URL (e.g., http://localhost:8001/mcp)"
+                placeholder="MCP 服务器 URL（例如：http://localhost:8001/mcp）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <input
@@ -173,7 +173,7 @@ export default function MCPServerSettingsComponent() {
                 onChange={(e) =>
                   setNewMCPServer({ ...newMCPServer, name: e.target.value })
                 }
-                placeholder="Name (optional)"
+                placeholder="名称（可选）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <textarea
@@ -181,7 +181,7 @@ export default function MCPServerSettingsComponent() {
                 onChange={(e) =>
                   setNewMCPServer({ ...newMCPServer, description: e.target.value })
                 }
-                placeholder="Description (optional)"
+                placeholder="描述（可选）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full h-20 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <input
@@ -190,20 +190,20 @@ export default function MCPServerSettingsComponent() {
                 onChange={(e) =>
                   setNewMCPServer({ ...newMCPServer, api_key: e.target.value })
                 }
-                placeholder="API Key (optional, for authentication)"
+                placeholder="API 密钥（可选，用于身份验证）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <p className="text-xs text-primary-700 dark:text-primary-400">
-                If the MCP server requires authentication, provide an API key. It will be sent as a Bearer token.
+                如果 MCP 服务器需要身份验证，请填写 API 密钥。它会作为 Bearer 令牌发送。
               </p>
 
               {/* Custom Headers Section */}
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-primary-900 dark:text-primary-100">
-                  Custom Headers (optional)
+                  自定义请求头（可选）
                 </h4>
                 <p className="text-xs text-primary-700 dark:text-primary-400">
-                  Add custom HTTP headers for advanced authentication (e.g., X-API-Key, Authorization with custom scheme).
+                  为高级身份验证添加自定义 HTTP 请求头（例如 X-API-Key，或自定义授权方案）。
                 </p>
                 
                 {/* Display existing headers */}
@@ -220,7 +220,7 @@ export default function MCPServerSettingsComponent() {
                         <button
                           onClick={() => handleRemoveHeader(key)}
                           className="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                          aria-label={`Remove header ${key}`}
+                          aria-label={`移除请求头 ${key}`}
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -234,13 +234,13 @@ export default function MCPServerSettingsComponent() {
                   <input
                     value={newHeaderKey}
                     onChange={(e) => setNewHeaderKey(e.target.value)}
-                    placeholder="Header name (e.g., X-API-Key)"
+                    placeholder="请求头名称（例如：X-API-Key）"
                     className="border border-primary-300 dark:border-primary-700 rounded p-2 flex-1 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
                   />
                   <input
                     value={newHeaderValue}
                     onChange={(e) => setNewHeaderValue(e.target.value)}
-                    placeholder="Header value"
+                    placeholder="请求头值"
                     className="border border-primary-300 dark:border-primary-700 rounded p-2 flex-1 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
                   />
                   <button
@@ -251,7 +251,7 @@ export default function MCPServerSettingsComponent() {
                         ? "bg-primary-300 dark:bg-primary-700 text-primary-500 dark:text-primary-400 cursor-not-allowed"
                         : "bg-tertiary-600 hover:bg-tertiary-700 text-white cursor-pointer"
                     }`}
-                    aria-label="Add header"
+                    aria-label="添加请求头"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -268,7 +268,7 @@ export default function MCPServerSettingsComponent() {
                     : "var(--second-primary-600)",
                 }}
               >
-                Add MCP Server
+                添加 MCP 服务器
               </button>
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function MCPServerSettingsComponent() {
           {/* MCP Server List */}
           <div className="space-y-3 border-t border-primary-200 pt-6">
             <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-              Configured MCP Servers
+              已配置 MCP 服务器
             </h3>
             {mcpServers && mcpServers.length > 0 ? (
               <ul className="space-y-3">
@@ -294,7 +294,7 @@ export default function MCPServerSettingsComponent() {
                       />
                       <div className="flex flex-col">
                         <span className="text-primary-900 dark:text-primary-100 font-medium">
-                          {server.name || "Unnamed Server"}
+                          {server.name || "未命名服务器"}
                         </span>
                         <span className="text-sm text-primary-700 dark:text-primary-300">
                           {server.url}
@@ -306,12 +306,12 @@ export default function MCPServerSettingsComponent() {
                         )}
                         {server.api_key && (
                           <span className="text-xs text-tertiary-600 dark:text-tertiary-400 mt-1">
-                            🔑 API Key configured
+                            已配置 API 密钥
                           </span>
                         )}
                         {server.headers && Object.keys(server.headers).length > 0 && (
                           <span className="text-xs text-tertiary-600 dark:text-tertiary-400 mt-1">
-                            📋 {Object.keys(server.headers).length} custom header(s)
+                            已配置 {Object.keys(server.headers).length} 个自定义请求头
                           </span>
                         )}
                       </div>
@@ -320,14 +320,14 @@ export default function MCPServerSettingsComponent() {
                       onClick={() => removeMCPServer(server.url)}
                       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium"
                     >
-                      Remove
+                      移除
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="text-sm text-primary-700 dark:text-primary-400 italic">
-                No MCP servers configured. Add one above to extend the agent with additional tools.
+                尚未配置 MCP 服务器。请在上方添加服务器，为智能体扩展更多工具。
               </p>
             )}
           </div>

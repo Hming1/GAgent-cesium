@@ -211,49 +211,70 @@ def extract_style_from_ai_response(ai_response: str, geometry_type: str = None) 
 def detect_geometry_type(data_link: str) -> str:
     """
     Detect the geometry type from GeoJSON data by examining the first feature.
+    Reads from disk to avoid self-referencing HTTP deadlock in dev mode.
     Returns the geometry type or 'Mixed' if multiple types are found.
     """
-    # Default to Polygon for uploaded files as a fallback
     default_type = "Polygon"
 
     try:
-        import requests
         import json
+        import os
+        import core.config as core_config
 
-        # Add a cache buster to avoid any potential caching issues
-        cache_buster = f"?cb={hash(data_link) % 10000}"
-        if "?" not in data_link:
-            request_url = f"{data_link}{cache_buster}"
-        else:
-            request_url = f"{data_link}&cb={hash(data_link) % 10000}"
+        # Extract file ID from URL (e.g. "http://localhost:8000/api/stream/abc_file.geojson" -> "abc_file.geojson")
+        file_id = data_link.rstrip("/").split("/")[-1]
+        file_path = os.path.join(core_config.LOCAL_UPLOAD_DIR, file_id)
 
-        logger.info(f"Fetching geometry type from: {request_url}")
-        response = requests.get(request_url, timeout=10)
+        if not os.path.isfile(file_path):
+            logger.warning(f"File not found on disk: {file_path}, defaulting to {default_type}")
+            return default_type
 
-        if response.status_code == 200:
-            try:
-                geojson_data = response.json()
+        # Only try to detect geometry from GeoJSON files
+        if not file_id.lower().endswith((".geojson", ".json", "_geojson")):
+            logger.info(f"Non-GeoJSON file ({file_id}), defaulting to {default_type}")
+            return default_type
 
-                if "features" in geojson_data and geojson_data["features"]:
-                    # Check the first few features to determine the geometry type
-                    geometry_types = set()
-                    for feature in geojson_data["features"][:5]:  # Check first 5 features
-                        if "geometry" in feature and "type" in feature["geometry"]:
-                            geometry_types.add(feature["geometry"]["type"])
+        logger.info(f"Detecting geometry type from disk: {file_path}")
 
-                    if len(geometry_types) == 1:
-                        detected_type = list(geometry_types)[0]
-                        logger.info(f"Detected geometry type: {detected_type}")
-                        return detected_type
-                    elif len(geometry_types) > 1:
-                        logger.info(f"Detected mixed geometry types: {geometry_types}")
-                        return "Mixed"
-            except json.JSONDecodeError as je:
-                logger.error(f"JSON decode error for {data_link}: {str(je)}")
+        # Read only the first chunk to find geometry type (avoid loading full file)
+        with open(file_path, "r", encoding="utf-8") as f:
+            # Read first 50KB which should contain at least a few features
+            chunk = f.read(50 * 1024)
 
-        logger.warning(
-            f"Could not detect geometry type from {data_link}, defaulting to {default_type}"
-        )
+        # Try to parse as complete JSON first
+        try:
+            geojson_data = json.loads(chunk)
+        except json.JSONDecodeError:
+            # If chunk is incomplete, try to find features manually
+            import re
+            type_matches = re.findall(r'"type"\s*:\s*"(Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon)"', chunk)
+            if type_matches:
+                # Filter out the FeatureCollection/Feature "type" values
+                geom_types = set(t for t in type_matches if t not in ("Feature", "FeatureCollection"))
+                if len(geom_types) == 1:
+                    detected = list(geom_types)[0]
+                    logger.info(f"Detected geometry type (regex): {detected}")
+                    return detected
+                elif len(geom_types) > 1:
+                    logger.info(f"Detected mixed geometry types (regex): {geom_types}")
+                    return "Mixed"
+            return default_type
+
+        if "features" in geojson_data and geojson_data["features"]:
+            geometry_types = set()
+            for feature in geojson_data["features"][:5]:
+                if "geometry" in feature and "type" in feature["geometry"]:
+                    geometry_types.add(feature["geometry"]["type"])
+
+            if len(geometry_types) == 1:
+                detected_type = list(geometry_types)[0]
+                logger.info(f"Detected geometry type: {detected_type}")
+                return detected_type
+            elif len(geometry_types) > 1:
+                logger.info(f"Detected mixed geometry types: {geometry_types}")
+                return "Mixed"
+
+        logger.warning(f"No features found in {file_path}, defaulting to {default_type}")
         return default_type
     except Exception as e:
         logger.error(f"Error detecting geometry type from {data_link}: {str(e)}")

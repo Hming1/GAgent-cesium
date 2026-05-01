@@ -189,11 +189,11 @@ export function useNaLaMapAgent(apiUrl: string) {
           body: JSON.stringify(payload),
         });
       } else {
-        throw new Error("Unknown Tool");
+        throw new Error("未知工具");
       }
       if (!response.ok) {
         Logger.log(response);
-        throw new Error("Network response was not ok");
+        throw new Error("网络响应异常");
       }
 
       if (endpoint === "ai-style") {
@@ -224,10 +224,10 @@ export function useNaLaMapAgent(apiUrl: string) {
       const data: NaLaMapResponse = await response.json();
       Logger.log(data);
       if (!data.geodata_results) {
-        throw new Error("Response was missing GeoData");
+        throw new Error("响应缺少 GeoData");
       }
       if (!data.messages) {
-        throw new Error("Response was missing Messages");
+        throw new Error("响应缺少消息");
       }
 
       chatInterfaceStore.setGeoDataList(data.geodata_results);
@@ -332,11 +332,11 @@ export function useNaLaMapAgent(apiUrl: string) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP 错误，状态码：${response.status}`);
       }
 
       if (!response.body) {
-        throw new Error("Response body is null");
+        throw new Error("响应正文为空");
       }
 
       const reader = response.body.getReader();

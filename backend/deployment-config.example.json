@@ -10,7 +10,7 @@
   "_comment_geoserver": "Configure GeoServer backends that should be pre-added for users",
   "geoserver_backends": [
     {
-      "url": "https://your-geoserver.example.org/geoserver/",
+      "url": "http://localhost:8080/geoserver/",
       "name": "Corporate GeoServer",
       "description": "Internal GeoServer with organizational data layers",
       "enabled": true,

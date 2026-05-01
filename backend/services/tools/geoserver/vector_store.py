@@ -486,17 +486,16 @@ def _create_vector_store() -> Optional[SQLiteVec]:
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Try using SQLiteVec's create_connection first
-        try:
-            connection = SQLiteVec.create_connection(str(db_path), check_same_thread=False)
-        except (AttributeError, TypeError):
-            # Fallback: create connection with sqlite-vec pre-loaded
-            import sqlite_vec  # type: ignore
+        import sqlite3
+        import sqlite_vec
 
-            # sqlite_vec.Connection creates a SQLite connection with vec extension pre-loaded
-            connection = sqlite_vec.Connection(str(db_path), check_same_thread=False)
-            # Enable thread-safe access for SQLite
-            connection.isolation_level = None  # autocommit mode
+        connection = sqlite3.connect(str(db_path), check_same_thread=False)
+        connection.enable_load_extension(True)
+        sqlite_vec.load(connection)
+        connection.enable_load_extension(False)
+        
+        # Enable thread-safe access for SQLite auto-commit
+        connection.isolation_level = None
 
         # Ensure we always return rows as dictionaries so json_extract calls work predictably
         connection.row_factory = sqlite3.Row

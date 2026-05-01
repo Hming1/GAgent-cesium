@@ -33,17 +33,17 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/map');
     } catch (err) {
-      setError("Invalid credentials");
+      setError("邮箱或密码无效");
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-16 p-4 border border-primary-300 rounded">
-      <h1 className="text-xl font-semibold mb-4">Login</h1>
+      <h1 className="text-xl font-semibold mb-4">登录</h1>
       {error && <div className="text-danger-600 mb-2">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label>Email</label>
+          <label>邮箱</label>
           <input
             type="email"
             name="email"
@@ -54,7 +54,7 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label>Password</label>
+          <label>密码</label>
           <input
             type="password"
             name="password"
@@ -68,12 +68,12 @@ export default function LoginPage() {
           type="submit"
           className="w-full bg-second-primary-600 text-neutral-50 p-2 rounded hover:bg-second-primary-700"
         >
-          Login
+          登录
         </button>
       </form>
       {providers.length > 0 && (
         <div className="mt-6 space-y-2">
-          <div className="text-sm text-neutral-700">Or continue with</div>
+          <div className="text-sm text-neutral-700">或使用以下方式继续</div>
           <div className="space-y-2">
             {providers.map((p) => (
               <button
@@ -87,16 +87,16 @@ export default function LoginPage() {
                 }}
                 className="w-full border border-primary-300 p-2 rounded hover:bg-primary-50"
               >
-                Continue with {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
+                使用 {p.name.charAt(0).toUpperCase() + p.name.slice(1)} 继续
               </button>
             ))}
           </div>
         </div>
       )}
       <p className="mt-4 text-sm">
-        Don't have an account?{' '}
+        还没有账号？{" "}
         <a href="/signup" className="text-second-primary-600 hover:text-second-primary-700">
-          Sign up
+          注册
         </a>
       </p>
     </div>

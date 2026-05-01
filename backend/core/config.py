@@ -48,7 +48,11 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB in bytes
 # Database
 
 # Database connection URL
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_AZURE_URL") or os.getenv("DATABASE_URL")
+
+# Secondary connection specifically for fetching spatial map layers.
+# If not explicitly set, falls back to the main DATABASE_URL
+GEODATA_DATABASE_URL = os.getenv("GEODATA_DATABASE_URL") or DATABASE_URL
 
 # Authentication settings
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
@@ -177,3 +181,17 @@ MCP_SERVER_PORT = int(os.getenv("MCP_SERVER_PORT", "8001"))
 # Example: "http://localhost:3001/mcp,http://tools.example.com/mcp"
 RAW_MCP_EXTERNAL_SERVERS = os.getenv("MCP_EXTERNAL_SERVERS", "")
 MCP_EXTERNAL_SERVERS = [url.strip() for url in RAW_MCP_EXTERNAL_SERVERS.split(",") if url.strip()]
+
+
+# Python analysis sandbox ---------------------------------------------------------------
+
+# Optional isolated service used by the run_python_analysis agent tool. Leave empty to
+# disable dynamic Python execution outside Docker deployments.
+PYTHON_ANALYSIS_SANDBOX_URL = os.getenv("PYTHON_ANALYSIS_SANDBOX_URL", "").rstrip("/")
+PYTHON_ANALYSIS_SANDBOX_TIMEOUT = float(os.getenv("PYTHON_ANALYSIS_SANDBOX_TIMEOUT", "35"))
+PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER = int(
+    os.getenv("PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER", "500")
+)
+PYTHON_ANALYSIS_MAX_OUTPUT_BYTES = int(
+    os.getenv("PYTHON_ANALYSIS_MAX_OUTPUT_BYTES", str(1024 * 1024))
+)

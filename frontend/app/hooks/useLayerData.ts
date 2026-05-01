@@ -83,7 +83,7 @@ export function useLayerData({
         }
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          throw new Error(`HTTP ${response.status}：${response.statusText}`);
         }
 
         // Parse response
@@ -102,7 +102,7 @@ export function useLayerData({
             json = JSON.parse(text);
           } catch (parseError) {
             throw new Error(
-              `Response is not valid JSON: ${text.slice(0, 200)}`,
+              `响应不是有效的 JSON：${text.slice(0, 200)}`,
             );
           }
         }
@@ -113,7 +113,7 @@ export function useLayerData({
         let normalized = GeoJSONNormalizer.normalize(json);
 
         if (!normalized) {
-          throw new Error("Could not normalize GeoJSON data");
+          throw new Error("无法规范化 GeoJSON 数据");
         }
 
         // Extract declared CRS
@@ -147,7 +147,7 @@ export function useLayerData({
                 }
               })
               .catch(() => {
-                setError(new Error("Fallback fetch failed"));
+                setError(new Error("备用获取失败"));
                 setIsLoading(false);
               });
           }, 0);

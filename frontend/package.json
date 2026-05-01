@@ -10,7 +10,8 @@
     "test": "playwright test",
     "test:ui": "playwright test",
     "test:e2e": "playwright test --config=playwright.e2e.config.ts",
-    "test:performance": "cd ../e2e-performance && python3 -m pytest tests/ -v"
+    "test:performance": "cd ../e2e-performance && python3 -m pytest tests/ -v",
+    "postinstall": "shx cp -R node_modules/cesium/Build/Cesium public/cesium"
   },
   "dependencies": {
     "@ai-sdk/react": "^1.2.12",
@@ -19,6 +20,7 @@
     "@types/leaflet": "^1.9.21",
     "@xmldom/xmldom": "^0.9.8",
     "ai": "^5.0.80",
+    "cesium": "^1.121.1",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "leaflet-geosearch": "^4.2.0",
@@ -31,6 +33,7 @@
     "react-map-gl": "^8.1.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.5.1",
+    "resium": "^1.18.2",
     "wellknown": "^0.5.0",
     "zustand": "^5.0.8"
   },
@@ -47,6 +50,7 @@
     "eslint-config-next": "^15.5.4",
     "@eslint/object-schema": "^2.1.7",
     "postcss": "^8.5.3",
+    "shx": "^0.3.4",
     "tailwindcss": "^4.0.9",
     "typescript": "^5"
   },

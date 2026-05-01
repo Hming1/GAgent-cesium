@@ -402,12 +402,62 @@ async def create_geo_agent(
                 "falling back to sequential execution"
             )
 
+    # Keywords that indicate the user's query is related to loaded layers/data
+    _LAYER_KEYWORDS = {
+        # Chinese
+        "图层", "加载", "数据", "分析", "统计", "查询", "检索", "筛选",
+        "过滤", "属性", "字段", "样式", "风格", "边界", "缓冲", "相交",
+        "裁剪", "合并", "处理", "操作", "上传", "文件", "显示", "可视化",
+        "空间", "面积", "长度", "距离", "计算", "汇总", "导出", "地图",
+        # English
+        "layer", "data", "analy", "filter", "style", "attribute",
+        "buffer", "intersect", "clip", "merge", "upload", "spatial",
+        "geojson", "shp", "csv", "kml", "zip", "loaded",
+    }
+
+    def _query_mentions_layers(state: GeoDataAgentState) -> bool:
+        """Check if the latest user message is related to layer/data operations."""
+        messages = state.get("messages", [])
+        if not messages:
+            return False
+        # Find the latest human message
+        for msg in reversed(messages):
+            if getattr(msg, "type", None) == "human" or (
+                isinstance(msg, dict) and msg.get("type") == "human"
+            ):
+                content = getattr(msg, "content", "") if not isinstance(msg, dict) else msg.get("content", "")
+                query_lower = str(content).lower()
+                return any(kw in query_lower for kw in _LAYER_KEYWORDS)
+        return False
+
+    # def prompt_modifier(state: GeoDataAgentState) -> str:
+    #     """Inject loaded layer info only when the user's query is layer-related."""
+    #     layers = state.get("geodata_layers", [])
+    #     if not layers or not _query_mentions_layers(state):
+    #         return system_prompt
+
+    #     layer_lines = []
+    #     for layer in layers:
+    #         name = getattr(layer, "name", None) or "Unknown"
+    #         title = getattr(layer, "title", None) or name
+    #         layer_id = getattr(layer, "id", "?")
+    #         data_link = getattr(layer, "data_link", "")
+    #         layer_lines.append(f"  - {title} (id={layer_id}, link={data_link})")
+
+    #     layer_block = (
+    #         "\n\n<system_state>\n"
+    #         f"Currently {len(layers)} layer(s) loaded on the map:\n"
+    #         + "\n".join(layer_lines)
+    #         + "\n</system_state>"
+    #     )
+    #     return system_prompt + layer_block
+
     agent = create_react_agent(
         name="GeoAgent",
         state_schema=GeoDataAgentState,
         tools=tools,
         model=llm.bind_tools(tools, parallel_tool_calls=parallel_tool_calls),
-        prompt=system_prompt,
+        #prompt=prompt_modifier,
         debug=debug_enabled,
         # config_schema=GeoData,
         # response_format=GeoData

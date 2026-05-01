@@ -34,17 +34,17 @@ export default function SignupPage() {
       await signup(email, password, displayName);
       router.push('/map');
     } catch {
-      setError("Sign-up failed");
+      setError("注册失败");
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-16 p-4 border border-primary-300 rounded">
-      <h1 className="text-xl font-semibold mb-4">Sign Up</h1>
+      <h1 className="text-xl font-semibold mb-4">注册</h1>
       {error && <div className="text-danger-600 mb-2">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label>Email</label>
+          <label>邮箱</label>
           <input
             type="email"
             name="email"
@@ -55,7 +55,7 @@ export default function SignupPage() {
           />
         </div>
         <div>
-          <label>Display Name</label>
+          <label>显示名称</label>
           <input
             type="text"
             name="displayName"
@@ -66,7 +66,7 @@ export default function SignupPage() {
           />
         </div>
         <div>
-          <label>Password</label>
+          <label>密码</label>
           <input
             type="password"
             name="password"
@@ -80,12 +80,12 @@ export default function SignupPage() {
           type="submit"
           className="w-full bg-second-primary-600 text-neutral-50 p-2 rounded hover:bg-second-primary-700"
         >
-          Sign Up
+          注册
         </button>
       </form>
       {providers.length > 0 && (
         <div className="mt-6 space-y-2">
-          <div className="text-sm text-neutral-700">Or continue with</div>
+          <div className="text-sm text-neutral-700">或使用以下方式继续</div>
           <div className="space-y-2">
             {providers.map((p) => (
               <button
@@ -99,16 +99,16 @@ export default function SignupPage() {
                 }}
                 className="w-full border border-primary-300 p-2 rounded hover:bg-primary-50"
               >
-                Continue with {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
+                使用 {p.name.charAt(0).toUpperCase() + p.name.slice(1)} 继续
               </button>
             ))}
           </div>
         </div>
       )}
       <p className="mt-4 text-sm">
-        Already have an account?{' '}
+        已有账号？{" "}
         <a href="/login" className="text-second-primary-600 hover:text-second-primary-700">
-          Login
+          登录
         </a>
       </p>
     </div>

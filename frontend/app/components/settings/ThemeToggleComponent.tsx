@@ -53,10 +53,10 @@ export default function ThemeToggleComponent() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-              Theme Preference
+              主题偏好
             </h2>
             <span className="text-xs bg-info-100 dark:bg-info-900 text-info-800 dark:text-info-100 px-2 py-0.5 rounded-full font-medium">
-              {theme === "dark" ? "Dark Mode" : "Light Mode"}
+              {theme === "dark" ? "深色模式" : "浅色模式"}
             </span>
           </div>
           {expanded ? (
@@ -92,15 +92,15 @@ export default function ThemeToggleComponent() {
                     theme === "light" ? "text-secondary-900" : "text-primary-900"
                   }`}
                 >
-                  Light Mode
+                  浅色模式
                 </div>
                 <div className="text-xs text-primary-600 mt-0.5">
-                  Bright and clear
+                  明亮清晰
                 </div>
               </div>
               {theme === "light" && (
                 <div className="text-xs bg-secondary-600 text-neutral-50 px-2 py-0.5 rounded font-medium">
-                  Active
+                  当前启用
                 </div>
               )}
             </div>
@@ -127,15 +127,15 @@ export default function ThemeToggleComponent() {
                     theme === "dark" ? "text-info-900" : "text-primary-900"
                   }`}
                 >
-                  Dark Mode
+                  深色模式
                 </div>
                 <div className="text-xs text-primary-600 mt-0.5">
-                  Easy on the eyes
+                  更护眼
                 </div>
               </div>
               {theme === "dark" && (
                 <div className="text-xs bg-info-600 text-neutral-50 px-2 py-0.5 rounded font-medium">
-                  Active
+                  当前启用
                 </div>
               )}
             </div>
@@ -147,19 +147,19 @@ export default function ThemeToggleComponent() {
           <div className="flex items-start space-x-2">
             <Monitor className="w-4 h-4 text-info-600 mt-0.5 flex-shrink-0" />
             <div className="text-info-900">
-              <p className="font-medium mb-1">Theme Settings</p>
+              <p className="font-medium mb-1">主题设置</p>
               <ul className="text-xs space-y-1 text-info-800">
                 <li>
-                  • <strong>Light Mode</strong>: Traditional bright interface, best for well-lit environments
+                  • <strong>浅色模式</strong>：传统明亮界面，适合光线充足的环境
                 </li>
                 <li>
-                  • <strong>Dark Mode</strong>: Reduces eye strain in low-light conditions
+                  • <strong>深色模式</strong>：在弱光环境下降低眼部疲劳
                 </li>
                 <li>
-                  • Map basemap will automatically switch to match your theme
+                  • 地图底图会自动切换以匹配当前主题
                 </li>
                 <li>
-                  • Your preference is saved and persists across sessions
+                  • 你的偏好会被保存，并在后续会话中保持
                 </li>
               </ul>
             </div>

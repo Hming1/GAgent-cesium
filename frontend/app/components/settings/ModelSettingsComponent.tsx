@@ -43,20 +43,20 @@ export default function ModelSettingsComponent() {
 
   // Format cost for display
   const formatCost = (cost: number | null | undefined) => {
-    if (cost === null || cost === undefined) return "N/A";
+    if (cost === null || cost === undefined) return "暂无";
     return `$${cost.toFixed(2)}`;
   };
 
   // Format context window with K/M notation
   const formatContextWindow = (tokens: number | undefined) => {
-    if (!tokens) return "Unknown";
+    if (!tokens) return "未知";
     if (tokens >= 1_000_000) {
-      return `${(tokens / 1_000_000).toFixed(1)}M tokens`;
+      return `${(tokens / 1_000_000).toFixed(1)}M 令牌`;
     }
     if (tokens >= 1_000) {
-      return `${(tokens / 1_000).toFixed(0)}K tokens`;
+      return `${(tokens / 1_000).toFixed(0)}K 令牌`;
     }
-    return `${tokens} tokens`;
+    return `${tokens} 令牌`;
   };
 
   // Get quality badge color
@@ -97,7 +97,7 @@ export default function ModelSettingsComponent() {
         className="w-full flex items-center justify-between px-4 py-3 bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 transition-colors"
       >
         <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-          Model Settings
+          模型设置
         </h2>
         {collapsed ? (
           <ChevronDown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -111,7 +111,7 @@ export default function ModelSettingsComponent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-primary-900 dark:text-primary-300 mb-1">
-                Provider
+                服务提供商
               </label>
               <select
                 value={modelSettings.model_provider}
@@ -138,7 +138,7 @@ export default function ModelSettingsComponent() {
 
             <div className="col-span-2">
               <label className="block text-sm font-medium text-primary-900 dark:text-primary-300 mb-1">
-                Model
+                模型
               </label>
               <select
                 value={modelSettings.model_name}
@@ -163,10 +163,10 @@ export default function ModelSettingsComponent() {
 
             <div className="col-span-2">
               <label className="block text-sm font-medium text-primary-900 dark:text-primary-300 mb-1">
-                Max Output Tokens
+                最大输出令牌数
                 {selectedModel && (
                   <span className="text-xs text-primary-700 dark:text-primary-400 ml-1">
-                    (0 to {selectedModel.max_tokens.toLocaleString()})
+                    (0 到 {selectedModel.max_tokens.toLocaleString()})
                   </span>
                 )}
               </label>
@@ -185,20 +185,20 @@ export default function ModelSettingsComponent() {
                 }}
                 min="0"
                 max={selectedModel?.max_tokens || undefined}
-                placeholder="Max Tokens"
+                placeholder="最大令牌数"
                 className="w-full border border-primary-300 dark:border-primary-700 rounded p-2 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
-                Maximum tokens to generate in responses
+                每次响应最多生成的令牌数
               </p>
             </div>
 
             {/* Message Window Size */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-primary-900 dark:text-primary-300 mb-1">
-                Message Window Size
+                消息窗口大小
                 <span className="text-xs text-primary-700 dark:text-primary-400 ml-1">
-                  (optional)
+                  (可选)
                 </span>
               </label>
               <input
@@ -214,12 +214,12 @@ export default function ModelSettingsComponent() {
                   }
                 }}
                 min="0"
-                placeholder="20 (default)"
+                placeholder="20（默认）"
                 className="w-full border border-primary-300 dark:border-primary-700 rounded p-2 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
-                Max recent messages to keep in context. Leave empty for default (20). 
-                Set to 0 to disable pruning. Higher values increase cost.
+                保留在上下文中的最近消息数量。留空则使用默认值（20）。
+                设为 0 可禁用裁剪。数值越高，成本越高。
               </p>
             </div>
 
@@ -238,28 +238,28 @@ export default function ModelSettingsComponent() {
                     htmlFor="enable-parallel-tools"
                     className="text-sm font-medium text-primary-900 dark:text-primary-300 cursor-pointer"
                   >
-                    Enable Parallel Tool Execution
+                    启用并行工具执行
                     {selectedModel?.supports_parallel_tool_calls && (
                       <span className="ml-2 px-2 py-0.5 rounded text-xs font-medium text-tertiary-700 dark:text-tertiary-300 bg-tertiary-100 dark:bg-tertiary-900">
-                        ⚡ Supported
+                        支持
                       </span>
                     )}
                     {!selectedModel?.supports_parallel_tool_calls && (
                       <span className="ml-2 px-2 py-0.5 rounded text-xs font-medium text-danger-700 dark:text-danger-300 bg-danger-100 dark:bg-danger-900">
-                        ✗ Not Supported
+                        不支持
                       </span>
                     )}
                   </label>
                   <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
                     <span className="font-semibold text-warning-700 dark:text-warning-300">
-                      ⚠️ EXPERIMENTAL:
+                      实验功能：
                     </span>{" "}
-                    Enables concurrent tool execution for faster multi-tool queries.
+                    允许并发执行工具，从而加快多工具查询。
                     {!selectedModel?.supports_parallel_tool_calls && 
-                      " This model does not support parallel tool calls."
+                      " 当前模型不支持并行工具调用。"
                     }
                     {selectedModel?.supports_parallel_tool_calls && 
-                      " May cause state corruption. Monitor for issues."
+                      " 可能导致状态冲突，请留意异常。"
                     }
                   </p>
                 </div>
@@ -281,13 +281,13 @@ export default function ModelSettingsComponent() {
                     htmlFor="enable-performance-metrics"
                     className="text-sm font-medium text-primary-900 dark:text-primary-300 cursor-pointer"
                   >
-                    Enable Performance Metrics
+                    启用性能指标
                     <span className="ml-2 px-2 py-0.5 rounded text-xs font-medium text-info-700 dark:text-info-300 bg-info-100 dark:bg-info-900">
-                      📊 Monitoring
+                      监控
                     </span>
                   </label>
                   <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
-                    Tracks timing, token usage, and tool performance.
+                    跟踪耗时、令牌用量和工具性能。
                     {modelSettings.enable_performance_metrics && (
                       <>
                         {" "}
@@ -295,17 +295,17 @@ export default function ModelSettingsComponent() {
                           href="/metrics"
                           className="text-tertiary-600 dark:text-tertiary-400 hover:text-tertiary-700 dark:hover:text-tertiary-300 underline"
                         >
-                          View metrics dashboard →
+                          查看指标面板
                         </Link>
                       </>
                     )}
                     {!modelSettings.enable_performance_metrics && (
                       <>
                         {" "}
-                        Metrics are available via the <code className="px-1 py-0.5 bg-primary-200 dark:bg-primary-800 rounded text-xs">/metrics</code> endpoint.
+                        指标也可通过 <code className="px-1 py-0.5 bg-primary-200 dark:bg-primary-800 rounded text-xs">/metrics</code> 端点查看。
                       </>
                     )}
-                    {" "}No impact on response time.
+                    {" "}不会影响响应速度。
                   </p>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export default function ModelSettingsComponent() {
                     {selectedModel.context_window && (
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-primary-800 dark:text-primary-400 font-medium">
-                          Context Window:
+                          上下文窗口：
                         </span>
                         <span className="text-xs text-primary-900 dark:text-primary-200 font-semibold">
                           {formatContextWindow(selectedModel.context_window)}
@@ -347,7 +347,7 @@ export default function ModelSettingsComponent() {
                         >
                           {selectedModel.reasoning_capability.charAt(0).toUpperCase() +
                             selectedModel.reasoning_capability.slice(1)}{" "}
-                          Reasoning
+                          推理
                         </span>
                       )}
 
@@ -359,19 +359,19 @@ export default function ModelSettingsComponent() {
                         >
                           {selectedModel.tool_calling_quality.charAt(0).toUpperCase() +
                             selectedModel.tool_calling_quality.slice(1)}{" "}
-                          Tools
+                          工具
                         </span>
                       )}
 
                       {selectedModel.supports_parallel_tool_calls && (
                         <span className="px-2 py-1 rounded text-xs font-medium text-tertiary-700 dark:text-tertiary-300 bg-tertiary-100 dark:bg-tertiary-900">
-                          ⚡ Parallel Tools
+                          并行工具
                         </span>
                       )}
 
                       {selectedModel.supports_vision && (
                         <span className="px-2 py-1 rounded text-xs font-medium text-info-700 dark:text-info-300 bg-info-100 dark:bg-info-900">
-                          👁️ Vision
+                          视觉
                         </span>
                       )}
                     </div>
@@ -383,7 +383,7 @@ export default function ModelSettingsComponent() {
                       selectedModel.input_cost_per_million !== undefined) && (
                       <div>
                         <span className="text-primary-800 dark:text-primary-400 font-medium">
-                          Input:
+                          输入：
                         </span>{" "}
                         <span className="text-primary-900 dark:text-primary-200">
                           {formatCost(selectedModel.input_cost_per_million)}/M
@@ -395,7 +395,7 @@ export default function ModelSettingsComponent() {
                       selectedModel.output_cost_per_million !== undefined) && (
                       <div>
                         <span className="text-primary-800 dark:text-primary-400 font-medium">
-                          Output:
+                          输出：
                         </span>{" "}
                         <span className="text-primary-900 dark:text-primary-200">
                           {formatCost(selectedModel.output_cost_per_million)}/M
@@ -407,7 +407,7 @@ export default function ModelSettingsComponent() {
                       selectedModel.cache_cost_per_million !== undefined) && (
                       <div className="col-span-2">
                         <span className="text-primary-800 dark:text-primary-400 font-medium">
-                          Cache:
+                          缓存：
                         </span>{" "}
                         <span className="text-primary-900 dark:text-primary-200">
                           {formatCost(selectedModel.cache_cost_per_million)}/M

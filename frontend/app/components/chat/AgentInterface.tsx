@@ -90,7 +90,7 @@ export default function AgentInterface() {
     <div className="h-full w-full bg-primary-50 p-4 flex flex-col overflow-hidden relative border-l border-primary-300">
       {/* Header */}
       <h2 className="text-xl font-bold mb-4 text-primary-900 text-center flex-shrink-0">
-        Map Assistant
+        地图助手
       </h2>
 
       {/* Scrollable content area */}
@@ -127,7 +127,7 @@ export default function AgentInterface() {
                   <span className="inline-block w-2 h-4 ml-1 bg-second-primary-600 animate-pulse"></span>
                 </div>
                 <div className="text-xs text-primary-500 mt-1">
-                  Agent
+                  智能体
                 </div>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function AgentInterface() {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           isStreaming={isStreaming}
-          placeholder="Ask about maps, search for data, or request analysis..."
+          placeholder="询问地图、搜索数据，或请求空间分析..."
           disabled={loading}
         />
       </div>

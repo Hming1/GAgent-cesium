@@ -40,7 +40,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
+    throw new Error(`请求失败：${res.status}`);
   }
   return (await res.json()) as T;
 }

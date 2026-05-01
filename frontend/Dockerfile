@@ -9,6 +9,9 @@ WORKDIR /app
 # Copy lockfiles & package manifests
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
 
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+
 # Install via the available package manager
 RUN \
   if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
@@ -20,6 +23,9 @@ RUN \
 
 ### 2) builder stage: bring down the build deps & build the app ###
 FROM node:25-slim AS builder
+
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
 
 WORKDIR /app
 
@@ -49,11 +55,16 @@ RUN \
 ### 3) runner stage: production image ###
 FROM node:25-slim AS runner
 
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \
     NEXT_TELEMETRY_DISABLED=1 \
-    NODE_OPTIONS="--max-old-space-size=512"
+    NODE_OPTIONS="--max-old-space-size=512"\
+    npm_config_registry="https://registry.npmmirror.com" \
+    YARN_REGISTRY="https://registry.npmmirror.com"
 
 # Create a non-root user
 RUN groupadd --system nodejs && useradd --system --gid nodejs nextjs

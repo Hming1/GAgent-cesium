@@ -14,12 +14,16 @@ ENV POETRY_VERSION=2.1.3 \
 
 ENV PATH=$POETRY_HOME/bin:$PATH
 
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
- && curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION \
- && poetry self add poetry-plugin-export \
  && rm -rf /var/lib/apt/lists/*
 
+ RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
+ && pip install --no-cache-dir poetry==$POETRY_VERSION poetry-plugin-export
+ 
 WORKDIR /app
 COPY pyproject.toml poetry.lock ./
 
@@ -30,6 +34,9 @@ RUN poetry export --only main --without-hashes -f requirements.txt -o requiremen
 # Stage 2 – BUILD: pip install into a venv using requirements.txt
 # ──────────────────────────────────────────────────────────────
 FROM python:3.13-slim AS build
+
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
 
 # Install every system library needed to *compile* native wheels:
 #   build-essential  → gcc / g++ / make (contourpy, etc.)
@@ -53,6 +60,8 @@ RUN python -m venv .venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --from=export /app/requirements.txt ./
+
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
 RUN pip install --no-cache-dir -r requirements.txt
 
 
@@ -70,6 +79,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 #   libgeos-dev      → shapely runtime
 #   libgdal*         → pyogrio / GDAL runtime
 # Note: The exact libgdal package name varies by Debian version.
+
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       libpq5 \

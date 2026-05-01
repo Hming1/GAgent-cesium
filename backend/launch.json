@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "调试后端 (FastAPI)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "main",
+            "jinja": true,
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

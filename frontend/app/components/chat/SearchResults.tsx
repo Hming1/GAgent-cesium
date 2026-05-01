@@ -37,7 +37,7 @@ function getChartData(result: GeoDataObject): {
   return {
     chartData: props.chart_data as ChartDataItem[],
     chartByCategory: (props.chart_by_category || {}) as ChartByCategory,
-    country: (props.country as string) || "Unknown",
+    country: (props.country as string) || "未知",
     dataPeriod: (props.data_period as string) || "",
   };
 }
@@ -76,7 +76,7 @@ export default function SearchResults({
 
   return (
     <div className="mt-6 mb-2 px-2 bg-neutral-50 rounded border">
-      <div className="font-semibold p-1">Search Results:</div>
+      <div className="font-semibold p-1">搜索结果：</div>
       {resultsToShow.map((result) => {
         const isWorldBank = isWorldBankResult(result);
         const chartDataResult = isWorldBank ? getChartData(result) : null;
@@ -108,7 +108,7 @@ export default function SearchResults({
                   setActiveDetailsId(null);
                 }}
               >
-                Type: {result.layer_type && `${result.layer_type}`}
+                类型：{result.layer_type && `${result.layer_type}`}
               </button>
 
               {/* Details Button */}
@@ -121,7 +121,7 @@ export default function SearchResults({
                 }}
                 className="px-2 py-1 bg-neutral-300 text-neutral-900 rounded text-xs hover:bg-neutral-400 flex-shrink-0"
               >
-                Details
+                详情
               </button>
 
               {/* Add to Map Button */}
@@ -132,7 +132,7 @@ export default function SearchResults({
                 }}
                 className="px-2 py-1 bg-info-600 text-neutral-50 rounded text-xs hover:bg-info-700 flex-shrink-0"
               >
-                Add to Map
+                添加到地图
               </button>
 
               {/* Chart Button - Only for World Bank results */}
@@ -148,7 +148,7 @@ export default function SearchResults({
                       : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                   }`}
                 >
-                  View Chart 📊
+                  查看图表
                 </button>
               )}
 
@@ -159,25 +159,25 @@ export default function SearchResults({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <h4 className="font-bold text-sm mb-2 break-words">
-                    {result.title || "Details"}
+                    {result.title || "详情"}
                   </h4>
                   <p className="text-xs mb-2 break-words">
-                    <strong>Description:</strong>{" "}
+                    <strong>描述：</strong>{" "}
                     {result.llm_description ||
                       result.description ||
-                      "N/A"}
+                      "无"}
                   </p>
                   <p className="text-xs mb-2 break-words">
-                    <strong>Data Source:</strong>{" "}
-                    {result.data_source || "N/A"}
+                    <strong>数据来源：</strong>{" "}
+                    {result.data_source || "无"}
                   </p>
                   <p className="text-xs mb-2">
-                    <strong>Layer Type:</strong>{" "}
-                    {result.layer_type || "N/A"}
+                    <strong>图层类型：</strong>{" "}
+                    {result.layer_type || "无"}
                   </p>
                   {result.bounding_box && (
                     <p className="text-xs break-all">
-                      <strong>BBox:</strong>{" "}
+                      <strong>边界框：</strong>{" "}
                       {typeof result.bounding_box === "string"
                         ? result.bounding_box
                         : JSON.stringify(result.bounding_box)}
@@ -187,25 +187,25 @@ export default function SearchResults({
                   {/* Processing Metadata Section */}
                   {result.processing_metadata && (
                     <div className="pt-3 mt-3 border-t border-neutral-200">
-                      <h5 className="font-semibold text-neutral-700 mb-2 text-xs">Processing Information</h5>
+                      <h5 className="font-semibold text-neutral-700 mb-2 text-xs">处理信息</h5>
                       
                       <div className="space-y-1">
                         {/* Source Layers */}
                         {result.processing_metadata.origin_layers && 
                          result.processing_metadata.origin_layers.length > 0 && (
                           <p className="text-xs text-neutral-900 dark:text-neutral-100">
-                            <strong className="text-neutral-700 dark:text-neutral-200">Source Layers:</strong> {result.processing_metadata.origin_layers.join(', ')}
+                            <strong className="text-neutral-700 dark:text-neutral-200">来源图层：</strong> {result.processing_metadata.origin_layers.join(', ')}
                           </p>
                         )}
                         
                         {/* Operation */}
                         <p className="text-xs text-neutral-900 dark:text-neutral-100 capitalize">
-                          <strong className="text-neutral-700 dark:text-neutral-200">Operation:</strong> {result.processing_metadata.operation}
+                          <strong className="text-neutral-700 dark:text-neutral-200">操作：</strong> {result.processing_metadata.operation}
                         </p>
                         
                         {/* CRS Used */}
                         <p className="text-xs text-neutral-900 dark:text-neutral-100">
-                          <strong className="text-neutral-700 dark:text-neutral-200">CRS Used:</strong> {result.processing_metadata.crs_used}
+                          <strong className="text-neutral-700 dark:text-neutral-200">使用的 CRS：</strong> {result.processing_metadata.crs_used}
                           {result.processing_metadata.auto_selected && ' 🎯'}
                           {result.processing_metadata.authority === 'WKT' && result.processing_metadata.wkt && (
                             <>
@@ -215,11 +215,11 @@ export default function SearchResults({
                                 className="underline text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  alert(`Custom CRS definition (WKT):\n\n${result.processing_metadata!.wkt!}`);
+                                  alert(`自定义 CRS 定义 (WKT)：\n\n${result.processing_metadata!.wkt!}`);
                                 }}
-                                aria-label="Show custom CRS WKT details"
+                                aria-label="显示自定义 CRS WKT 详情"
                               >
-                                (details)
+                                (详情)
                               </button>
                             </>
                           )}
@@ -227,27 +227,27 @@ export default function SearchResults({
                         
                         {/* CRS Name */}
                         <p className="text-xs text-neutral-900 dark:text-neutral-100">
-                          <strong className="text-neutral-700 dark:text-neutral-200">CRS Name:</strong> {result.processing_metadata.crs_name}
+                          <strong className="text-neutral-700 dark:text-neutral-200">CRS 名称：</strong> {result.processing_metadata.crs_name}
                         </p>
                         
                         {/* Projection Property */}
                         {result.processing_metadata.projection_property && (
                           <p className="text-xs text-neutral-900 dark:text-neutral-100 capitalize">
-                            <strong className="text-neutral-700 dark:text-neutral-200">Projection:</strong> {result.processing_metadata.projection_property}
+                            <strong className="text-neutral-700 dark:text-neutral-200">投影：</strong> {result.processing_metadata.projection_property}
                           </p>
                         )}
                         
                         {/* Selection Reason */}
                         {result.processing_metadata.selection_reason && (
                           <p className="text-xs text-neutral-900 dark:text-neutral-100">
-                            <strong className="text-neutral-700 dark:text-neutral-200">Selection Reason:</strong> {result.processing_metadata.selection_reason}
+                            <strong className="text-neutral-700 dark:text-neutral-200">选择原因：</strong> {result.processing_metadata.selection_reason}
                           </p>
                         )}
                         
                         {/* Expected Error */}
                         {result.processing_metadata.expected_error !== undefined && (
                           <p className="text-xs text-neutral-900 dark:text-neutral-100">
-                            <strong className="text-neutral-700 dark:text-neutral-200">Expected Error:</strong> &lt;{result.processing_metadata.expected_error}%
+                            <strong className="text-neutral-700 dark:text-neutral-200">预计误差：</strong> &lt;{result.processing_metadata.expected_error}%
                           </p>
                         )}
                       </div>
@@ -262,7 +262,7 @@ export default function SearchResults({
                     }}
                     className="mt-3 w-full py-2 bg-neutral-200 hover:bg-neutral-300 rounded text-xs font-medium md:hidden"
                   >
-                    Close
+                    关闭
                   </button>
                 </div>
               )}
@@ -296,12 +296,12 @@ export default function SearchResults({
               {/* Modal Header */}
               <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
                 <h2 className="text-lg font-bold text-gray-900">
-                  📊 {result.title || result.name}
+                  图表：{result.title || result.name}
                 </h2>
                 <button
                   onClick={() => setChartModalId(null)}
                   className="text-neutral-400 hover:text-neutral-600 p-1 hover:bg-neutral-100 rounded"
-                  aria-label="Close chart"
+                  aria-label="关闭图表"
                 >
                   <X size={20} />
                 </button>
@@ -327,8 +327,8 @@ export default function SearchResults({
           className="w-full py-2 text-center text-blue-600 hover:underline"
         >
           {showAllResults
-            ? "Show Less"
-            : `Show More (${results.length - 5} more)`}
+            ? "收起"
+            : `查看更多（还有 ${results.length - 5} 条）`}
         </button>
       )}
     </div>

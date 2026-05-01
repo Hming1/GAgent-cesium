@@ -160,13 +160,13 @@ export default function MetricsPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/metrics?hours=${timeRange}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+        throw new Error(`获取指标失败：${response.statusText}`);
       }
       const data: MetricsResponse = await response.json();
       setMetrics(data.data);
       setStorageInfo(data.storage_info);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch metrics");
+      setError(err instanceof Error ? err.message : "获取指标失败");
     } finally {
       setLoading(false);
     }
@@ -248,7 +248,7 @@ export default function MetricsPage() {
           <main className="flex-1 overflow-auto bg-primary-50 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tertiary-600 mx-auto mb-4"></div>
-              <p className="text-primary-700">Loading metrics...</p>
+              <p className="text-primary-700">正在加载指标...</p>
             </div>
           </main>
         </div>
@@ -318,14 +318,14 @@ export default function MetricsPage() {
             <div className="text-center max-w-md">
               <AlertCircle className="h-12 w-12 text-danger-600 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-primary-900 mb-2">
-                Error Loading Metrics
+                加载指标出错
               </h2>
               <p className="text-primary-700 mb-4">{error}</p>
               <button
                 onClick={fetchMetrics}
                 className="px-4 py-2 bg-tertiary-600 text-white rounded hover:bg-tertiary-700 transition-colors"
               >
-                Retry
+                重试
               </button>
             </div>
           </main>
@@ -396,10 +396,10 @@ export default function MetricsPage() {
             <div className="text-center max-w-md">
               <Activity className="h-12 w-12 text-primary-400 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-primary-900 mb-2">
-                No Metrics Available
+                暂无可用指标
               </h2>
               <p className="text-primary-700 mb-4">
-                No metrics data for the selected time range. Enable performance metrics in settings and make some requests.
+                所选时间范围内暂无指标数据。请在设置中启用性能指标，并发起一些请求。
               </p>
             </div>
           </main>
@@ -470,37 +470,37 @@ export default function MetricsPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-primary-900 mb-2">
-            Performance Metrics
+            性能指标
           </h1>
           <p className="text-primary-700">
-            Agent performance analytics and statistics
+            智能体性能分析与统计
           </p>
         </div>
 
         {/* Time Range Selector */}
         <div className="mb-6 flex items-center gap-4">
           <label className="text-sm font-medium text-primary-900">
-            Time Range:
+            时间范围：
           </label>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(Number(e.target.value))}
             className="px-3 py-2 border border-primary-300 rounded bg-white text-primary-900"
           >
-            <option value={1}>Last Hour</option>
-            <option value={6}>Last 6 Hours</option>
-            <option value={24}>Last 24 Hours</option>
-            <option value={168}>Last Week</option>
+            <option value={1}>最近 1 小时</option>
+            <option value={6}>最近 6 小时</option>
+            <option value={24}>最近 24 小时</option>
+            <option value={168}>最近 1 周</option>
           </select>
           <button
             onClick={fetchMetrics}
             className="px-4 py-2 bg-tertiary-600 text-white rounded hover:bg-tertiary-700 transition-colors"
           >
-            Refresh
+            刷新
           </button>
           {storageInfo && (
             <span className="text-sm text-primary-600 ml-auto">
-              {formatNumber(storageInfo.total_entries)} entries stored
+              已存储 {formatNumber(storageInfo.total_entries)} 条记录
             </span>
           )}
         </div>
@@ -511,7 +511,7 @@ export default function MetricsPage() {
           <div className="bg-white rounded-lg shadow p-6 border border-primary-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-primary-600">
-                Total Requests
+                请求总数
               </span>
               <Activity className="h-5 w-5 text-tertiary-600" />
             </div>
@@ -524,7 +524,7 @@ export default function MetricsPage() {
           <div className="bg-white rounded-lg shadow p-6 border border-primary-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-primary-600">
-                Avg Response Time
+                平均响应时间
               </span>
               <Clock className="h-5 w-5 text-info-600" />
             </div>
@@ -537,7 +537,7 @@ export default function MetricsPage() {
           <div className="bg-white rounded-lg shadow p-6 border border-primary-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-primary-600">
-                Total LLM Calls
+                LLM 调用总数
               </span>
               <Zap className="h-5 w-5 text-warning-600" />
             </div>
@@ -550,7 +550,7 @@ export default function MetricsPage() {
           <div className="bg-white rounded-lg shadow p-6 border border-primary-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-primary-600">
-                Error Rate
+                错误率
               </span>
               <AlertCircle className="h-5 w-5 text-danger-600" />
             </div>
@@ -564,17 +564,17 @@ export default function MetricsPage() {
         <div className="bg-white rounded-lg shadow p-6 border border-primary-200 mb-6">
           <h2 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Response Time Analysis
+            响应时间分析
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-xs text-primary-600 mb-1">Min</div>
+              <div className="text-xs text-primary-600 mb-1">最小</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatTime(metrics.response_time.min)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Average</div>
+              <div className="text-xs text-primary-600 mb-1">平均</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatTime(metrics.response_time.avg)}
               </div>
@@ -586,7 +586,7 @@ export default function MetricsPage() {
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Max</div>
+              <div className="text-xs text-primary-600 mb-1">最大</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatTime(metrics.response_time.max)}
               </div>
@@ -598,29 +598,29 @@ export default function MetricsPage() {
         <div className="bg-white rounded-lg shadow p-6 border border-primary-200 mb-6">
           <h2 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            LLM Performance
+            LLM 性能
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-xs text-primary-600 mb-1">Total Calls</div>
+              <div className="text-xs text-primary-600 mb-1">调用总数</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatNumber(metrics.llm.total_calls)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Avg per Request</div>
+              <div className="text-xs text-primary-600 mb-1">每次请求平均</div>
               <div className="text-lg font-semibold text-primary-900">
                 {metrics.llm.avg_calls_per_request.toFixed(1)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Total Time</div>
+              <div className="text-xs text-primary-600 mb-1">总耗时</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatTime(metrics.llm.total_time)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Avg Time</div>
+              <div className="text-xs text-primary-600 mb-1">平均耗时</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatTime(metrics.llm.time_stats.avg)}
               </div>
@@ -632,7 +632,7 @@ export default function MetricsPage() {
         <div className="bg-white rounded-lg shadow p-6 border border-primary-200 mb-6">
           <h2 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Top Tools
+            热门工具
           </h2>
           {metrics.tools.top_tools.length > 0 ? (
             <div className="space-y-3">
@@ -648,13 +648,13 @@ export default function MetricsPage() {
                   </div>
                   <div className="flex items-center gap-6 text-sm">
                     <div>
-                      <span className="text-primary-600">Calls: </span>
+                      <span className="text-primary-600">调用：</span>
                       <span className="font-semibold text-primary-900">
                         {formatNumber(tool.total_calls)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-primary-600">Avg: </span>
+                      <span className="text-primary-600">平均：</span>
                       <span className="font-semibold text-primary-900">
                         {formatTime(tool.avg_time)}
                       </span>
@@ -664,7 +664,7 @@ export default function MetricsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-primary-600 text-sm">No tool usage data available</p>
+            <p className="text-primary-600 text-sm">暂无工具使用数据</p>
           )}
         </div>
 
@@ -673,32 +673,32 @@ export default function MetricsPage() {
           <div className="bg-white rounded-lg shadow p-6 border border-primary-200 mb-6">
             <h2 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
               <Target className="h-5 w-5 text-success-600" />
-              Tool Selection Performance
+              工具选择性能
               <span className="ml-2 px-2 py-0.5 text-xs bg-success-100 text-success-800 rounded-full font-medium">
-                Week 3
+                第 3 周
               </span>
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <div className="text-xs text-primary-600 mb-1">Avg Selection Time</div>
+                <div className="text-xs text-primary-600 mb-1">平均选择耗时</div>
                 <div className="text-lg font-semibold text-primary-900">
                   {metrics.tool_selector.avg_selection_time_ms.toFixed(1)}ms
                 </div>
               </div>
               <div>
-                <div className="text-xs text-primary-600 mb-1">Avg Tools Selected</div>
+                <div className="text-xs text-primary-600 mb-1">平均选择工具数</div>
                 <div className="text-lg font-semibold text-primary-900">
                   {metrics.tool_selector.avg_tools_selected.toFixed(1)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-primary-600 mb-1">Fallback Count</div>
+                <div className="text-xs text-primary-600 mb-1">回退次数</div>
                 <div className="text-lg font-semibold text-primary-900">
                   {formatNumber(metrics.tool_selector.fallback_count)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-primary-600 mb-1">Fallback Rate</div>
+                <div className="text-xs text-primary-600 mb-1">回退率</div>
                 <div className="text-lg font-semibold text-primary-900">
                   {(metrics.tool_selector.fallback_rate * 100).toFixed(1)}%
                 </div>
@@ -708,7 +708,7 @@ export default function MetricsPage() {
               <div className="mt-4 p-3 bg-warning-50 border border-warning-200 rounded-lg">
                 <p className="text-sm text-warning-800">
                   <AlertCircle className="inline h-4 w-4 mr-1" />
-                  High fallback rate detected. Consider enabling embeddings for semantic tool selection.
+                  检测到较高回退率。建议启用嵌入以支持语义工具选择。
                 </p>
               </div>
             )}
@@ -720,36 +720,36 @@ export default function MetricsPage() {
           <div className="bg-white rounded-lg shadow p-6 border border-primary-200 mb-6">
             <h2 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
               <Activity className="h-5 w-5 text-info-600" />
-              Tool Usage Analytics
+              工具使用分析
               <span className="ml-2 px-2 py-0.5 text-xs bg-info-100 text-info-800 rounded-full font-medium">
-                Week 3
+                第 3 周
               </span>
             </h2>
             
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 pb-6 border-b border-primary-200">
               <div>
-                <div className="text-xs text-primary-600 mb-1">Total Invocations</div>
+                <div className="text-xs text-primary-600 mb-1">调用总数</div>
                 <div className="text-lg font-semibold text-primary-900">
                   {formatNumber(metrics.tool_usage.total_invocations)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-primary-600 mb-1">Successful</div>
+                <div className="text-xs text-primary-600 mb-1">成功</div>
                 <div className="text-lg font-semibold text-success-700 flex items-center gap-1">
                   <CheckCircle className="h-4 w-4" />
                   {formatNumber(metrics.tool_usage.total_successes)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-primary-600 mb-1">Failed</div>
+                <div className="text-xs text-primary-600 mb-1">失败</div>
                 <div className="text-lg font-semibold text-danger-700 flex items-center gap-1">
                   <XCircle className="h-4 w-4" />
                   {formatNumber(metrics.tool_usage.total_failures)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-primary-600 mb-1">Success Rate</div>
+                <div className="text-xs text-primary-600 mb-1">成功率</div>
                 <div className="text-lg font-semibold text-primary-900">
                   {(metrics.tool_usage.success_rate * 100).toFixed(1)}%
                 </div>
@@ -758,7 +758,7 @@ export default function MetricsPage() {
 
             {/* Tool Usage Table */}
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-primary-700 mb-3">Top Tools by Usage</h3>
+              <h3 className="text-sm font-medium text-primary-700 mb-3">按使用量排序的热门工具</h3>
               {metrics.tool_usage.top_tools.slice(0, 15).map((tool, index) => {
                 const successRate = tool.success_rate * 100;
                 const isHealthy = successRate >= 95;
@@ -780,25 +780,25 @@ export default function MetricsPage() {
                     </div>
                     <div className="flex items-center gap-4 text-sm flex-shrink-0">
                       <div className="text-right">
-                        <div className="text-xs text-primary-600">Invocations</div>
+                        <div className="text-xs text-primary-600">调用</div>
                         <div className="font-semibold text-primary-900">
                           {formatNumber(tool.invocations)}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-primary-600">Success</div>
+                        <div className="text-xs text-primary-600">成功</div>
                         <div className="font-semibold text-success-700">
                           {formatNumber(tool.successes)}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-primary-600">Failed</div>
+                        <div className="text-xs text-primary-600">失败</div>
                         <div className="font-semibold text-danger-700">
                           {formatNumber(tool.failures)}
                         </div>
                       </div>
                       <div className="text-right min-w-[70px]">
-                        <div className="text-xs text-primary-600">Rate</div>
+                        <div className="text-xs text-primary-600">比例</div>
                         <div className={`font-semibold ${
                           isHealthy ? "text-success-700" : 
                           isWarning ? "text-warning-700" : 
@@ -819,7 +819,7 @@ export default function MetricsPage() {
               <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg">
                 <p className="text-sm text-danger-800">
                   <AlertCircle className="inline h-4 w-4 mr-1" />
-                  Some tools have success rates below 80%. Consider investigating these tools.
+                  有些工具成功率低于 80%。建议检查这些工具。
                 </p>
               </div>
             )}
@@ -829,23 +829,23 @@ export default function MetricsPage() {
         {/* Token Usage */}
         <div className="bg-white rounded-lg shadow p-6 border border-primary-200 mb-6">
           <h2 className="text-lg font-semibold text-primary-900 mb-4">
-            Token Usage
+            令牌用量
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <div className="text-xs text-primary-600 mb-1">Total Tokens</div>
+              <div className="text-xs text-primary-600 mb-1">令牌总数</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatNumber(metrics.tokens.total)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Avg per Request</div>
+              <div className="text-xs text-primary-600 mb-1">每次请求平均</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatNumber(Math.round(metrics.tokens.avg_per_request))}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Estimated Cost</div>
+              <div className="text-xs text-primary-600 mb-1">预估成本</div>
               <div className="text-lg font-semibold text-primary-900">
                 {(() => {
                   // Use actual model costs if available, otherwise show N/A
@@ -854,7 +854,7 @@ export default function MetricsPage() {
                   
                   if (inputCost === null || inputCost === undefined || 
                       outputCost === null || outputCost === undefined) {
-                    return "N/A";
+                    return "暂无";
                   }
                   
                   // Rough estimate using average of input/output costs
@@ -867,9 +867,9 @@ export default function MetricsPage() {
               <div className="text-xs text-primary-600">
                 {selectedModel?.input_cost_per_million !== null && 
                  selectedModel?.input_cost_per_million !== undefined ? (
-                  `Based on ${modelSettings.model_name}`
+                  `基于 ${modelSettings.model_name}`
                 ) : (
-                  "Model costs not available"
+                  "暂无模型成本数据"
                 )}
               </div>
             </div>
@@ -879,17 +879,17 @@ export default function MetricsPage() {
         {/* Message Pruning */}
         <div className="bg-white rounded-lg shadow p-6 border border-primary-200">
           <h2 className="text-lg font-semibold text-primary-900 mb-4">
-            Message Pruning Effectiveness
+            消息裁剪效果
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs text-primary-600 mb-1">Total Messages Pruned</div>
+              <div className="text-xs text-primary-600 mb-1">裁剪消息总数</div>
               <div className="text-lg font-semibold text-primary-900">
                 {formatNumber(metrics.message_pruning.total_reduction)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-primary-600 mb-1">Avg per Request</div>
+              <div className="text-xs text-primary-600 mb-1">每次请求平均</div>
               <div className="text-lg font-semibold text-primary-900">
                 {metrics.message_pruning.avg_reduction.toFixed(1)}
               </div>

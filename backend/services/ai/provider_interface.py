@@ -138,6 +138,30 @@ def get_all_providers() -> Dict[str, ProviderInfo]:
             models=[],
             error_message=str(e),
         )
+        
+    # KIMI
+    try:
+        from services.ai import kimi
+
+        is_available = kimi.is_available()
+        models = kimi.get_available_models() if is_available else []
+
+        providers_unordered["kimi"] = ProviderInfo(
+            name="kimi",
+            display_name="KIMI",
+            available=is_available,
+            models=models,
+            error_message=None if is_available else "API key not configured",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to load KIMI provider: {e}")
+        providers_unordered["kimi"] = ProviderInfo(
+            name="kimi",
+            display_name="KIMI",
+            available=False,
+            models=[],
+            error_message=str(e),
+        )
 
     # Order providers based on DEFAULT_LLM_PROVIDER or LLM_PROVIDER env var
     # The first provider in the ordered dict will be selected by default in the UI

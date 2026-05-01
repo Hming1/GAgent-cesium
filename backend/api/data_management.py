@@ -1,7 +1,7 @@
 import hashlib
 import os
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -81,11 +81,152 @@ async def update_layer_style_endpoint(layer_id: str, style_data: Dict[str, Any])
 
 
 # Upload endpoint
+import tempfile
+import io
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _sanitize_table_name(filename: str) -> str:
+    """Convert a filename into a safe PostgreSQL table name."""
+    # Remove extension and path
+    name = filename.rsplit(".", 1)[0].split("/")[-1].split("\\")[-1]
+    # Replace non-alphanumeric chars with underscores
+    name = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "_", name)
+    # Collapse multiple underscores
+    name = re.sub(r"_+", "_", name).strip("_").lower()
+    # Add prefix and limit length
+    table_name = f"upload_{name}"[:63]  # PostgreSQL 63-char limit
+    return table_name
+
+
+def _write_gdf_to_postgis(gdf, table_name: str) -> bool:
+    """Write a GeoDataFrame to PostGIS. Returns True on success, False on failure."""
+    try:
+        from sqlalchemy import create_engine, text
+
+        db_url = core_config.GEODATA_DATABASE_URL
+        if not db_url:
+            logger.warning("No GEODATA_DATABASE_URL configured, skipping PostGIS write")
+            return False
+
+        # Convert psycopg3 dialect to psycopg2 for GeoPandas compatibility
+        db_url = db_url.replace("postgresql+psycopg://", "postgresql://")
+        engine = create_engine(db_url)
+
+        # Ensure PostGIS extension exists
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+            conn.commit()
+
+        # Write GeoDataFrame to PostGIS
+        gdf.to_postgis(
+            name=table_name,
+            con=engine,
+            schema="public",
+            if_exists="replace",
+            index=False,
+        )
+        logger.info(f"Successfully wrote {len(gdf)} rows to PostGIS table: public.{table_name}")
+        engine.dispose()
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to write to PostGIS (non-blocking): {e}")
+        return False
+
+
+def _process_upload_to_geojson_stream(
+    filename: str, file_obj
+) -> tuple[str, io.BytesIO, Optional[str]]:
+    """
+    If filename corresponds to a GIS format (KML, Shapefile in zip, or CSV),
+    parse it and convert it to a GeoJSON stream and write to PostGIS.
+    Returns (new_filename, stream, postgis_table_name).
+    postgis_table_name is None if PostGIS write was skipped or failed.
+    """
+    ext = filename.lower().split(".")[-1]
+    if ext not in ["zip", "kml", "csv"]:
+        return filename, file_obj, None
+
+    try:
+        import geopandas as gpd
+        import pandas as pd
+
+        # Write to temporary file for geopandas
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+            tmp.write(file_obj.read())
+            tmp_path = tmp.name
+
+        try:
+            if ext == "kml":
+                import fiona
+
+                fiona.drvsupport.supported_drivers["KML"] = "rw"
+                gdf = gpd.read_file(tmp_path, driver="KML")
+            elif ext == "zip":
+                # geopandas can read zipped shapefiles using the zip scheme
+                gdf = gpd.read_file(f"zip://{tmp_path}")
+            elif ext == "csv":
+                df = pd.read_csv(tmp_path)
+                lat_col, lon_col = None, None
+                for col in df.columns:
+                    col_lower = str(col).lower()
+                    if col_lower in ["y", "lat", "latitude", "point_y"]:
+                        lat_col = col
+                    elif col_lower in ["x", "lon", "longitude", "lng", "point_x"]:
+                        lon_col = col
+                if lat_col and lon_col:
+                    gdf = gpd.GeoDataFrame(
+                        df, geometry=gpd.points_from_xy(df[lon_col], df[lat_col])
+                    )
+                    gdf.set_crs(epsg=4326, inplace=True, allow_override=True)
+                else:
+                    raise ValueError("Could not find latitude and longitude columns in CSV.")
+
+            # Reproject to EPSG:4326 standard
+            if getattr(gdf, "crs", None) is not None and gdf.crs.to_epsg() != 4326:
+                gdf = gdf.to_crs(epsg=4326)
+            elif getattr(gdf, "crs", None) is None:
+                gdf.set_crs(epsg=4326, inplace=True)
+
+            # Convert datetime/Timestamp columns to strings for JSON compatibility
+            for col in gdf.columns:
+                if col == "geometry":
+                    continue
+                if hasattr(gdf[col], "dt") or pd.api.types.is_datetime64_any_dtype(gdf[col]):
+                    gdf[col] = gdf[col].astype(str)
+
+            # Convert GeoDataFrame to GeoJSON
+            geojson_str = gdf.to_json()
+            new_stream = io.BytesIO(geojson_str.encode("utf-8"))
+            new_filename = filename.rsplit(".", 1)[0] + ".geojson"
+
+            # Write to PostGIS (non-blocking)
+            postgis_table = _sanitize_table_name(filename)
+            if not gdf.empty:
+                _write_gdf_to_postgis(gdf, postgis_table)
+            else:
+                logger.warning(f"Skipping PostGIS write for {filename}: GeoDataFrame is empty")
+                postgis_table = None
+
+            return new_filename, new_stream, postgis_table
+        finally:
+            os.unlink(tmp_path)
+
+    except Exception as e:
+        logger.warning(f"Failed to convert {filename} to GeoJSON: {e}")
+        file_obj.seek(0)
+        return filename, file_obj, None
+
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)) -> Dict[str, str]:
     """Uploads a file to Azure Blob Storage or local disk, streaming the payload.
 
     Returns its public URL and unique ID. File size is limited to 100MB.
+    Automatically converts .zip (shapefile), .kml, and .csv to GeoJSON.
     """
     try:
         # Prefer server-provided size (if multipart header contains it) for a fast pre-check
@@ -98,11 +239,18 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, str]:
                 ),
             )
 
-        # Stream to storage without loading into memory
-        # UploadFile.file is a SpooledTemporaryFile (BinaryIO)
         safe_name = file.filename or "upload.bin"
-        url, unique_name = store_file_stream(safe_name, file.file)
-        return {"url": url, "id": unique_name}
+
+        # Intercept and convert vector formats to GeoJSON
+        final_name, final_stream, postgis_table = _process_upload_to_geojson_stream(
+            safe_name, file.file
+        )
+
+        url, unique_name = store_file_stream(final_name, final_stream)
+        result = {"url": url, "id": unique_name}
+        if postgis_table:
+            result["postgis_table"] = postgis_table
+        return result
     finally:
         await file.close()
 

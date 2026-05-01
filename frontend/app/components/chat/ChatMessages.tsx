@@ -68,15 +68,15 @@ export default function ChatMessages({
               <div key={msgKey} className="flex justify-start">
                 <div className="max-w px-4 py-2 rounded-lg bg-primary-100 rounded-tl-none border border-primary-300">
                   <div className="text-sm font-medium text-primary-900">
-                    Using tool '{call.function.name}' with arguments '{" "}
-                    {call.function.arguments}'
+                    正在使用工具“{call.function.name}”，参数为“{" "}
+                    {call.function.arguments}”
                   </div>
 
                   <button
                     className="ml-2 px-2 py-1 bg-second-primary-600 text-white rounded text-xs hover:bg-second-primary-700"
                     onClick={() => onToggleToolMessage?.(idx)}
                   >
-                    {isOpen ? "Hide result" : "Show result"}
+                    {isOpen ? "隐藏结果" : "显示结果"}
                   </button>
 
                   {isOpen && conversation[idx + 1]?.type === "tool" && (
@@ -120,7 +120,7 @@ export default function ChatMessages({
                   </div>
                 )}
                 <div className="text-xs text-primary-500 mt-1">
-                  {isHuman ? "You" : msg.type === "ai" ? "Agent" : "Unknown"}
+                  {isHuman ? "你" : msg.type === "ai" ? "智能体" : "未知"}
                 </div>
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function ChatMessages({
             <div className="flex items-center space-x-2 max-w-[80%] px-4 py-2 rounded-lg bg-neutral-50 rounded-tl-none border border-primary-200">
               <Loader2 size={16} className="animate-spin text-second-primary-600" />
               <span className="text-sm text-primary-700">
-                NaLaMap Agent is working on your request...
+                NaLaMap 智能体正在处理你的请求...
               </span>
             </div>
           </div>

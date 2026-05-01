@@ -29,7 +29,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
 
   // If auth status is loading, show a loader (don't redirect yet)
   if (user === undefined) {
-    return <div>Loading...</div>;
+    return <div>加载中...</div>;
   }
 
   if (user === null) {
@@ -37,7 +37,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
     if (['/login', '/signup'].includes(pathname)) {
       return <>{children}</>;
     }
-    return <div>Loading...</div>;
+    return <div>加载中...</div>;
   }
   return <>{children}</>;
 }

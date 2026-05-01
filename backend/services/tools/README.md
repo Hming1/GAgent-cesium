@@ -36,6 +36,13 @@ Tools for managing the current session's data.
 - `metadata_search`: Search for loaded layers using semantic similarity.
 - `describe_geodata_object`: Get detailed metadata about a specific layer.
 
+### Python Analysis (`python_analysis_tool.py`)
+Tools for running bounded, custom data analysis outside the main backend process.
+- `run_python_analysis`: Sends selected current GeoJSON-like layers and optional
+  Python code to the isolated `analysis-sandbox` service. The tool returns chat
+  summaries and stores any sandbox-produced GeoJSON outputs as `GeoDataObject`
+  records in `geodata_results`.
+
 ### 📚 Data Discovery (`librarian_tools.py`, `geoserver/`)
 Tools for finding external data.
 - `query_librarian_postgis`: Search the internal PostGIS database for datasets.

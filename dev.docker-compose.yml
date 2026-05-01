@@ -18,7 +18,33 @@ services:
       - AZURE_SAS_EXPIRY_HOURS=${AZURE_SAS_EXPIRY_HOURS:-24}
       - ALLOWED_CORS_ORIGINS=http://localhost:3000,http://frontend:3000
       - COOKIE_SECURE=false
+      - PYTHON_ANALYSIS_SANDBOX_URL=${PYTHON_ANALYSIS_SANDBOX_URL:-http://analysis-sandbox:8080}
+      - PYTHON_ANALYSIS_SANDBOX_TIMEOUT=${PYTHON_ANALYSIS_SANDBOX_TIMEOUT:-35}
+      - PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER=${PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER:-500}
+      - PYTHON_ANALYSIS_MAX_OUTPUT_BYTES=${PYTHON_ANALYSIS_MAX_OUTPUT_BYTES:-1048576}
     command: /app/.venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000 # auto-reload enabled
+    depends_on:
+      - analysis-sandbox
+    networks:
+      - default
+      - sandbox
+
+  analysis-sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    environment:
+      - SANDBOX_MAX_SECONDS=${SANDBOX_MAX_SECONDS:-30}
+      - SANDBOX_MAX_OUTPUT_BYTES=${SANDBOX_MAX_OUTPUT_BYTES:-1048576}
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - sandbox
 
   frontend:
     build:
@@ -38,3 +64,7 @@ services:
     command: yarn dev # starts Next.js in dev mode with hot reloading
     depends_on:
       - backend
+
+networks:
+  sandbox:
+    internal: true

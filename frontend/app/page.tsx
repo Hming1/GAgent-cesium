@@ -102,7 +102,7 @@ export default function Home() {
       <button
         className="md:hidden fixed top-4 right-4 z-[25] p-3 bg-primary-800 rounded-md shadow-lg hover:bg-primary-700"
         onClick={() => setMobileMenuOpen(true)}
-        aria-label="Open menu"
+        aria-label="打开菜单"
       >
         <Menu className="w-8 h-8 text-white" />
       </button>
@@ -116,11 +116,11 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-primary-700">
-              <h2 className="text-lg font-semibold">Menu</h2>
+              <h2 className="text-lg font-semibold">菜单</h2>
               <button
                 className="p-1 hover:bg-primary-700 rounded"
                 onClick={() => setMobileMenuOpen(false)}
-                aria-label="Close menu"
+                aria-label="关闭菜单"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -176,7 +176,7 @@ export default function Home() {
               setLayerCollapsed(false);
               setLayerPanelCollapsed(false);
             }}
-            aria-label="Open layer management"
+            aria-label="打开图层管理"
           >
             <Layers className="w-9 h-9 text-white" />
           </button>
@@ -213,7 +213,7 @@ export default function Home() {
           <button
             className="fixed bottom-4 right-4 p-3 bg-primary-800 rounded-full shadow-lg z-[25] hover:bg-primary-700 touch-manipulation"
             onClick={() => setChatCollapsed(false)}
-            aria-label="Open chat"
+            aria-label="打开聊天"
           >
             <MessageCircle className="w-9 h-9 text-white" />
           </button>

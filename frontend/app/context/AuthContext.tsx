@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: "include",
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) throw new Error("Login failed");
+    if (!res.ok) throw new Error("登录失败");
     const data = await res.json();
     setUser(data.user);
   }
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: "include",
       body: JSON.stringify({ email, password, display_name: displayName }),
     });
-    if (!res.ok) throw new Error("Sign-up failed");
+    if (!res.ok) throw new Error("注册失败");
     const data = await res.json();
     setUser(data.user);
   }
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (ctx === undefined) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error("useAuth 必须在 AuthProvider 内使用");
   }
   return ctx;
 }

@@ -7,64 +7,64 @@ import { ColorScale, ColorSettings } from "../../stores/settingsStore";
 import { generateColorScale } from "../../utils/colorGenerator";
 
 const COLOR_SCALE_LABELS: Record<keyof ColorScale, string> = {
-  shade_50: "50 - Lightest",
+  shade_50: "50 - 最浅",
   shade_100: "100",
   shade_200: "200",
   shade_300: "300",
   shade_400: "400",
-  shade_500: "500 - Base",
+  shade_500: "500 - 基础",
   shade_600: "600",
   shade_700: "700",
   shade_800: "800",
   shade_900: "900",
-  shade_950: "950 - Darkest",
+  shade_950: "950 - 最深",
 };
 
 // Organized color groups
 const COLOR_GROUPS = {
   core: {
-    title: "Core Colors",
-    description: "Primary UI colors for text, backgrounds, and main actions",
+    title: "核心颜色",
+    description: "文本、背景和主要操作使用的 UI 主色",
     scales: ["primary", "second_primary", "secondary", "tertiary"] as (keyof ColorSettings)[],
   },
   semantic: {
-    title: "Semantic Colors",
-    description: "Status and feedback colors",
+    title: "语义颜色",
+    description: "状态与反馈颜色",
     scales: ["danger", "warning", "info", "neutral"] as (keyof ColorSettings)[],
   },
   corporate: {
-    title: "Corporate/Brand Colors",
-    description: "Your brand colors for layer styling and custom elements",
+    title: "企业/品牌颜色",
+    description: "用于图层样式和自定义元素的品牌色",
     scales: ["corporate_1", "corporate_2", "corporate_3"] as (keyof ColorSettings)[],
   },
 };
 
 const COLOR_SCALE_NAMES: Record<keyof ColorSettings, string> = {
-  primary: "Primary (Text & Borders)",
-  second_primary: "Second Primary (Actions)",
-  secondary: "Secondary (Accents)",
-  tertiary: "Tertiary (Success)",
-  danger: "Danger (Errors)",
-  warning: "Warning",
-  info: "Info",
-  neutral: "Neutral (White/Black)",
-  corporate_1: "Corporate 1 (Rose)",
-  corporate_2: "Corporate 2 (Sky)",
-  corporate_3: "Corporate 3 (Purple)",
+  primary: "主色（文本与边框）",
+  second_primary: "第二主色（操作）",
+  secondary: "辅助色（强调）",
+  tertiary: "第三色（成功）",
+  danger: "危险色（错误）",
+  warning: "警告色",
+  info: "信息色",
+  neutral: "中性色（黑白灰）",
+  corporate_1: "品牌色 1（玫瑰）",
+  corporate_2: "品牌色 2（天空蓝）",
+  corporate_3: "品牌色 3（紫色）",
 };
 
 const COLOR_USAGE_HINTS: Record<keyof ColorSettings, string> = {
-  primary: "Used for main text (900), backgrounds (50-100), borders (300), icons (600-700), and sidebar (800)",
-  second_primary: "Action buttons (600), hover states (700), user messages (200), progress bars (500)",
-  secondary: "Focus rings (300), waiting states (500-600), sidebar hover (800), badges (100)",
-  tertiary: "Success messages (600), completed states, checkboxes, export button (700)",
-  danger: "Error messages, delete/remove buttons (600), error backgrounds (100), hover (700)",
-  warning: "Warning messages and alerts (600), warning backgrounds (100-200)",
-  info: "Informational messages and hints (600), info backgrounds (100-200)",
-  neutral: "Pure white (50), pure black (950), overlay backgrounds, neutral grays",
-  corporate_1: "Your first brand color - used for layer type styling (rose/pink tones)",
-  corporate_2: "Your second brand color - used for layer type styling (sky/blue tones)",
-  corporate_3: "Your third brand color - used for layer type styling (purple tones)",
+  primary: "用于主文本（900）、背景（50-100）、边框（300）、图标（600-700）和侧边栏（800）",
+  second_primary: "用于操作按钮（600）、悬停状态（700）、用户消息（200）和进度条（500）",
+  secondary: "用于焦点环（300）、等待状态（500-600）、侧边栏悬停（800）和徽章（100）",
+  tertiary: "用于成功消息（600）、完成状态、复选框和导出按钮（700）",
+  danger: "用于错误消息、删除/移除按钮（600）、错误背景（100）和悬停（700）",
+  warning: "用于警告消息与提醒（600）、警告背景（100-200）",
+  info: "用于信息提示（600）和信息背景（100-200）",
+  neutral: "用于纯白（50）、纯黑（950）、遮罩背景和中性灰",
+  corporate_1: "第一个品牌色，用于图层类型样式（玫瑰/粉色系）",
+  corporate_2: "第二个品牌色，用于图层类型样式（天空蓝系）",
+  corporate_3: "第三个品牌色，用于图层类型样式（紫色系）",
 };
 
 interface ColorScaleEditorProps {
@@ -142,7 +142,7 @@ const ColorScaleEditor = memo(function ColorScaleEditor({
                 }}
                 className="w-3 h-8 first:rounded-l last:rounded-r cursor-pointer hover:ring-2 hover:ring-secondary-500 hover:z-10 transition-all"
                 style={{ backgroundColor: color }}
-                title={`${shade}: ${color} - Click to change`}
+                title={`${shade}: ${color} - 点击修改`}
               />
             ))}
           </div>
@@ -163,7 +163,7 @@ const ColorScaleEditor = memo(function ColorScaleEditor({
               setShowQuickPicker(!showQuickPicker);
             }}
             className="p-1.5 bg-secondary-100 hover:bg-secondary-200 rounded transition-colors"
-            title="Quick set color (auto-generates all shades)"
+            title="快速设置颜色（自动生成所有色阶）"
           >
             <Wand2 className="w-4 h-4 text-secondary-700" />
           </button>
@@ -184,14 +184,14 @@ const ColorScaleEditor = memo(function ColorScaleEditor({
               value={scale.shade_500}
               onChange={(e) => handleQuickColorChange(e.target.value)}
               className="w-16 h-16 rounded cursor-pointer border-2 border-secondary-300"
-              title="Pick main color - all shades will be generated automatically"
+              title="选择主色，所有色阶将自动生成"
             />
             <div className="flex-1">
               <p className="text-sm font-medium text-secondary-900 mb-1">
-                🪄 Quick Color Set
+                快速配色
               </p>
               <p className="text-xs text-secondary-800">
-                Pick your main color and we'll automatically generate all 11 shades (lighter to darker).
+                选择主色后，系统会自动生成从浅到深的 11 个色阶。
               </p>
             </div>
           </div>
@@ -209,7 +209,7 @@ const ColorScaleEditor = memo(function ColorScaleEditor({
                   onUpdate(shade as keyof ColorScale, e.target.value)
                 }
                 className="w-12 h-12 rounded cursor-pointer border border-primary-300"
-                title={`Edit ${shade}`}
+                title={`编辑 ${shade}`}
               />
               <span className="text-xs text-primary-700 font-mono">
                 {COLOR_SCALE_LABELS[shade as keyof ColorScale]}
@@ -235,7 +235,7 @@ export default function ColorSettingsComponent() {
   if (!color_settings) {
     return (
       <div className="border border-primary-300 rounded p-4 bg-primary-100 dark:bg-primary-900">
-        <p className="text-primary-600">Loading color settings...</p>
+        <p className="text-primary-600">正在加载颜色设置...</p>
       </div>
     );
   }
@@ -262,10 +262,10 @@ export default function ColorSettingsComponent() {
       >
         <div className="flex items-center space-x-2">
           <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-            Color Customization
+            颜色自定义
           </h2>
           <span className="text-xs bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-100 px-2 py-0.5 rounded-full font-medium">
-            Corporate Branding
+            企业品牌
           </span>
         </div>
         {isOpen ? (
@@ -283,30 +283,29 @@ export default function ColorSettingsComponent() {
               <Info className="w-4 h-4 text-info-600 mt-0.5 flex-shrink-0" />
               <div className="text-info-900">
                 <p className="font-medium mb-1">
-                  Customize your app's color scheme
+                  自定义应用配色方案
                 </p>
                 <ul className="text-xs space-y-1 text-info-800">
                   <li>
-                    • Click the <strong>🪄 magic wand</strong> icon for quick color generation
+                    • 点击<strong>魔法棒</strong>图标可快速生成配色
                   </li>
                   <li>
-                    • Changes apply instantly across the entire application
+                    • 修改会立即应用到整个应用
                   </li>
                   <li>
-                    • Use <strong>Core Colors</strong> for main UI elements
+                    • <strong>核心颜色</strong>用于主要 UI 元素
                   </li>
                   <li>
-                    • <strong>Semantic Colors</strong> provide status feedback
+                    • <strong>语义颜色</strong>用于状态反馈
                   </li>
                   <li>
-                    • <strong>Corporate Colors</strong> for layer styling and
-                    branding
+                    • <strong>品牌颜色</strong>用于图层样式和品牌展示
                   </li>
                   <li>
-                    • Each color has 11 shades (50=lightest, 950=darkest)
+                    • 每个颜色包含 11 个色阶（50=最浅，950=最深）
                   </li>
                   <li>
-                    • Export your settings to save your custom color scheme
+                    • 导出设置可保存你的自定义配色
                   </li>
                 </ul>
               </div>
@@ -348,24 +347,24 @@ export default function ColorSettingsComponent() {
                 className="flex items-center space-x-2 px-4 py-2 bg-primary-200 text-primary-700 rounded hover:bg-primary-300 transition-colors font-medium"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Reset</span>
+                <span>重置</span>
               </button>
             ) : (
               <div className="flex items-center space-x-2">
                 <p className="text-sm text-primary-700">
-                  Reset all colors to defaults?
+                  是否将所有颜色重置为默认值？
                 </p>
                 <button
                   onClick={handleReset}
                   className="px-3 py-1 bg-danger-600 text-neutral-50 rounded hover:bg-danger-700 transition-colors font-medium text-sm"
                 >
-                  Confirm
+                  确认
                 </button>
                 <button
                   onClick={() => setShowResetConfirm(false)}
                   className="px-3 py-1 bg-primary-300 text-primary-900 rounded hover:bg-primary-400 transition-colors font-medium text-sm"
                 >
-                  Cancel
+                  取消
                 </button>
               </div>
             )}
@@ -373,24 +372,22 @@ export default function ColorSettingsComponent() {
 
           {/* Usage Tips */}
           <div className="bg-warning-50 border border-warning-200 rounded p-3 text-xs text-warning-900">
-            <p className="font-medium mb-1">Tips for Color Selection:</p>
+            <p className="font-medium mb-1">颜色选择建议：</p>
             <ul className="space-y-1">
               <li>
-                • Use lighter shades (50-300) for backgrounds, darker (700-950)
-                for text
+                • 使用较浅色阶（50-300）作为背景，较深色阶（700-950）作为文本
               </li>
               <li>
-                • Maintain sufficient contrast for accessibility between text and background
-                colors
+                • 保持文本与背景之间有足够对比度，提升可访问性
               </li>
               <li>
-                • Keep your brand colors consistent with corporate guidelines
+                • 保持品牌色与企业规范一致
               </li>
               <li>
-                • Test colors with color blindness simulators for accessibility
+                • 使用色盲模拟器测试颜色可访问性
               </li>
               <li>
-                • Danger (red) should remain red-ish for universal recognition
+                • 危险色建议保持红色系，方便用户快速识别
               </li>
             </ul>
           </div>

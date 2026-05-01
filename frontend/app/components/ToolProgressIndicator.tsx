@@ -21,99 +21,99 @@ function formatToolInput(input: any): string | null {
 
   // Extract common meaningful parameters
   if (input.query) {
-    params.push(`query: "${input.query}"`);
+    params.push(`查询：“${input.query}”`);
   }
 
   if (input.location) {
-    params.push(`location: "${input.location}"`);
+    params.push(`位置：“${input.location}”`);
   }
 
   if (input.search_query) {
-    params.push(`search: "${input.search_query}"`);
+    params.push(`搜索：“${input.search_query}”`);
   }
 
   if (input.operator) {
-    params.push(`operator: ${input.operator}`);
+    params.push(`运算符：${input.operator}`);
   }
 
   if (input.operation) {
-    params.push(`operation: ${input.operation}`);
+    params.push(`操作：${input.operation}`);
   }
 
   if (input.distance !== undefined) {
-    params.push(`distance: ${input.distance}m`);
+    params.push(`距离：${input.distance} 米`);
   }
 
   if (input.buffer_distance !== undefined) {
-    params.push(`buffer: ${input.buffer_distance}m`);
+    params.push(`缓冲距离：${input.buffer_distance} 米`);
   }
 
   // Handle layer references - show layer name instead of full object
   if (input.layer_id) {
-    params.push(`layer: ${input.layer_id}`);
+    params.push(`图层：${input.layer_id}`);
   }
 
   if (input.layer_name) {
-    params.push(`layer: "${input.layer_name}"`);
+    params.push(`图层：“${input.layer_name}”`);
   }
 
   // Handle multiple layers
   if (input.layer_ids && Array.isArray(input.layer_ids)) {
-    params.push(`layers: ${input.layer_ids.length} selected`);
+    params.push(`图层：已选择 ${input.layer_ids.length} 个`);
   }
 
   // Handle GeoJSON features - show count instead of full geometry
   if (input.features && Array.isArray(input.features)) {
-    params.push(`features: ${input.features.length} items`);
+    params.push(`要素：${input.features.length} 个`);
   }
 
   // Handle geometry type
   if (input.geometry_type) {
-    params.push(`type: ${input.geometry_type}`);
+    params.push(`类型：${input.geometry_type}`);
   }
 
   // Handle attribute filters
   if (input.attribute) {
-    params.push(`attribute: ${input.attribute}`);
+    params.push(`属性：${input.attribute}`);
   }
 
   if (input.filter) {
     if (typeof input.filter === "string") {
-      params.push(`filter: "${input.filter}"`);
+      params.push(`过滤：“${input.filter}”`);
     } else {
-      params.push(`filter applied`);
+      params.push("已应用过滤条件");
     }
   }
 
   // Handle bbox (bounding box)
   if (input.bbox && Array.isArray(input.bbox) && input.bbox.length === 4) {
-    params.push(`bbox: [${input.bbox.map((n: number) => n.toFixed(2)).join(", ")}]`);
+    params.push(`边界框：[${input.bbox.map((n: number) => n.toFixed(2)).join(", ")}]`);
   }
 
   // Handle service URLs (show domain only)
   if (input.service_url) {
     try {
       const url = new URL(input.service_url);
-      params.push(`service: ${url.hostname}`);
+      params.push(`服务：${url.hostname}`);
     } catch {
-      params.push(`service: ${input.service_url.substring(0, 30)}...`);
+      params.push(`服务：${input.service_url.substring(0, 30)}...`);
     }
   }
 
   // Handle coordinate pairs
   if (input.coordinates && Array.isArray(input.coordinates)) {
     if (input.coordinates.length === 2) {
-      params.push(`coords: [${input.coordinates.map((n: number) => n.toFixed(4)).join(", ")}]`);
+      params.push(`坐标：[${input.coordinates.map((n: number) => n.toFixed(4)).join(", ")}]`);
     }
   }
 
   // Handle limit/max results
   if (input.limit !== undefined) {
-    params.push(`limit: ${input.limit}`);
+    params.push(`限制：${input.limit}`);
   }
 
   if (input.max_results !== undefined) {
-    params.push(`max: ${input.max_results}`);
+    params.push(`最大数量：${input.max_results}`);
   }
 
   // If we found any meaningful parameters, return them
@@ -154,7 +154,7 @@ const ToolProgressIndicator: React.FC<ToolProgressIndicatorProps> = ({
   return (
     <div className="tool-progress-container">
       <div className="tool-progress-header">
-        <span className="tool-progress-title">Agent Activity</span>
+        <span className="tool-progress-title">智能体活动</span>
       </div>
       <div className="tool-progress-list">
         {toolUpdates.map((tool, index) => {

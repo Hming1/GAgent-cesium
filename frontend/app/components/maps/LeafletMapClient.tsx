@@ -807,7 +807,7 @@ const LeafletGeoJSONLayer = memo(function LeafletGeoJSONLayer({
             });
             if (expectedBytes !== null && receivedBytes < expectedBytes) {
               throw new Error(
-                `GeoJSON response truncated (${receivedBytes}/${expectedBytes} bytes)`,
+                `GeoJSON 响应不完整（已接收 ${receivedBytes}/${expectedBytes} 字节）`,
               );
             }
           }
@@ -1428,8 +1428,8 @@ const Legend = memo(function Legend({
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
-          title={isCollapsed ? "Expand legend" : "Collapse legend"}
-          aria-label={isCollapsed ? "Expand legend" : "Collapse legend"}
+          title={isCollapsed ? "展开图例" : "折叠图例"}
+          aria-label={isCollapsed ? "展开图例" : "折叠图例"}
         >
           <svg
             className={`w-4 h-4 transition-transform ${isCollapsed ? "rotate-0" : "rotate-180"}`}
@@ -1452,20 +1452,20 @@ const Legend = memo(function Legend({
         <>
           {isLoading && (
             <div className="flex items-center justify-center h-16 text-xs text-gray-500">
-              Loading legend...
+              正在加载图例...
             </div>
           )}
           <div className="relative group cursor-pointer">
             <img
               src={legendUrl}
-              alt="Layer Legend"
+              alt="图层图例"
               className={`w-full object-contain transition-all duration-300 ease-in-out ${
                 isImageMaximized ? "max-h-none" : "max-h-50"
               }`}
               style={{ display: isLoading ? "none" : "block" }}
               onClick={() => setIsImageMaximized(!isImageMaximized)}
               title={
-                isImageMaximized ? "Click to minimize" : "Click to maximize"
+                isImageMaximized ? "点击缩小" : "点击放大"
               }
               onLoad={() => {
                 setIsLoading(false);
@@ -1502,7 +1502,7 @@ const Legend = memo(function Legend({
             />
             {/* Hover indicator */}
             <div className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              {isImageMaximized ? "Click to minimize" : "Click to maximize"}
+              {isImageMaximized ? "点击缩小" : "点击放大"}
             </div>
           </div>
         </>

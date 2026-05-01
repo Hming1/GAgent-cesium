@@ -49,6 +49,7 @@ class DataType(str, Enum):
     LAYER = "Layer"
     UPLOADED = "uploaded"
     RASTER = "Raster"
+    POSTGIS = "postgis"
 
 
 class DataOrigin(Enum):

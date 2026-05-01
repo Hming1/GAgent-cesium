@@ -89,15 +89,15 @@ const QuickActionsButtons: React.FC<QuickActionsProps> = ({
 
 // Configuration for different quick action button sets
 const BASIC_QUICK_ACTIONS: QuickActionButton[] = [
-  { label: "Dashed", style: { stroke_dash_array: "5,5" } },
-  { label: "Dotted", style: { stroke_dash_array: "3,3" } },
-  { label: "Solid", style: { stroke_dash_array: undefined } },
-  { label: "Large Points", style: { radius: 12, stroke_weight: 3 } },
+  { label: "虚线", style: { stroke_dash_array: "5,5" } },
+  { label: "点线", style: { stroke_dash_array: "3,3" } },
+  { label: "实线", style: { stroke_dash_array: undefined } },
+  { label: "大点", style: { radius: 12, stroke_weight: 3 } },
 ];
 
 const ADVANCED_QUICK_ACTIONS: QuickActionButton[] = [
   {
-    label: "Thick Dashed",
+    label: "粗虚线",
     style: {
       stroke_color: "#ff0000",
       stroke_weight: 4,
@@ -108,7 +108,7 @@ const ADVANCED_QUICK_ACTIONS: QuickActionButton[] = [
       "px-2 py-1 bg-corporate-1-500 text-neutral-50 text-xs rounded hover:bg-corporate-1-600 cursor-pointer transition-colors",
   },
   {
-    label: "Subtle Blue",
+    label: "淡蓝",
     style: {
       stroke_color: "#0066cc",
       stroke_weight: 1,
@@ -120,7 +120,7 @@ const ADVANCED_QUICK_ACTIONS: QuickActionButton[] = [
       "px-2 py-1 bg-corporate-2-500 text-neutral-50 text-xs rounded hover:bg-corporate-2-600 cursor-pointer transition-colors",
   },
   {
-    label: "Green Outline",
+    label: "绿色轮廓",
     style: {
       stroke_color: "#00aa00",
       stroke_weight: 3,
@@ -132,7 +132,7 @@ const ADVANCED_QUICK_ACTIONS: QuickActionButton[] = [
       "px-2 py-1 bg-corporate-2-500 text-neutral-50 text-xs rounded hover:bg-corporate-2-600 cursor-pointer transition-colors",
   },
   {
-    label: "Highlight Points",
+    label: "高亮点",
     style: {
       stroke_color: "#ff6600",
       stroke_weight: 2,
@@ -146,8 +146,8 @@ const ADVANCED_QUICK_ACTIONS: QuickActionButton[] = [
 ];
 
 const SECONDARY_QUICK_ACTIONS: QuickActionButton[] = [
-  { label: "Subtle", style: { stroke_weight: 1, fill_opacity: 0.1 } },
-  { label: "Bold", style: { stroke_weight: 4, stroke_opacity: 1.0 } },
+  { label: "柔和", style: { stroke_weight: 1, fill_opacity: 0.1 } },
+  { label: "醒目", style: { stroke_weight: 4, stroke_opacity: 1.0 } },
 ];
 
 interface LayerListProps {
@@ -182,7 +182,7 @@ function getWorldBankChartData(layer: any): {
   return {
     chartData: props.chart_data as ChartDataItem[],
     chartByCategory: (props.chart_by_category || {}) as ChartByCategory,
-    country: (props.country as string) || "Unknown",
+    country: (props.country as string) || "未知",
     dataPeriod: (props.data_period as string) || "",
   };
 }
@@ -256,7 +256,7 @@ export default function LayerList({
       const response = await fetch(layer.data_link.startsWith('http') ? layer.data_link : `${apiBase}${layer.data_link}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to download layer: ${response.statusText}`);
+        throw new Error(`下载图层失败：${response.statusText}`);
       }
       
       const data = await response.json();
@@ -273,7 +273,7 @@ export default function LayerList({
       Logger.log(`Downloaded layer: ${layer.name}`);
     } catch (error) {
       Logger.error(`Error downloading layer ${layer.name}:`, error);
-      alert(`Failed to download layer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`下载图层失败：${error instanceof Error ? error.message : "未知错误"}`);
     }
   };
 
@@ -284,7 +284,7 @@ export default function LayerList({
       const response = await fetch(layer.data_link.startsWith('http') ? layer.data_link : `${apiBase}${layer.data_link}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch layer: ${response.statusText}`);
+        throw new Error(`获取图层失败：${response.statusText}`);
       }
       
       const data = await response.json();
@@ -316,9 +316,9 @@ export default function LayerList({
 
   return (
     <div className="mb-4">
-      <h3 className="font-semibold mb-2">User Layers</h3>
+      <h3 className="font-semibold mb-2">用户图层</h3>
       {layers.length === 0 ? (
-        <p className="text-sm text-gray-500">No layers added yet.</p>
+        <p className="text-sm text-gray-500">尚未添加图层。</p>
       ) : (
         <ul
           className={`space-y-2 text-sm ${isDragging ? "cursor-grabbing" : ""}`}
@@ -467,7 +467,7 @@ export default function LayerList({
                     style={{
                       cursor: isDragging ? "grabbing" : "grab",
                     }}
-                    title="Drag to reorder"
+                    title="拖拽排序"
                   >
                     <div className="flex p-2 gap-2">
                       {/* Drag handle - dynamically fills height with dots */}
@@ -521,7 +521,7 @@ export default function LayerList({
                                 });
                               }
                             }}
-                            title="View layer metadata"
+                            title="查看图层元数据"
                             className="text-neutral-500 hover:text-info-600 p-1 hover:bg-neutral-100 rounded transition-colors cursor-pointer flex-shrink-0"
                           >
                             <Info size={16} />
@@ -532,14 +532,14 @@ export default function LayerList({
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           <button
                             onClick={() => setZoomTo(layer.id)}
-                            title="Zoom to this layer"
+                            title="缩放到此图层"
                             className="text-neutral-600 hover:text-info-600 p-1 hover:bg-neutral-100 rounded transition-colors cursor-pointer"
                           >
                             <Search size={16} />
                           </button>
                           <button
                             onClick={() => toggleLayerVisibility(layer.id)}
-                            title="Toggle Visibility"
+                            title="切换可见性"
                             className="text-neutral-600 hover:text-info-600 p-1 hover:bg-neutral-100 rounded transition-colors cursor-pointer"
                           >
                             {layer.visible ? (
@@ -554,7 +554,7 @@ export default function LayerList({
                                 stylePanelOpen === layer.id ? null : layer.id,
                               )
                             }
-                            title="Style Layer"
+                            title="设置图层样式"
                             className={`p-1 rounded transition-colors cursor-pointer ${stylePanelOpen === layer.id ? "text-info-600 bg-info-100" : "text-neutral-600 hover:text-info-600 hover:bg-neutral-100"}`}
                           >
                             <Palette size={16} />
@@ -567,7 +567,7 @@ export default function LayerList({
                                 e.stopPropagation();
                                 setActiveChartId(activeChartId === layer.id ? null : layer.id);
                               }}
-                              title="View World Bank Indicators Chart"
+                              title="查看世界银行指标图表"
                               className={`p-1 rounded transition-colors cursor-pointer ${activeChartId === layer.id ? "text-blue-600 bg-blue-100" : "text-neutral-600 hover:text-blue-600 hover:bg-neutral-100"}`}
                             >
                               <BarChart3 size={16} />
@@ -577,14 +577,14 @@ export default function LayerList({
                             onClick={() => downloadLayer(layer)}
                             draggable="true"
                             onDragStart={(e) => handleDownloadDragStart(e, layer)}
-                            title="Download as GeoJSON (click or drag to desktop)"
+                            title="下载为 GeoJSON（点击或拖到桌面）"
                             className="text-neutral-600 hover:text-success-600 p-1 hover:bg-neutral-100 rounded transition-colors cursor-grab active:cursor-grabbing"
                           >
                             <Download size={16} />
                           </button>
                           <button
                             onClick={() => removeLayer(layer.id)}
-                            title="Remove Layer"
+                            title="移除图层"
                             className="text-danger-500 hover:text-danger-700 p-1 hover:bg-danger-50 rounded transition-colors cursor-pointer"
                           >
                             <Trash2 size={16} />
@@ -598,13 +598,13 @@ export default function LayerList({
                   {stylePanelOpen === layer.id && (
                     <div className="mt-2 p-3 bg-neutral-50 rounded border-l-4 border-info-400">
                       <h4 className="font-semibold text-sm mb-2">
-                        Style Options
+                        样式选项
                       </h4>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         {/* Stroke Color */}
                         <div>
                           <label className="block text-neutral-700">
-                            Stroke Color
+                            描边颜色
                           </label>
                           <input
                             type="color"
@@ -621,7 +621,7 @@ export default function LayerList({
                         {/* Stroke Weight */}
                         <div>
                           <label className="block text-gray-700">
-                            Stroke Weight
+                            描边宽度
                           </label>
                           <input
                             type="range"
@@ -643,7 +643,7 @@ export default function LayerList({
                         {/* Stroke Opacity */}
                         <div>
                           <label className="block text-gray-700">
-                            Stroke Opacity
+                            描边透明度
                           </label>
                           <input
                             type="range"
@@ -669,7 +669,7 @@ export default function LayerList({
                         {/* Dash Array */}
                         <div>
                           <label className="block text-gray-700">
-                            Dash Pattern
+                            虚线样式
                           </label>
                           <select
                             value={layer.style?.stroke_dash_array || ""}
@@ -680,15 +680,15 @@ export default function LayerList({
                             }
                             className="w-full border rounded px-2 py-1"
                           >
-                            <option value="">Solid Line</option>
-                            <option value="5,5">Dashed (5,5)</option>
-                            <option value="10,5">Long Dash (10,5)</option>
-                            <option value="3,3">Dotted (3,3)</option>
+                            <option value="">实线</option>
+                            <option value="5,5">虚线 (5,5)</option>
+                            <option value="10,5">长虚线 (10,5)</option>
+                            <option value="3,3">点线 (3,3)</option>
                             <option value="10,5,5,5">
-                              Dash-Dot (10,5,5,5)
+                              点划线 (10,5,5,5)
                             </option>
                             <option value="15,5,5,5,5,5">
-                              Long Dash-Dot (15,5,5,5,5,5)
+                              长点划线 (15,5,5,5,5,5)
                             </option>
                           </select>
                         </div>
@@ -697,7 +697,7 @@ export default function LayerList({
                         {layer.style?.stroke_dash_array && (
                           <div>
                             <label className="block text-gray-700">
-                              Dash Offset
+                              虚线偏移
                             </label>
                             <input
                               type="range"
@@ -722,7 +722,7 @@ export default function LayerList({
                         {/* Fill Color */}
                         <div>
                           <label className="block text-gray-700">
-                            Fill Color
+                            填充颜色
                           </label>
                           <input
                             type="color"
@@ -739,7 +739,7 @@ export default function LayerList({
                         {/* Fill Opacity */}
                         <div>
                           <label className="block text-gray-700">
-                            Fill Opacity
+                            填充透明度
                           </label>
                           <input
                             type="range"
@@ -765,7 +765,7 @@ export default function LayerList({
                         {/* Circle Radius (for point data) */}
                         <div>
                           <label className="block text-gray-700">
-                            Point Radius
+                            点半径
                           </label>
                           <input
                             type="range"
@@ -787,7 +787,7 @@ export default function LayerList({
                         {/* Line Cap Style */}
                         <div>
                           <label className="block text-gray-700">
-                            Line Cap
+                            线端样式
                           </label>
                           <select
                             value={layer.style?.line_cap || "round"}
@@ -798,16 +798,16 @@ export default function LayerList({
                             }
                             className="w-full border rounded px-2 py-1"
                           >
-                            <option value="round">Round</option>
-                            <option value="square">Square</option>
-                            <option value="butt">Butt</option>
+                            <option value="round">圆角</option>
+                            <option value="square">方形</option>
+                            <option value="butt">平直</option>
                           </select>
                         </div>
 
                         {/* Line Join Style */}
                         <div>
                           <label className="block text-gray-700">
-                            Line Join
+                            线连接样式
                           </label>
                           <select
                             value={layer.style?.line_join || "round"}
@@ -818,9 +818,9 @@ export default function LayerList({
                             }
                             className="w-full border rounded px-2 py-1"
                           >
-                            <option value="round">Round</option>
-                            <option value="bevel">Bevel</option>
-                            <option value="miter">Miter</option>
+                            <option value="round">圆角</option>
+                            <option value="bevel">斜角</option>
+                            <option value="miter">尖角</option>
                           </select>
                         </div>
                       </div>
@@ -828,13 +828,13 @@ export default function LayerList({
                       {/* Advanced styling section */}
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <h4 className="text-xs font-semibold text-gray-600 mb-2">
-                          Advanced Effects
+                          高级效果
                         </h4>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {/* Shadow Color */}
                           <div>
                             <label className="block text-gray-700">
-                              Shadow Color
+                              阴影颜色
                             </label>
                             <input
                               type="color"
@@ -856,7 +856,7 @@ export default function LayerList({
                           {/* Shadow Blur */}
                           <div>
                             <label className="block text-gray-700">
-                              Shadow Blur
+                              阴影模糊
                             </label>
                             <input
                               type="range"
@@ -880,7 +880,7 @@ export default function LayerList({
                       {/* Preset buttons */}
                       <div className="mt-3">
                         <h4 className="text-xs font-semibold text-neutral-600 mb-2">
-                          Quick Presets
+                          快速预设
                         </h4>
                         <div className="flex flex-wrap gap-1 mb-2">
                           <button
@@ -893,7 +893,7 @@ export default function LayerList({
                             }
                             className="px-2 py-1 bg-danger-500 text-neutral-50 text-xs rounded hover:bg-danger-600 cursor-pointer transition-colors"
                           >
-                            Red
+                            红色
                           </button>
                           <button
                             onClick={() =>
@@ -905,7 +905,7 @@ export default function LayerList({
                             }
                             className="px-2 py-1 bg-corporate-2-500 text-neutral-50 text-xs rounded hover:bg-corporate-2-600 cursor-pointer transition-colors"
                           >
-                            Green
+                            绿色
                           </button>
                           <button
                             onClick={() =>
@@ -917,7 +917,7 @@ export default function LayerList({
                             }
                             className="px-2 py-1 bg-info-600 text-neutral-50 text-xs rounded hover:bg-info-700 cursor-pointer transition-colors"
                           >
-                            Blue
+                            蓝色
                           </button>
                           <button
                             onClick={() =>
@@ -929,7 +929,7 @@ export default function LayerList({
                             }
                             className="px-2 py-1 bg-warning-500 text-neutral-50 text-xs rounded hover:bg-warning-600 cursor-pointer transition-colors"
                           >
-                            Yellow
+                            黄色
                           </button>
                           <button
                             onClick={() =>
@@ -941,7 +941,7 @@ export default function LayerList({
                             }
                             className="px-2 py-1 bg-corporate-3-500 text-neutral-50 text-xs rounded hover:bg-corporate-3-600 cursor-pointer transition-colors"
                           >
-                            Purple
+                            紫色
                           </button>
                           <button
                             onClick={() =>
@@ -953,7 +953,7 @@ export default function LayerList({
                             }
                             className="px-2 py-1 bg-warning-500 text-neutral-50 text-xs rounded hover:bg-warning-600 cursor-pointer transition-colors"
                           >
-                            Orange
+                            橙色
                           </button>
                         </div>
                         <QuickActionsButtons
@@ -974,7 +974,7 @@ export default function LayerList({
                         {/* Geometry-specific quick actions */}
                         <div className="mt-2">
                           <h4 className="text-xs font-semibold text-neutral-600 mb-1">
-                            Quick Actions
+                            快捷操作
                           </h4>
                           <QuickActionsButtons
                             layerId={layer.id}
@@ -1024,43 +1024,43 @@ export default function LayerList({
             <button
               onClick={() => setActiveMetadataId(null)}
               className="absolute top-2 right-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-              aria-label="Close metadata"
+              aria-label="关闭元数据"
             >
               <X size={16} />
             </button>
             
             <div className="space-y-2">
               <div>
-                <span className="font-semibold text-neutral-700 dark:text-neutral-200">Title:</span>
+                <span className="font-semibold text-neutral-700 dark:text-neutral-200">标题：</span>
                 <p className="text-neutral-900 dark:text-neutral-100 break-words">{layer.title || layer.name}</p>
               </div>
               {layer.data_type && (
                 <div>
-                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">Data Type:</span>
+                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">数据类型：</span>
                   <p className="text-neutral-900 dark:text-neutral-100">{layer.data_type}</p>
                 </div>
               )}
               {layer.layer_type && (
                 <div>
-                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">Layer Type:</span>
+                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">图层类型：</span>
                   <p className="text-neutral-900 dark:text-neutral-100">{layer.layer_type}</p>
                 </div>
               )}
               {layer.format && (
                 <div>
-                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">Format:</span>
+                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">格式：</span>
                   <p className="text-neutral-900 dark:text-neutral-100">{layer.format}</p>
                 </div>
               )}
               {layer.data_source && (
                 <div>
-                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">Source:</span>
+                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">来源：</span>
                   <p className="text-neutral-900 dark:text-neutral-100 break-all text-xs">{layer.data_source}</p>
                 </div>
               )}
               {layer.bounding_box && (
                 <div>
-                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">Bounding Box:</span>
+                  <span className="font-semibold text-neutral-700 dark:text-neutral-200">边界框：</span>
                   <p className="text-neutral-900 dark:text-neutral-100 text-xs font-mono">
                     [{Array.isArray(layer.bounding_box) 
                       ? layer.bounding_box.join(', ')
@@ -1073,13 +1073,13 @@ export default function LayerList({
               {/* Processing Metadata Section */}
               {layer.processing_metadata && (
                 <div className="pt-3 mt-3 border-t border-neutral-200 dark:border-neutral-600">
-                  <h4 className="font-semibold text-neutral-700 dark:text-neutral-200 mb-2">Processing Information</h4>
+                  <h4 className="font-semibold text-neutral-700 dark:text-neutral-200 mb-2">处理信息</h4>
                   
                   {/* Source Layers - Prominently displayed */}
                   {layer.processing_metadata.origin_layers && 
                    layer.processing_metadata.origin_layers.length > 0 && (
                     <div className="mb-3 p-2 bg-secondary-50 dark:bg-secondary-900 rounded border border-secondary-300 dark:border-secondary-600">
-                      <span className="font-semibold text-secondary-900 dark:text-secondary-100 text-xs uppercase tracking-wide">Source Layers</span>
+                      <span className="font-semibold text-secondary-900 dark:text-secondary-100 text-xs uppercase tracking-wide">来源图层</span>
                       <p className="text-sm text-neutral-900 dark:text-neutral-100 mt-1">
                         {layer.processing_metadata.origin_layers.join(', ')}
                       </p>
@@ -1092,40 +1092,40 @@ export default function LayerList({
                       <strong className="text-info-800 dark:text-info-200">
                         {layer.processing_metadata.operation.charAt(0).toUpperCase() + 
                          layer.processing_metadata.operation.slice(1)}
-                      </strong> operation
+                      </strong> 操作
                       {layer.processing_metadata.operation === 'buffer' && 
                        layer.description?.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i) && 
-                       ` with ${layer.description.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i)![0]}`}
-                      {' using '}
+                       `，距离 ${layer.description.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i)![0]}`}
+                      {'，使用 '}
                       <strong className="text-info-800 dark:text-info-200">{layer.processing_metadata.crs_used}</strong>
-                      {layer.processing_metadata.auto_selected && ' 🎯'}
+                      {layer.processing_metadata.auto_selected && '（自动选择）'}
                     </p>
                   </div>
                   
                   {/* CRS Details */}
                   <div className="space-y-1">
                     <div>
-                      <span className="font-semibold text-neutral-700 dark:text-neutral-200">CRS Name:</span>
+                      <span className="font-semibold text-neutral-700 dark:text-neutral-200">CRS 名称：</span>
                       <p className="text-neutral-900 dark:text-neutral-100 text-sm">{layer.processing_metadata.crs_name}</p>
                     </div>
                     <div>
-                      <span className="font-semibold text-neutral-700 dark:text-neutral-200">Projection Property:</span>
+                      <span className="font-semibold text-neutral-700 dark:text-neutral-200">投影属性：</span>
                       <p className="text-neutral-900 dark:text-neutral-100 text-sm capitalize">
                         {layer.processing_metadata.projection_property}
                       </p>
                     </div>
                     {layer.processing_metadata.auto_selected && (
                       <div>
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-200">Auto-Selected:</span>
+                        <span className="font-semibold text-neutral-700 dark:text-neutral-200">自动选择：</span>
                         <p className="text-neutral-900 dark:text-neutral-100 text-sm">
-                          Yes {layer.processing_metadata.selection_reason && 
+                          是 {layer.processing_metadata.selection_reason && 
                                `- ${layer.processing_metadata.selection_reason}`}
                         </p>
                       </div>
                     )}
                     {layer.processing_metadata.expected_error !== undefined && (
                       <div>
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-200">Expected Error:</span>
+                        <span className="font-semibold text-neutral-700 dark:text-neutral-200">预计误差：</span>
                         <p className="text-neutral-900 dark:text-neutral-100 text-sm">
                           &lt;{layer.processing_metadata.expected_error}%
                         </p>
@@ -1159,12 +1159,12 @@ export default function LayerList({
               {/* Modal Header */}
               <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
                 <h2 className="text-lg font-bold text-gray-900">
-                  📊 {layer.title || layer.name}
+                  图表：{layer.title || layer.name}
                 </h2>
                 <button
                   onClick={() => setActiveChartId(null)}
                   className="text-neutral-400 hover:text-neutral-600 p-1 hover:bg-neutral-100 rounded"
-                  aria-label="Close chart"
+                  aria-label="关闭图表"
                 >
                   <X size={20} />
                 </button>

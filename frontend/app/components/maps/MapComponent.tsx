@@ -1,11 +1,11 @@
 "use client";
 
-import LeafletMapComponent from "./LeafletMap";
+import CesiumMap from "./CesiumMap";
 
 export default function MapComponent() {
   return (
     <div className="w-full h-full">
-      <LeafletMapComponent />
+      <CesiumMap />
     </div>
   );
 }

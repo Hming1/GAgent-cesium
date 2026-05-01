@@ -2,6 +2,15 @@ import logging
 import mimetypes
 import os
 from contextlib import asynccontextmanager
+import sys
+import asyncio
+
+# Windows compatibility for asyncio event loop.
+# This needs to run before importing modules that may touch async DB setup.
+if sys.platform.startswith("win"):
+    policy_cls = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
+    if policy_cls is not None:
+        asyncio.set_event_loop_policy(policy_cls())
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -22,6 +31,7 @@ from api import (
     nalamap,
     proxy,
     settings,
+    postgis_layers,
 )
 
 # from sqlalchemy.ext.asyncio import AsyncSession
@@ -145,6 +155,7 @@ app.include_router(mcp.router, prefix="/api")  # MCP server endpoint
 app.include_router(proxy.router, prefix="/api/proxy")  # CORS proxy for external data
 app.include_router(maps.router, prefix="/api")
 app.include_router(layers.router, prefix="/api")
+app.include_router(postgis_layers.router, prefix="/api")
 
 
 @app.get("/")

@@ -6,69 +6,69 @@ import { getUploadUrl, getApiBase } from "../../utils/apiBase";
 import { sha256OfFile } from "../../utils/hashUtil";
 import Logger from "../../utils/logger";
 
-// Funny geo and data-themed loading messages
+// 地理与数据主题的上传提示语
 const FUNNY_UPLOAD_MESSAGES = [
-  "📍 Pinning your data to reality...",
-  "🗺️ Teaching your data where it belongs...",
-  "🌍 Giving your coordinates a home on Earth...",
-  "📊 Converting chaos into beautiful geodata...",
-  "🛰️ Negotiating with satellites for better reception...",
-  "🗂️ Organizing your spatial mess...",
-  "📐 Measuring the distance between confusion and clarity...",
-  "🧭 Finding magnetic north in your dataset...",
-  "🌐 Translating your data into Earth language...",
-  "📡 Beaming your files through geographic dimensions...",
-  "🗺️ Drawing invisible lines between your data points...",
-  "📍 GPS-ing your way through file structures...",
-  "🌏 Making Mother Earth proud of your data...",
-  "📊 Convincing your data to stay within map boundaries...",
-  "🛰️ Asking Google Earth to make room for your layer...",
-  "🗃️ Filing your geodata in Earth's cabinet...",
-  "📐 Calculating the shortest path to awesome maps...",
-  "🧭 Pointing your data in the right direction...",
-  "🌍 Giving your coordinates their passport to the map...",
-  "📡 Synchronizing with the International Date Line...",
+  "正在把数据钉到真实世界中...",
+  "正在教数据找到自己的地理位置...",
+  "正在为坐标安排一个地球上的家...",
+  "正在把混乱数据转换成漂亮的地理数据...",
+  "正在和卫星协商更好的接收质量...",
+  "正在整理空间数据的小宇宙...",
+  "正在丈量困惑与清晰之间的距离...",
+  "正在数据集中寻找正北方向...",
+  "正在把数据翻译成地球语言...",
+  "正在穿越地理维度传输文件...",
+  "正在为数据点画出看不见的联系...",
+  "正在沿着文件结构做 GPS 导航...",
+  "正在让地球妈妈为你的数据骄傲...",
+  "正在说服数据留在地图边界内...",
+  "正在请求地图为新图层腾位置...",
+  "正在把地理数据归档进地球抽屉...",
+  "正在计算通往优秀地图的最短路径...",
+  "正在把数据指向正确方向...",
+  "正在给坐标办理地图通行证...",
+  "正在与国际日期变更线同步...",
 ];
 
 const FUNNY_STYLING_MESSAGES = [
-  "🎨 Teaching your data some fashion sense...",
-  "✨ Sprinkling AI magic on your boring gray shapes...",
-  "🌈 Choosing colors that would make a cartographer cry (tears of joy)...",
-  "🎭 Giving your data a makeover worthy of a map magazine cover...",
-  "🖌️ Consulting with Picasso's ghost about color theory...",
-  "💄 Applying digital makeup to your geographic features...",
-  "👗 Dressing up your data for the geographic gala...",
-  "🎨 Mixing pixels and polygons in the perfect palette...",
-  "✨ Transforming your data from 'meh' to 'magnificent'...",
-  "🌟 Making your layers so pretty, other maps will be jealous...",
-  "🎪 Turning your dataset into a visual circus (the good kind)...",
-  "🖼️ Creating art that would make da Vinci switch to GIS...",
-  "🎨 Channeling Bob Ross for some happy little features...",
-  "💅 Giving your polygons a professional manicure...",
-  "🌈 Finding the perfect shade of 'wow' for your data...",
-  "✨ Applying Instagram filters to geographic reality...",
-  "🎭 Teaching your data to express its inner beauty...",
-  "🖌️ Painting your data with the brush of artificial intelligence...",
-  "🌟 Making your map so stunning, satellites will take selfies...",
-  "🎨 Creating a masterpiece worthy of the geographic Louvre...",
+  "正在给数据培养一点审美...",
+  "正在用 AI 魔法点亮灰色图形...",
+  "正在挑选让制图师会心一笑的配色...",
+  "正在给数据做一次地图杂志级改造...",
+  "正在向色彩理论请教灵感...",
+  "正在给地理要素上数字妆容...",
+  "正在为地理舞会打扮数据...",
+  "正在调和像素与多边形的完美色盘...",
+  "正在把数据从普通变成出彩...",
+  "正在让图层漂亮到让其他地图羡慕...",
+  "正在把数据集变成好看的视觉舞台...",
+  "正在创作一幅 GIS 风格作品...",
+  "正在为每个要素刷上快乐的小色块...",
+  "正在给多边形做专业修饰...",
+  "正在寻找数据专属的惊艳色调...",
+  "正在给地理现实加一点滤镜...",
+  "正在让数据表达内在美...",
+  "正在用人工智能的画笔绘制数据...",
+  "正在让地图美到卫星都想合影...",
+  "正在创作一件地理空间杰作...",
 ];
 
 const FUNNY_FINALIZING_MESSAGES = [
-  "🏁 Crossing the finish line with style...",
-  "✅ Putting the final bow on your geographic gift...",
-  "🎉 Celebrating your data's successful transformation...",
-  "🎯 Hitting the bullseye of cartographic perfection...",
-  "🚀 Preparing for launch into the mapping stratosphere...",
-  "⭐ Adding the final touches of geographic brilliance...",
-  "🏆 Awarding your data the gold medal of visualization...",
-  "🎪 Rolling out the red carpet for your new layer...",
-  "✨ Sprinkling the last bits of mapping fairy dust...",
-  "🎊 Throwing a small party for your successfully styled data...",
-  "🎈 Inflating the balloons for your layer's grand opening...",
-  "🎭 Taking a bow for this geographic performance...",
-  "🌟 Polishing your data until it sparkles on the map...",
-  "🎨 Signing the artist's name on your cartographic masterpiece...",
-  "🏅 Pinning a medal on your data for outstanding service...",
+  "正在优雅地冲过终点线...",
+  "正在为这份地理礼物系上最后的蝴蝶结...",
+  "正在庆祝数据成功变身...",
+  "正在命中制图完美靶心...",
+  "正在准备把图层发射到地图平流层...",
+  "正在添加最后一点地理光泽...",
+  "正在给数据颁发可视化金牌...",
+  "正在为新图层铺上红毯...",
+  "正在撒上最后一点制图星尘...",
+  "正在为完成样式的数据开个小庆功会...",
+  "正在为图层登场准备气球...",
+  "正在为这场地理表演谢幕...",
+  "正在把数据擦亮到地图上闪闪发光...",
+  "正在为制图作品签名...",
+  "正在给表现出色的数据别上一枚奖章...",
 ];
 
 function getRandomMessage(messages: string[]): string {
@@ -124,7 +124,7 @@ export default function UploadSection({
       setTotalFiles(0);
       setCurrentFileName("");
       setFunnyMessage("");
-      setUploadError("Upload cancelled by user");
+      setUploadError("上传已由用户取消");
     }
   };
 
@@ -156,7 +156,7 @@ export default function UploadSection({
         // Check file size limit
         if (!isFileSizeValid(file, MAX_FILE_SIZE)) {
           throw new Error(
-            `File ${file.name} size (${formatFileSize(file.size)}) exceeds the ${MAX_FILE_SIZE_FORMATTED} limit.`,
+            `文件 ${file.name} 大小为 ${formatFileSize(file.size)}，超过 ${MAX_FILE_SIZE_FORMATTED} 限制。`,
           );
         }
 
@@ -199,21 +199,21 @@ export default function UploadSection({
                   const data = JSON.parse(xhr.responseText);
                   resolve(data);
                 } catch (error) {
-                  reject(new Error("Invalid JSON response"));
+                  reject(new Error("响应不是有效的 JSON"));
                 }
               } else {
                 try {
                   const errorData = JSON.parse(xhr.responseText);
-                  reject(new Error(errorData.detail || "Upload failed"));
+                  reject(new Error(errorData.detail || "上传失败"));
                 } catch (e) {
-                  reject(new Error(`Upload failed: ${xhr.statusText}`));
+                  reject(new Error(`上传失败：${xhr.statusText}`));
                 }
               }
             };
 
-            xhr.onerror = () => reject(new Error("Network error occurred"));
-            xhr.ontimeout = () => reject(new Error("Upload timed out"));
-            xhr.onabort = () => reject(new Error("Upload cancelled by user"));
+            xhr.onerror = () => reject(new Error("发生网络错误"));
+            xhr.ontimeout = () => reject(new Error("上传超时"));
+            xhr.onabort = () => reject(new Error("上传已由用户取消"));
 
             xhr.send(formData);
           },
@@ -230,18 +230,19 @@ export default function UploadSection({
           );
           if (metaRes.ok) {
             const meta = await metaRes.json();
-            if (meta?.sha256 && typeof meta.sha256 === "string") {
+            const isConverted = ['zip', 'kml', 'csv'].some(ext => file.name.toLowerCase().endsWith(`.${ext}`));
+            if (!isConverted && meta?.sha256 && typeof meta.sha256 === "string") {
               if (meta.sha256.toLowerCase() !== localSha256.toLowerCase()) {
                 throw new Error(
-                  `Integrity check failed for ${file.name}. Expected ${localSha256.slice(0, 8)}…, got ${String(meta.sha256).slice(0, 8)}…`,
+                  `文件 ${file.name} 完整性校验失败。期望 ${localSha256.slice(0, 8)}…，实际为 ${String(meta.sha256).slice(0, 8)}…`,
                 );
               }
             }
-            if (meta?.size && Number.isFinite(Number(meta.size))) {
+            if (!isConverted && meta?.size && Number.isFinite(Number(meta.size))) {
               const serverSize = Number(meta.size);
               if (serverSize !== file.size) {
                 throw new Error(
-                  `Size mismatch for ${file.name}. Local ${file.size} bytes vs server ${serverSize} bytes`,
+                  `文件 ${file.name} 大小不一致。本地为 ${file.size} 字节，服务器为 ${serverSize} 字节。`,
                 );
               }
             }
@@ -296,7 +297,8 @@ export default function UploadSection({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              layers: [newLayer],
+              query: `Auto-style the layer "${newLayer.name}"`,
+              geodata_layers: [newLayer],
             }),
           });
 
@@ -338,11 +340,11 @@ export default function UploadSection({
       setUploadProgress(100);
       Logger.log(`Successfully uploaded and styled ${files.length} file(s)`);
     } catch (err) {
-      if (err instanceof Error && err.message === "Upload cancelled by user") {
-        Logger.log("Upload was cancelled by the user");
+      if (err instanceof Error && err.message === "上传已由用户取消") {
+        Logger.log("上传已由用户取消");
       } else {
         setUploadError(
-          `Upload error: ${err instanceof Error ? err.message : String(err)}`,
+          `上传错误：${err instanceof Error ? err.message : String(err)}`,
         );
         Logger.error("Error uploading files:", err);
       }
@@ -361,7 +363,7 @@ export default function UploadSection({
 
   return (
     <div className="mb-4">
-      <h3 className="font-semibold mb-2">Upload Data</h3>
+      <h3 className="font-semibold mb-2">上传数据</h3>
       <div
         className={`border border-dashed border-primary-400 p-4 rounded bg-primary-100 text-center cursor-pointer ${isUploading ? "opacity-75" : ""}`}
         onClick={() => !isUploading && fileInputRef.current?.click()}
@@ -369,7 +371,7 @@ export default function UploadSection({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".geojson"
+          accept=".geojson,.zip,.kml,.csv"
           onChange={handleFileUpload}
           className="hidden"
           disabled={isUploading}
@@ -383,10 +385,10 @@ export default function UploadSection({
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
-            <p className="text-sm text-info-600">{uploadProgress}% Complete</p>
+            <p className="text-sm text-info-600">{uploadProgress}% 完成</p>
             {totalFiles > 1 && (
               <p className="text-xs text-neutral-600">
-                File {currentFileIndex} of {totalFiles}
+                文件 {currentFileIndex} / {totalFiles}
               </p>
             )}
             {currentFileName && (
@@ -397,10 +399,10 @@ export default function UploadSection({
             <p className="text-xs text-neutral-400 mt-1 text-center italic">
               {funnyMessage ||
                 (uploadProgress < 70
-                  ? "Uploading..."
+                  ? "上传中..."
                   : uploadProgress < 100
-                    ? "Applying AI styling..."
-                    : "Finalizing...")}
+                    ? "正在应用 AI 样式..."
+                    : "正在完成...")}
             </p>
             <button
               onClick={(e) => {
@@ -409,18 +411,18 @@ export default function UploadSection({
               }}
               className="mt-2 px-3 py-1 bg-danger-100 text-danger-700 text-xs rounded hover:bg-danger-200 transition-colors"
             >
-              Cancel Upload
+              取消上传
             </button>
           </div>
         ) : (
           <>
             <p className="text-sm text-neutral-500">
-              Drag & drop or click to upload GeoJSON files
+              拖放或点击上传 GeoJSON 文件
             </p>
             <p className="text-xs text-neutral-400 mt-1">
-              Supports multiple files • Max size: {MAX_FILE_SIZE_FORMATTED}
+              支持多文件上传 • 最大大小：{MAX_FILE_SIZE_FORMATTED}
             </p>
-            <p className="text-xs text-neutral-400">Format: .geojson only</p>
+            <p className="text-xs text-neutral-400">格式：支持 .geojson, .zip, .kml, .csv</p>
           </>
         )}
       </div>

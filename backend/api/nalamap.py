@@ -42,11 +42,21 @@ def make_json_serializable(obj: Any) -> Any:
     if isinstance(obj, HumanMessage):
         return {"type": "human", "content": obj.content}
     elif isinstance(obj, AIMessage):
-        return {"type": "ai", "content": obj.content}
+        res = {"type": "ai", "content": obj.content}
+        if getattr(obj, "additional_kwargs", None):
+            res["additional_kwargs"] = make_json_serializable(obj.additional_kwargs)
+        if getattr(obj, "tool_calls", None):
+            res["tool_calls"] = make_json_serializable(obj.tool_calls)
+        return res
     elif isinstance(obj, SystemMessage):
         return {"type": "system", "content": obj.content}
     elif isinstance(obj, (ToolMessage, FunctionMessage)):
-        return {"type": "tool", "content": obj.content}
+        res = {"type": "tool", "content": obj.content}
+        if getattr(obj, "tool_call_id", None):
+            res["tool_call_id"] = obj.tool_call_id
+        if getattr(obj, "name", None):
+            res["name"] = obj.name
+        return res
     elif isinstance(obj, BaseMessage):
         return {"type": "message", "content": str(obj.content)}
 
@@ -56,7 +66,7 @@ def make_json_serializable(obj: Any) -> Any:
 
     # Handle dicts
     elif isinstance(obj, dict):
-        return {key: make_json_serializable(value) for key, value in obj.items()}
+        return {key: make_json_serializable(value) for key, value in list(obj.items())}
 
     # Handle primitive types and other JSON-serializable objects
     elif isinstance(obj, (str, int, float, bool)):
@@ -117,8 +127,8 @@ def normalize_messages(raw: Optional[List[BaseMessage]]) -> List[BaseMessage]:
                 ai_kwargs["refusal"] = raw_refusal
 
             # Turn each legacy entry into a proper tool_call dict
+            normalized_tool_calls = []
             if raw_tool_calls:
-                normalized_tool_calls = []
                 for tc in raw_tool_calls:
                     func = tc.get("function", {})
                     # parse arguments JSON if needed:
@@ -135,7 +145,16 @@ def normalize_messages(raw: Optional[List[BaseMessage]]) -> List[BaseMessage]:
                             "type": "tool_call",
                         }
                     )
-                # Finally merge in the other metadata (token_usage, model_name, etc)
+                # Assign the properly structured tool calls to ai_kwargs
+                ai_kwargs["tool_calls"] = normalized_tool_calls
+            
+            # Ensure additional_kwargs is completely preserved (important for reasoning_content)
+            ai_kwargs["additional_kwargs"] = dict(raw_additional) if raw_additional else {}
+            if normalized_tool_calls and "reasoning_content" not in ai_kwargs["additional_kwargs"]:
+                # Fallback for old/broken message histories that lost additional_kwargs
+                # Moonshot kimi-k2.6 throws 400 Bad Request if reasoning_content is missing on a tool_call message
+                ai_kwargs["additional_kwargs"]["reasoning_content"] = ""
+            # Finally merge in the other metadata (token_usage, model_name, etc)
             ai_kwargs.update(extra)
 
             normalized.append(AIMessage(**ai_kwargs))
@@ -532,7 +551,7 @@ async def ask_nalamap_agent_stream(request: NaLaMapRequest, raw_request: Request
 
             # Stream events using astream_events v2
             async for event in single_agent.astream_events(
-                state, version="v2", config={"callbacks": [perf_callback]}
+                state, version="v2", config={"callbacks": [perf_callback], "recursion_limit": 100}
             ):
                 # Check for cancellation before processing each event (use stream_id)
                 if await is_cancelled(stream_id):
@@ -668,16 +687,7 @@ async def ask_nalamap_agent_stream(request: NaLaMapRequest, raw_request: Request
                         # Convert messages to serializable format
                         serializable_messages = []
                         for msg in result_messages:
-                            if isinstance(msg, HumanMessage):
-                                serializable_messages.append(
-                                    {"type": "human", "content": msg.content}
-                                )
-                            elif isinstance(msg, AIMessage):
-                                serializable_messages.append({"type": "ai", "content": msg.content})
-                            elif isinstance(msg, SystemMessage):
-                                serializable_messages.append(
-                                    {"type": "system", "content": msg.content}
-                                )
+                            serializable_messages.append(make_json_serializable(msg))
 
                         # Serialize geodata objects
                         serialized_results = [

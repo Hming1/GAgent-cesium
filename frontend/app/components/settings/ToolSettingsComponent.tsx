@@ -37,13 +37,14 @@ export default function ToolSettingsComponent() {
   });
 
   const categoryDisplayNames: { [key: string]: string } = {
-    geocoding: "Geocoding",
-    geoprocessing: "Geoprocessing",
-    attributes: "Attribute Operations",
-    styling: "Styling",
-    data_retrieval: "Data Retrieval",
-    metadata: "Metadata",
-    other: "Other",
+    geocoding: "地理编码",
+    geoprocessing: "地理处理",
+    attributes: "属性操作",
+    styling: "样式",
+    data_retrieval: "数据检索",
+    metadata: "元数据",
+    analysis: "分析",
+    other: "其他",
   };
 
   return (
@@ -53,7 +54,7 @@ export default function ToolSettingsComponent() {
         className="w-full flex items-center justify-between px-4 py-3 bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 transition-colors"
       >
         <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-          Tools Configuration
+          工具配置
         </h2>
         {collapsed ? (
           <ChevronDown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -70,7 +71,7 @@ export default function ToolSettingsComponent() {
               onChange={(e) => setNewToolName(e.target.value)}
               className="border border-primary-300 dark:border-primary-700 rounded p-2 flex-grow bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
             >
-              <option value="">Select tool to add</option>
+              <option value="">选择要添加的工具</option>
               {availableTools.map((tool) => (
                 <option key={tool} value={tool}>
                   {toolOptions[tool]?.display_name || tool}
@@ -85,7 +86,7 @@ export default function ToolSettingsComponent() {
               className="bg-second-primary-600 text-white px-4 py-2 rounded hover:bg-second-primary-700 font-medium shadow-sm cursor-pointer"
               style={{ backgroundColor: 'var(--second-primary-600)' }}
             >
-              Add Tool
+              添加工具
             </button>
           </div>
           
@@ -119,7 +120,7 @@ export default function ToolSettingsComponent() {
                             </span>
                             {group && (
                               <span className="text-xs text-primary-700 dark:text-primary-400">
-                                Group: {group}
+                                分组：{group}
                               </span>
                             )}
                           </div>
@@ -134,13 +135,13 @@ export default function ToolSettingsComponent() {
                             }
                             className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200 font-medium text-sm"
                           >
-                            {toolPromptVisibility[t.name] ? "Hide Prompt" : "Show Prompt"}
+                            {toolPromptVisibility[t.name] ? "隐藏提示词" : "显示提示词"}
                           </button>
                           <button
                             onClick={() => removeToolConfig(t.name)}
                             className="text-red-600 hover:underline font-medium"
                           >
-                            Remove
+                            移除
                           </button>
                         </div>
                       </div>
@@ -150,7 +151,7 @@ export default function ToolSettingsComponent() {
                           onChange={(e) =>
                             setToolPromptOverride(t.name, e.target.value)
                           }
-                          placeholder="Prompt Override (leave empty to use default)"
+                          placeholder="覆盖提示词（留空使用默认值）"
                           className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full h-20 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
                         />
                       )}

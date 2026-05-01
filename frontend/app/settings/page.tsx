@@ -177,7 +177,7 @@ export default function SettingsPage() {
   ): Promise<{ backend: GeoServerBackend; totalLayers: number }> => {
     const normalized = normalizeBackend(backend);
     if (!normalized.url) {
-      throw new Error("Please provide a GeoServer URL.");
+      throw new Error("请提供 GeoServer URL。");
     }
 
     let responseJson: any = null;
@@ -201,7 +201,7 @@ export default function SettingsPage() {
       }
 
       if (!res.ok) {
-        let message = res.statusText || "Failed to contact GeoServer backend.";
+        let message = res.statusText || "联系 GeoServer 后端失败。";
         if (responseJson?.detail) {
           message = responseJson.detail;
         }
@@ -211,7 +211,7 @@ export default function SettingsPage() {
       if (err instanceof Error) {
         throw err;
       }
-      throw new Error("Failed to preload GeoServer backend.");
+      throw new Error("预加载 GeoServer 后端失败。");
     }
 
     if (responseJson?.session_id) {
@@ -247,7 +247,7 @@ export default function SettingsPage() {
 
     const importedBackends = snapshot.geoserver_backends || [];
     if (importedBackends.length === 0) {
-      setBackendSuccess("Settings imported successfully.");
+      setBackendSuccess("设置导入成功。");
       return;
     }
 
@@ -270,16 +270,16 @@ export default function SettingsPage() {
 
       if (successCount > 0) {
         setBackendSuccess(
-          `Prefetched ${successCount} imported backend${successCount === 1 ? "" : "s"} successfully.`,
+          `已成功预取 ${successCount} 个导入的后端。`,
         );
       } else {
         setBackendSuccess(
-          "Settings imported. Unable to preload any GeoServer backends.",
+          "设置已导入，但无法预加载任何 GeoServer 后端。",
         );
       }
 
       if (failures.length > 0) {
-        setBackendError(`Failed to preload: ${failures.join(", ")}`);
+        setBackendError(`预加载失败：${failures.join(", ")}`);
       }
     } finally {
       setBackendLoading(false);
@@ -346,10 +346,10 @@ export default function SettingsPage() {
       // automatically when the backends state updates.
 
       setBackendSuccess(
-        `Backend queued for processing. Embedding will start shortly.`,
+        "后端已加入处理队列，嵌入将很快开始。",
       );
     } catch (err: any) {
-      setBackendError(err?.message || "Failed to preload GeoServer backend.");
+      setBackendError(err?.message || "预加载 GeoServer 后端失败。");
     } finally {
       setBackendLoading(false);
     }
@@ -416,11 +416,11 @@ export default function SettingsPage() {
       // automatically when the backends state updates.
 
       setBackendSuccess(
-        `Example backend "${selected.name}" added and queued for processing.`,
+        `示例后端“${selected.name}”已添加并加入处理队列。`,
       );
     } catch (err: any) {
       setBackendError(
-        err?.message || "Failed to add example GeoServer backend.",
+        err?.message || "添加示例 GeoServer 后端失败。",
       );
     } finally {
       setBackendLoading(false);
@@ -679,7 +679,7 @@ export default function SettingsPage() {
     reader.onload = (evt) => {
       const content = evt.target?.result;
       if (typeof content !== "string") {
-        alert("Invalid settings JSON");
+        alert("设置 JSON 无效");
         return;
       }
 
@@ -687,7 +687,7 @@ export default function SettingsPage() {
       try {
         parsed = JSON.parse(content) as SettingsSnapshot;
       } catch {
-        alert("Invalid settings JSON");
+        alert("设置 JSON 无效");
         return;
       }
 
@@ -696,7 +696,7 @@ export default function SettingsPage() {
           await applyImportedSettings(parsed);
         } catch (err) {
           console.error("Failed to import settings", err);
-          alert("Failed to import settings");
+          alert("导入设置失败");
         }
       })();
     };
@@ -762,7 +762,7 @@ export default function SettingsPage() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto p-6 space-y-8 scroll-smooth bg-primary-50">
-          <h1 className="text-3xl font-bold text-primary-900">Settings</h1>
+          <h1 className="text-3xl font-bold text-primary-900">设置</h1>
           {/* Export/Import Settings */}
           <div className="flex space-x-4 mb-8">
             <button
@@ -770,13 +770,13 @@ export default function SettingsPage() {
               className="bg-tertiary-600 text-neutral-50 px-4 py-2 rounded hover:bg-tertiary-700 font-medium shadow-sm cursor-pointer"
               style={{ backgroundColor: 'var(--tertiary-600)' }}
             >
-              Export Settings
+              导出设置
             </button>
             <label 
               className="bg-second-primary-600 text-neutral-50 px-4 py-2 rounded cursor-pointer hover:bg-second-primary-700 font-medium shadow-sm inline-block"
               style={{ backgroundColor: 'var(--second-primary-600)' }}
             >
-              Import Settings
+              导入设置
               <input
                 type="file"
                 accept="application/json"

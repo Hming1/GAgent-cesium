@@ -14,6 +14,7 @@ from services.tools.nasa_gibs_imagery import get_nasa_gibs_layer, list_nasa_gibs
 from services.tools.geoprocess_tools import geoprocess_tool
 from services.tools.geoserver.custom_geoserver import get_custom_geoserver_data
 from services.tools.geostate_management import metadata_search
+from services.tools.python_analysis_tool import run_python_analysis
 
 # from services.tools.librarian_tools import query_librarian_postgis
 from services.tools.styling_tools import (
@@ -25,6 +26,7 @@ from services.tools.styling_tools import (
 from services.tools.world_bank_indicators import get_world_bank_data
 
 # Tool metadata for configuration and UI display
+#用于配置与界面展示的工具元数据
 TOOL_METADATA = {
     "geocode_nominatim": {
         "display_name": "Nominatim Geocoding",
@@ -48,7 +50,7 @@ TOOL_METADATA = {
         "display_name": "Metadata Search",
         "category": "metadata",
         "group": None,
-        "enabled": True,
+        "enabled": False,
     },
     "style_layers": {
         "display_name": "Manual Layer Styling",
@@ -122,11 +124,18 @@ TOOL_METADATA = {
         "group": None,
         "enabled": True,
     },
+    "run_python_analysis": {
+        "display_name": "Python Analysis Sandbox",
+        "category": "analysis",
+        "group": None,
+        "enabled": False,
+    },
 }
 
 DEFAULT_SYSTEM_PROMPT: str = (
     "You are NaLaMap: an advanced geospatial assistant that helps users without GIS expertise "
-    "create maps and perform spatial analysis through natural language.\n\n"
+    "create maps and perform spatial analysis through natural language.\n"
+    "You MUST ALWAYS reply in Chinese (中文).\n\n"
     "# ROLE AND CAPABILITIES\n"
     "- Your purpose is to interpret user requests about geographic information and translate them "
     "into appropriate map visualizations and spatial analyses.\n"
@@ -145,8 +154,15 @@ DEFAULT_SYSTEM_PROMPT: str = (
     "(list fields, summarize numeric columns, list unique values, "
     "sort, select columns, and filter rows using a safe CQL-lite predicate language). "
     "Use the attribute_tool for these operations.\n"
+    "- You can run bounded Python data analysis through an isolated sandbox when a user "
+    "explicitly asks for custom Python/pandas-style analysis that is not covered by "
+    "dedicated NaLaMap tools.\n"
     "- Decision policy:\n"
-    " - Prefer using existing layers/results in state before discovery or new data creation.\n"
+    " - IMPORTANT: Before performing ANY data analysis or geocoding, you MUST first check "
+    "the '<system_state>' block injected at the end of this prompt for currently loaded layers.\n"
+    " - If the user's requested data (e.g. city boundaries, POIs, uploaded files) is ALREADY "
+    "present in the loaded layers, you MUST use those local layers directly. DO NOT fetch "
+    "external data when a matching layer is already loaded.\n"
     " - Choose the simplest single tool that satisfies the goal; avoid redundant calls.\n"
     " - Validate inputs (layer names, fields, units) and ask one clarifying question if needed.\n"
     " - Styling is opt-in: do not style layers automatically unless the user asks.\n"
@@ -364,6 +380,21 @@ DEFAULT_SYSTEM_PROMPT: str = (
     "- Overlap policy\n"
     " - If the question is about an existing layer/result, use metadata_search first; "
     "avoid re-querying catalogs or servers unless no match is found."
+    "\n\n"
+    "## PYTHON ANALYSIS SANDBOX\n"
+    "- Purpose: Run custom, bounded Python analysis against selected current layers in an "
+    "isolated sandbox container.\n"
+    "- run_python_analysis\n"
+    " - Use when: The user explicitly asks for Python, pandas-style exploratory analysis, "
+    "custom calculations, or a derived GeoJSON output that existing attribute/geoprocessing "
+    "tools cannot directly produce.\n"
+    " - Avoid when: The request is a simple field summary, filter, sort, buffer, clip, "
+    "intersect, styling operation, geocoding task, or GeoServer data discovery.\n"
+    " - Safety: Never include secrets, API keys, database URLs, or internal credentials in "
+    "sandbox code or parameters. Keep code short, deterministic, and scoped to the provided "
+    "inputs.\n"
+    " - Output: Set a JSON-serializable result for chat summaries, and return GeoJSON outputs "
+    "only when the user needs a new map layer.\n"
 )
 
 DEFAULT_AVAILABLE_TOOLS: Dict[str, BaseTool] = {
@@ -388,5 +419,6 @@ DEFAULT_AVAILABLE_TOOLS: Dict[str, BaseTool] = {
     "nasa_fire_data": get_nasa_fire_data,  # OSINT: NASA FIRMS fire detection GeoJSON
     "nasa_gibs_layer": get_nasa_gibs_layer,  # OSINT: NASA GIBS satellite imagery
     "list_nasa_gibs_layers": list_nasa_gibs_layers,  # OSINT: List available GIBS layers
+    "run_python_analysis": run_python_analysis,  # Analysis: isolated Python sandbox
 }
 DEFAULT_SELECTED_TOOLS = []

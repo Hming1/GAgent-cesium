@@ -992,3 +992,137 @@ def my_new_tool(param: str) -> dict:
 
 **Last Updated**: October 2025  
 **Maintainers**: NaLaMap Development Team
+
+---
+
+## Agent Harness, Skills, and Python Analysis Sandbox
+
+This section defines the extension path for adding repeatable agent evaluations,
+new agent skills, and isolated Python data analysis execution.
+
+### Design Goals
+
+- Keep the main FastAPI backend focused on orchestration, state management, and
+  trusted application logic.
+- Expose new agent capabilities as explicit tools or MCP tools instead of
+  embedding hidden behavior in prompts.
+- Run dynamic or user/agent-authored Python code outside the main backend
+  process in a restricted sandbox container.
+- Preserve NaLaMap's current map-result contract by returning generated
+  geospatial outputs as `GeoDataObject` records in `geodata_results`.
+
+### Conceptual Architecture
+
+```text
+User request
+    |
+    v
+NaLaMap chat API
+    |
+    v
+LangGraph GeoAgent
+    |
+    +--> Built-in tools
+    |       - geocoding
+    |       - geoprocessing
+    |       - attributes
+    |       - styling
+    |       - GeoServer discovery
+    |
+    +--> Skill tools
+            |
+            +--> Local LangChain @tool wrappers
+            |
+            +--> External MCP tools
+            |
+            +--> Python analysis sandbox tool
+                    |
+                    v
+              analysis-sandbox container
+                    |
+                    v
+              JSON summaries, artifacts, GeoJSON outputs
+                    |
+                    v
+              GeoDataObject results for the frontend map
+```
+
+### Agent Skills
+
+An agent skill is a named capability exposed to the agent through one of two
+supported integration styles:
+
+- **Local skill**: A LangChain `@tool` implemented under
+  `backend/services/tools/` and registered in
+  `backend/services/default_agent_settings.py`. Use this for trusted, core
+  NaLaMap capabilities that update `GeoDataAgentState` directly.
+- **External skill**: A tool served by an MCP server and loaded through the
+  existing MCP integration. Use this for optional, organization-specific, or
+  separately deployed capabilities.
+
+Skills should have narrow schemas, clear docstrings, bounded resource usage,
+and deterministic output shapes. If a skill creates a map layer, it should
+return or persist GeoJSON and update `geodata_results`.
+
+### Python Analysis Sandbox
+
+The Python sandbox is a separate service for running data analysis code against
+selected session layers. The backend does not execute dynamic Python directly.
+Instead, it serializes a bounded subset of the current layer data and sends it
+to the sandbox over an internal container network.
+
+The first supported execution path is:
+
+1. The agent calls `run_python_analysis`.
+2. The tool resolves selected `geodata_layers` from `GeoDataAgentState`.
+3. GeoJSON layers are loaded and truncated to a configured feature limit.
+4. The backend sends `analysis_goal`, optional Python `code`, and serialized
+   layer inputs to the sandbox.
+5. The sandbox executes the code with timeout and output limits.
+6. The sandbox returns a structured response containing `summary`, `stdout`,
+   `stderr`, `result`, and optional `geojson_outputs`.
+7. The backend stores returned GeoJSON outputs and exposes them as
+   `GeoDataObject` items in `geodata_results`.
+
+### Sandbox Boundaries
+
+The sandbox container must be treated as untrusted execution infrastructure:
+
+- It should not receive LLM API keys, database URLs, cloud credentials, or user
+  authentication secrets.
+- It should run as a non-root user when deployed.
+- It should use timeout, memory, CPU, and output-size limits.
+- It should use a read-only filesystem with temporary writable storage.
+- It should not mount the project source tree or Docker socket.
+- It should be reachable from the backend through an internal network only.
+
+The sandbox improves isolation but is not a complete security boundary by
+itself. Production deployments should combine container hardening, network
+policy, request authentication, observability, and job cleanup.
+
+### Agent Harness
+
+The agent harness is the repeatable evaluation layer for skills and prompts. It
+should live under `backend/evals/` and provide:
+
+- Fixed user queries and initial `geodata_layers`.
+- Fixed model and tool settings.
+- Captured tool-call traces.
+- Checks for expected tool usage.
+- Checks for valid GeoJSON and expected `GeoDataObject` outputs.
+- Runtime and error-rate metrics for regression tracking.
+
+Harness cases should be added before large prompt, skill, or tool-selection
+changes so that agent behavior can be compared across revisions.
+
+### Implementation Map
+
+- `backend/services/tools/python_analysis_tool.py`: LangChain tool exposed to
+  the GeoAgent.
+- `backend/services/sandbox/client.py`: Backend HTTP client for the sandbox.
+- `backend/models/sandbox.py`: Request and response contracts shared by the
+  tool and client.
+- `sandbox/`: Separate FastAPI service for restricted Python execution.
+- `docker-compose.yml` and `dev.docker-compose.yml`: Optional
+  `analysis-sandbox` service on an internal network.
+- `backend/evals/`: Future agent harness scenarios and replay tests.

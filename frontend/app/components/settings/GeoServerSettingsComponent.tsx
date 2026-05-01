@@ -76,7 +76,7 @@ export default function GeoServerSettingsComponent({
         className="w-full flex items-center justify-between px-4 py-3 bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 transition-colors"
       >
         <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-          GeoServer Backends
+          GeoServer 后端
         </h2>
         {collapsed ? (
           <ChevronDown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -90,11 +90,10 @@ export default function GeoServerSettingsComponent({
           {/* Example GeoServers Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-              Example GeoServers
+              示例 GeoServer
             </h3>
             <p className="text-sm text-primary-800 dark:text-primary-300">
-              Choose from publicly available example GeoServers to quickly get
-              started with geospatial data.
+              从公开可用的示例 GeoServer 中选择，快速开始使用地理空间数据。
             </p>
             <div className="flex space-x-2 mb-4">
               <select
@@ -102,7 +101,7 @@ export default function GeoServerSettingsComponent({
                 onChange={(e) => setSelectedExampleGeoServer(e.target.value)}
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 flex-grow bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               >
-                <option value="" className="bg-primary-50 text-primary-900">Select an example GeoServer</option>
+                <option value="" className="bg-primary-50 text-primary-900">选择一个示例 GeoServer</option>
                 {availableExampleGeoServers.map((geoserver) => (
                   <option key={geoserver.url} value={geoserver.url} className="bg-primary-50 text-primary-900">
                     {geoserver.name} - {geoserver.url}
@@ -120,7 +119,7 @@ export default function GeoServerSettingsComponent({
                       : "var(--second-primary-600)",
                 }}
               >
-                {backendLoading ? "Adding..." : "Add Example GeoServer"}
+                {backendLoading ? "添加中..." : "添加示例 GeoServer"}
               </button>
             </div>
             {availableExampleGeoServers.map((geoserver) => (
@@ -142,7 +141,7 @@ export default function GeoServerSettingsComponent({
           {/* Custom Backend Section */}
           <div className="space-y-4 border-t border-primary-200 pt-6">
             <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-              Add Custom Backend
+              添加自定义后端
             </h3>
             <div className="space-y-3">
               <input
@@ -158,7 +157,7 @@ export default function GeoServerSettingsComponent({
                 onChange={(e) =>
                   setNewBackend({ ...newBackend, name: e.target.value })
                 }
-                placeholder="Name (optional)"
+                placeholder="名称（可选）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <textarea
@@ -166,7 +165,7 @@ export default function GeoServerSettingsComponent({
                 onChange={(e) =>
                   setNewBackend({ ...newBackend, description: e.target.value })
                 }
-                placeholder="Description (optional)"
+                placeholder="描述（可选）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full h-20 bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <input
@@ -174,7 +173,7 @@ export default function GeoServerSettingsComponent({
                 onChange={(e) =>
                   setNewBackend({ ...newBackend, username: e.target.value })
                 }
-                placeholder="Username (optional)"
+                placeholder="用户名（可选）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <input
@@ -183,7 +182,7 @@ export default function GeoServerSettingsComponent({
                 onChange={(e) =>
                   setNewBackend({ ...newBackend, password: e.target.value })
                 }
-                placeholder="Password (optional)"
+                placeholder="密码（可选）"
                 className="border border-primary-300 dark:border-primary-700 rounded p-2 w-full bg-primary-50 dark:bg-primary-950 text-primary-900 dark:text-primary-100"
               />
               <label className="flex items-center space-x-2 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-300 dark:border-warning-700 rounded">
@@ -199,8 +198,8 @@ export default function GeoServerSettingsComponent({
                   className="form-checkbox h-4 w-4 text-warning-600"
                 />
                 <span className="text-sm text-gray-900 dark:text-warning-300 flex items-center">
-                  Allow insecure connections (expired/self-signed SSL certificates)
-                  <span className="ml-1 text-base" title="Warning: Only enable for trusted servers">
+                  允许不安全连接（过期/自签名 SSL 证书）
+                  <span className="ml-1 text-base" title="警告：仅对可信服务器启用">
                     ⚠️
                   </span>
                 </span>
@@ -215,7 +214,7 @@ export default function GeoServerSettingsComponent({
                     : "var(--second-primary-600)",
                 }}
               >
-                {backendLoading ? "Checking…" : "Add Backend"}
+                {backendLoading ? "检查中..." : "添加后端"}
               </button>
               {backendLoading && (
                 <div className="w-full mt-2 h-2 bg-primary-200 rounded">
@@ -238,7 +237,7 @@ export default function GeoServerSettingsComponent({
           {/* Backend List */}
           <div className="space-y-3 border-t border-primary-200 pt-6">
             <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
-              Configured Backends
+              已配置后端
             </h3>
             <ul className="space-y-3">
               {backends.map((b, i) => (
@@ -270,7 +269,7 @@ export default function GeoServerSettingsComponent({
                         <p
                           className={`${b.enabled ? "text-primary-900 dark:text-primary-100" : "text-neutral-600 dark:text-primary-600"} text-sm`}
                         >
-                          <strong>Username:</strong> {b.username}
+                          <strong>用户名：</strong> {b.username}
                         </p>
                       )}
 
@@ -300,17 +299,17 @@ export default function GeoServerSettingsComponent({
                               >
                                 {embeddingStatus[b.url].complete ||
                                 embeddingStatus[b.url].state === "completed"
-                                  ? "✓ Embedding complete"
+                                  ? "✓ 嵌入完成"
                                   : embeddingStatus[b.url].state === "error"
-                                    ? "✗ Error: " +
+                                    ? "✗ 错误：" +
                                       (embeddingStatus[b.url].error ||
-                                        "Unknown error")
+                                        "未知错误")
                                     : embeddingStatus[b.url].state === "waiting"
-                                      ? "⏱️ Waiting to start"
+                                      ? "⏱️ 等待开始"
                                       : embeddingStatus[b.url].state ===
                                           "unknown"
-                                        ? "⏸️ Status unknown (checking...)"
-                                        : "⏳ Embedding in progress"}
+                                        ? "⏸️ 状态未知（检查中...）"
+                                        : "⏳ 嵌入处理中"}
                                 {embeddingStatus[b.url].total > 0 && (
                                   <>
                                     :{" "}
@@ -319,7 +318,7 @@ export default function GeoServerSettingsComponent({
                                           interpolatedProgress[b.url].displayEncoded,
                                         )
                                       : embeddingStatus[b.url].encoded}{" "}
-                                    / {embeddingStatus[b.url].total} layers
+                                    / {embeddingStatus[b.url].total} 个图层
                                   </>
                                 )}
                               </span>
@@ -386,13 +385,13 @@ export default function GeoServerSettingsComponent({
                             <div className="p-3 bg-error-100 dark:bg-error-900">
                               <p className="text-sm font-semibold text-error-900 dark:text-error-100 flex items-center gap-2">
                                 <span className="text-lg text-error-600 dark:text-error-300">✗</span>
-                                <span>{embeddingStatus[b.url].error || "Connection error"}</span>
+                                <span>{embeddingStatus[b.url].error || "连接错误"}</span>
                               </p>
                               {embeddingStatus[b.url].error_details && (
                                 <details className="mt-3 group">
                                   <summary className="text-xs text-gray-900 dark:text-error-200 cursor-pointer hover:text-error-900 dark:hover:text-error-100 font-medium list-none flex items-center gap-1.5 select-none">
                                     <span className="inline-block transition-transform group-open:rotate-90">▶</span>
-                                    Show technical details
+                                    显示技术详情
                                   </summary>
                                   <pre className="text-xs mt-2 p-2 bg-error-200 dark:bg-error-800 border border-error-300 dark:border-error-600 rounded overflow-x-auto whitespace-pre-wrap text-gray-900 dark:text-error-100 font-mono">
                                     {embeddingStatus[b.url].error_details}
@@ -404,7 +403,7 @@ export default function GeoServerSettingsComponent({
                               <div className="px-3 py-2 bg-error-200 dark:bg-error-800 border-t border-error-300 dark:border-error-600">
                                 <p className="text-xs text-gray-900 dark:text-error-100 flex items-start gap-1.5">
                                   <span className="text-base shrink-0">💡</span>
-                                  <span>Try enabling "Allow insecure connections" below</span>
+                                  <span>可尝试启用下方“允许不安全连接”</span>
                                 </p>
                               </div>
                             )}
@@ -423,12 +422,12 @@ export default function GeoServerSettingsComponent({
                             />
                             <span className="text-gray-900 dark:text-warning-100 flex items-center gap-1.5 font-medium">
                               <span className="text-base">⚠️</span>
-                              <span>Allow insecure connections</span>
+                              <span>允许不安全连接</span>
                               <span
                                 className="text-[10px] text-gray-700 dark:text-warning-200 font-normal"
-                                title="Bypass SSL certificate verification (expired/self-signed). Only use for trusted servers."
+                                title="绕过 SSL 证书校验（过期/自签名）。仅对可信服务器使用。"
                               >
-                                (expired/self-signed SSL)
+                                （过期/自签名 SSL）
                               </span>
                             </span>
                           </label>
@@ -440,7 +439,7 @@ export default function GeoServerSettingsComponent({
                     onClick={() => removeBackend(b.url)}
                     className="text-red-600 hover:underline ml-2 font-medium"
                   >
-                    Remove
+                    移除
                   </button>
                 </li>
               ))}

@@ -133,7 +133,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
+    throw new Error(`请求失败：${res.status}`);
   }
   return (await res.json()) as T;
 }
@@ -231,7 +231,7 @@ export const useLayerStore = create<LayerStore>()((set, get) => {
         credentials: "include",
       });
       if (!res.ok && res.status !== 404) {
-        throw new Error(`Delete failed: ${res.status}`);
+        throw new Error(`删除失败：${res.status}`);
       }
     } catch (err) {
       Logger.warn("Failed to delete layer:", err);

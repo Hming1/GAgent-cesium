@@ -12,6 +12,8 @@ export interface ProcessingMetadata {
   crs_name: string; // e.g., "WGS 84 / UTM zone 33N"
   auto_selected: boolean; // true if auto-selected, false if user-specified
   selection_reason?: string; // e.g., "Local extent - UTM zone 33N"
+  projection_property?: string; // e.g., "transverse_mercator"
+  expected_error?: number; // Expected projection error percentage
   origin_layers?: string[]; // Names of input layers used to generate this result
   // Optional fields for custom WKT projections
   authority?: string; // "WKT" when a custom projection is used

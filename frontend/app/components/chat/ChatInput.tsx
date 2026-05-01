@@ -18,7 +18,7 @@ export default function ChatInput({
   onSubmit,
   onCancel,
   isStreaming = false,
-  placeholder = "Type your message...",
+  placeholder = "输入你的消息...",
   disabled = false,
 }: ChatInputProps) {
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -52,7 +52,7 @@ export default function ChatInput({
           type="submit"
           onClick={onCancel}
           className="absolute right-3 bottom-3 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-          title="Cancel request"
+          title="取消请求"
         >
           <X size={20} />
         </button>
@@ -61,7 +61,7 @@ export default function ChatInput({
           type="submit"
           disabled={disabled || !value.trim()}
           className="absolute right-3 bottom-3 p-2 bg-secondary-600 text-white rounded-full hover:bg-secondary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Send message"
+          title="发送消息"
         >
           <ArrowUp size={20} />
         </button>
