@@ -6,7 +6,7 @@
 # *export* a pinned requirements.txt, then let pip do the heavy
 # lifting in the build stage.
 # ──────────────────────────────────────────────────────────────
-FROM python:3.13-slim AS export
+FROM python:3.14-slim AS export
 
 ENV POETRY_VERSION=2.1.3 \
     POETRY_HOME=/opt/poetry \
@@ -33,7 +33,7 @@ RUN poetry export --only main --without-hashes -f requirements.txt -o requiremen
 # ──────────────────────────────────────────────────────────────
 # Stage 2 – BUILD: pip install into a venv using requirements.txt
 # ──────────────────────────────────────────────────────────────
-FROM python:3.13-slim AS build
+FROM python:3.14-slim AS build
 
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
     sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
@@ -68,7 +68,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ──────────────────────────────────────────────────────────────
 # Stage 3 – RUNTIME: slim image with only runtime libraries
 # ──────────────────────────────────────────────────────────────
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
