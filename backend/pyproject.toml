@@ -10,7 +10,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = ">=0.115.8"
+fastapi = ">=0.136.1"
 uvicorn = {extras = ["standard"], version = ">=0.34.0"}
 langchain = ">=0.3.27"
 langchain-core = ">=0.3.76"
