@@ -2,7 +2,7 @@
 # # syntax=docker/dockerfile:1
 
 ### 1) deps stage: install and cache all dependencies ###
-FROM node:25-slim AS deps
+FROM node:26-slim AS deps
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN \
 
 
 ### 2) builder stage: bring down the build deps & build the app ###
-FROM node:25-slim AS builder
+FROM node:26-slim AS builder
 
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
     sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
@@ -53,7 +53,7 @@ RUN \
 
 
 ### 3) runner stage: production image ###
-FROM node:25-slim AS runner
+FROM node:26-slim AS runner
 
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
     sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
