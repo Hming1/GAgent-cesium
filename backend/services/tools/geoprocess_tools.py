@@ -368,6 +368,7 @@ def geoprocess_tool(
     The tool will apply operations like buffer, overlay, simplify, sjoin, merge, sjoin_nearest, centroid to the specified layers.
     """
     # Safely pull out the list (defaults to [] if key missing or None)
+    # 安全地提取列表（如果缺少键或为 None，则默认为 []）
     layers = state.get("geodata_layers") or []
     messages = state.get("messages") or []
 
