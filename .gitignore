@@ -501,3 +501,20 @@ gradle-app.setting
 !./frontend/.env.local
 test-results/.last-run.json
 
+
+# Project-local configuration and generated runtime artifacts.
+# Keep templates such as .env.example in version control, but never local values.
+.env.local
+
+# Conversation memory and test output are created at runtime.
+/backend/data/memory/
+/backend/memory/
+/backend/tmp/
+/tmp/
+/test-results/
+
+# Cesium is copied from node_modules by frontend's postinstall script.
+/frontend/public/cesium/
+
+# Editor and manual backup copies.
+*.backup-*
