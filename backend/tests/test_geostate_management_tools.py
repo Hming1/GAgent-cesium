@@ -75,6 +75,23 @@ def test_describe_geodata_object_returns_exact_match(empty_state, sample_river_l
     assert result == [sample_river_layer]
 
 
+def test_list_user_layers_includes_generated_results(
+    empty_state,
+    sample_river_layer,
+    sample_building_layer,
+):
+    empty_state["geodata_layers"] = [sample_river_layer]
+    empty_state["geodata_results"] = [sample_building_layer]
+
+    result = geostate_management.list_user_layers.func(state=empty_state)
+
+    assert [item["id"] for item in result] == [sample_river_layer.id, sample_building_layer.id]
+    assert result[0]["state_collection"] == "geodata_layers"
+    assert result[0]["is_result_layer"] is False
+    assert result[1]["state_collection"] == "geodata_results"
+    assert result[1]["is_result_layer"] is True
+
+
 @pytest.mark.parametrize("prioritize_layers", [True, False])
 def test_metadata_search_returns_relevant_dataset(
     empty_state,
@@ -117,3 +134,24 @@ def test_metadata_search_handles_no_matches(empty_state):
     tool_message = command.update["messages"][-1]
     assert tool_message.name == "metadata_search"
     assert "No datasets found" in tool_message.content
+
+
+def test_create_execution_plan_updates_state(empty_state):
+    command = geostate_management.create_execution_plan.func(
+        state=empty_state,
+        tool_call_id="call-plan",
+        title="测试计划",
+        steps=[
+            {
+                "action": "列出当前图层",
+                "tool": "list_user_layers",
+                "reason": "确认可用输入",
+            }
+        ],
+        summary="展示当前图层清单",
+    )
+
+    assert command.update["execution_plan"]["status"] == "pending"
+    assert command.update["execution_plan"]["step_count"] == 1
+    tool_message = command.update["messages"][-1]
+    assert tool_message.name == "create_execution_plan"

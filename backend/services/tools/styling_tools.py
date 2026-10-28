@@ -1,5 +1,5 @@
 """
-AI-powered map layer styling tools for the NaLaMap agent.
+AI-powered map layer styling tools for the GeoAgent agent.
 """
 
 import logging
@@ -16,12 +16,69 @@ from models.geodata import GeoDataObject
 from services.ai.automatic_styling import (
     detect_layer_type,
     generate_automatic_style,
+    get_colorblind_safe_palette,
+    get_colorbrewer_scheme,
     parse_color_scheme_request,
     parse_intelligent_color,
 )
-from services.tools.utils import match_layer_names
+from services.tools.utils import (
+    collect_stylable_layers,
+    match_layer_names,
+    promote_layers_to_map,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _select_style_targets(
+    state: Dict[str, Any],
+    layer_names: Optional[List[str]] = None,
+) -> List[Any]:
+    """Pick layers to style: named match across map+results, else map, else results."""
+    pool = collect_stylable_layers(state)
+    if layer_names:
+        return match_layer_names(pool, layer_names)
+
+    map_layers = list(state.get("geodata_layers") or [])
+    if map_layers:
+        return map_layers
+    return pool
+
+
+def _style_command(
+    *,
+    state: Dict[str, Any],
+    tool_call_id: str,
+    tool_name: str,
+    message: str,
+    styled_layers: List[GeoDataObject],
+) -> Command:
+    """Build a Command that updates messages and promotes styled layers to the map."""
+    update: Dict[str, Any] = {
+        "messages": [
+            *state["messages"],
+            ToolMessage(name=tool_name, content=message, tool_call_id=tool_call_id),
+        ]
+    }
+    if styled_layers:
+        update.update(promote_layers_to_map(state, styled_layers))
+    return Command(update=update)
+
+
+def _empty_style_command(
+    state: Dict[str, Any],
+    tool_call_id: str,
+    tool_name: str,
+    message: str,
+) -> Command:
+    return Command(
+        update={
+            "messages": [
+                *state["messages"],
+                ToolMessage(name=tool_name, content=message, tool_call_id=tool_call_id),
+            ]
+        }
+    )
 
 
 def normalize_color(color: str) -> str:
@@ -135,25 +192,17 @@ def style_map_layers(
         dash_pattern: Line dash pattern like "5,5"
     """
 
-    # Get available layers from state
-    available_layers = state.get("geodata_layers", [])
-
+    available_layers = collect_stylable_layers(state)
     if not available_layers:
-        message = (
-            "No layers are currently available to style. "
-            "Please add some layers to the map first."
-        )
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="style_map_layers",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "style_map_layers",
+            (
+                "No layers are currently available to style. "
+                "Load or generate a layer first "
+                "(map layers, geodata_results, or geodata_last_results are all eligible)."
+            ),
         )
 
     # Extract current colors for context (helps choose distinct colors)
@@ -170,65 +219,34 @@ def style_map_layers(
         else "No existing colors to avoid."
     )
 
-    # Determine which layers to style with smart detection
-    layers_to_style = []
-
-    # Log available layers for debugging
     logger.info(f"Available layers: {[layer.name for layer in available_layers]}")
     logger.info(f"Requested layer_names: {layer_names}")
 
-    # Determine target layers using fuzzy name matching
-    if layer_names:
-        layers_to_style = match_layer_names(available_layers, layer_names)
-        missing = len(layer_names) - len(layers_to_style)
-        if missing:
-            available_names = ", ".join([layer.name for layer in available_layers])
-            message = (
+    layers_to_style = _select_style_targets(state, layer_names)
+    if layer_names and not layers_to_style:
+        available_names = ", ".join([layer.name for layer in available_layers])
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "style_map_layers",
+            (
                 f"Could not find any layers matching the specified names. "
                 f"Available layers: {available_names}"
-            )
-            return Command(
-                update={
-                    "messages": [
-                        *state["messages"],
-                        ToolMessage(
-                            name="style_map_layers",
-                            content=message,
-                            tool_call_id=tool_call_id,
-                        ),
-                    ]
-                }
-            )
-        logger.info(
-            f"Matched layers for names {layer_names}: "
-            f"{[layer.name for layer in layers_to_style]}"
+            ),
         )
-    elif len(available_layers) == 1:
-        # Only one layer available and no specific layer names provided
-        layers_to_style = available_layers
-        logger.info("Single layer auto-detection: styling the only available layer")
-    else:
-        # Multiple layers available and no specific names provided
-        layers_to_style = available_layers
-        logger.info("Multiple layers: styling all available layers")
+
+    logger.info(f"Layers selected for styling: {[layer.name for layer in layers_to_style]}")
 
     if not layers_to_style:
         available_names = ", ".join([layer.name for layer in available_layers])
-        message = (
-            f"Could not find any layers matching the specified names. "
-            f"Available layers: {available_names}"
-        )
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="style_map_layers",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "style_map_layers",
+            (
+                f"Could not find any layers matching the specified names. "
+                f"Available layers: {available_names}"
+            ),
         )
 
     # Apply styling to selected layers
@@ -284,39 +302,28 @@ def style_map_layers(
         updated_layer = GeoDataObject(**layer_dict)
         styled_layers.append(updated_layer)
 
-    # Update the state with styled layers
-    updated_layers = []
-    for layer in available_layers:
-        styled_layer = next((sl for sl in styled_layers if sl.id == layer.id), None)
-        if styled_layer:
-            updated_layers.append(styled_layer)
-        else:
-            updated_layers.append(layer)
-
-    # Return success message and update state
+    # Return success message and promote styled layers onto the map
     styled_layer_names = [layer.name for layer in layers_to_style]
     if len(styled_layer_names) == 1:
         message = (
-            f"Successfully applied styling to layer '{styled_layer_names[0]}'. "
-            "The changes should be visible on the map."
+            f"Successfully applied styling to layer '{styled_layer_names[0]}' "
+            "and added/updated it on the map."
         )
     else:
         layer_list = ", ".join(styled_layer_names)
         message = (
             f"Successfully applied styling to {len(styled_layer_names)} layers: "
-            f"{layer_list}. The changes should be visible on the map."
+            f"{layer_list}. Layers were added/updated on the map."
         )
 
     message += f"\n\n{color_context}\n\n"
 
-    return Command(
-        update={
-            "messages": [
-                *state["messages"],
-                ToolMessage(name="style_map_layers", content=message, tool_call_id=tool_call_id),
-            ],
-            "geodata_layers": updated_layers,
-        }
+    return _style_command(
+        state=state,
+        tool_call_id=tool_call_id,
+        tool_name="style_map_layers",
+        message=message,
+        styled_layers=styled_layers,
     )
 
 
@@ -343,36 +350,24 @@ def auto_style_new_layers(
         layer_names: Specific layer names to auto-style (if None, styles all
                      layers needing styling)
     """
-    available_layers = state.get("geodata_layers", [])
+    available_layers = collect_stylable_layers(state)
 
     if not available_layers:
-        message = "No layers are currently available to auto-style."
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="auto_style_new_layers",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "auto_style_new_layers",
+            "No layers are currently available to auto-style.",
         )
 
     # Determine which layers to auto-style
-    layers_to_style = []
-
     if layer_names:
-        # Style specific layers
-        for layer_name in layer_names:
-            matching_layers = [layer for layer in available_layers if layer.name == layer_name]
-            layers_to_style.extend(matching_layers)
+        layers_to_style = _select_style_targets(state, layer_names)
     else:
-        # Style all layers that have default styling or no styling
+        candidates = _select_style_targets(state, None)
         layers_to_style = [
             layer
-            for layer in available_layers
+            for layer in candidates
             if not layer.style
             or (
                 layer.style
@@ -382,21 +377,14 @@ def auto_style_new_layers(
         ]
 
     if not layers_to_style:
-        message = (
-            "No layers found that need auto-styling. "
-            "All layers appear to have custom styling already."
-        )
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="auto_style_new_layers",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "auto_style_new_layers",
+            (
+                "No layers found that need auto-styling. "
+                "All layers appear to have custom styling already."
+            ),
         )
 
     # Apply automatic styling using the comprehensive styling system
@@ -445,16 +433,6 @@ def auto_style_new_layers(
         styled_layer = GeoDataObject(**layer_dict)
         styled_layers.append(styled_layer)
 
-    # Update the state with styled layers
-    updated_layers = []
-    for layer in available_layers:
-        styled_layer = next((sl for sl in styled_layers if sl.id == layer.id), None)
-        if styled_layer:
-            updated_layers.append(styled_layer)
-        else:
-            updated_layers.append(layer)
-
-    # Create success message with layer type information
     styled_layer_info = []
     for layer in styled_layers:
         layer_description = getattr(layer, "description", None) or getattr(layer, "title", None)
@@ -463,23 +441,16 @@ def auto_style_new_layers(
 
     message = (
         f"Successfully applied intelligent automatic styling to {len(styled_layers)} "
-        f"layer(s) using the comprehensive automatic styling system. Each layer received "
-        f"contextually appropriate colors and styles based on geographic feature type "
-        f"analysis. Styling applied: {'; '.join(styled_layer_info)}"
+        f"layer(s) and added/updated them on the map. Styling applied: "
+        f"{'; '.join(styled_layer_info)}"
     )
 
-    return Command(
-        update={
-            "messages": [
-                *state["messages"],
-                ToolMessage(
-                    name="auto_style_new_layers",
-                    content=message,
-                    tool_call_id=tool_call_id,
-                ),
-            ],
-            "geodata_layers": updated_layers,
-        }
+    return _style_command(
+        state=state,
+        tool_call_id=tool_call_id,
+        tool_name="auto_style_new_layers",
+        message=message,
+        styled_layers=styled_layers,
     )
 
 
@@ -500,20 +471,14 @@ def check_and_auto_style_layers(
 
     Only use this tool proactively when detecting newly uploaded layers that need initial styling.
     """
-    available_layers = state.get("geodata_layers", [])
+    available_layers = collect_stylable_layers(state)
 
     if not available_layers:
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="check_and_auto_style_layers",
-                        content="No layers available for auto-styling.",
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "check_and_auto_style_layers",
+            "No layers available for auto-styling.",
         )
 
     # Find layers that need styling (have default colors)
@@ -586,121 +551,274 @@ def apply_intelligent_color_scheme(
         scheme_request: Natural language color scheme request
         layer_names: Specific layers to style (if None, styles all layers)
     """
-    available_layers = state.get("geodata_layers", [])
+    available_layers = collect_stylable_layers(state)
 
     if not available_layers:
-        message = "No layers are currently available to apply color schemes to."
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="apply_intelligent_color_scheme",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "apply_intelligent_color_scheme",
+            (
+                "No layers are currently available to apply color schemes to. "
+                "Result layers are eligible; they will be promoted to the map when styled."
+            ),
         )
 
     # Parse the color scheme request
     scheme_info = parse_color_scheme_request(scheme_request)
 
     if not scheme_info["colors"]:
-        message = f"Could not understand color scheme request: '{scheme_request}'"
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="apply_intelligent_color_scheme",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
-            }
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "apply_intelligent_color_scheme",
+            f"Could not understand color scheme request: '{scheme_request}'",
         )
 
-    # Determine which layers to style
-    if layer_names:
-        layers_to_style = [layer for layer in available_layers if layer.name in layer_names]
-    else:
-        layers_to_style = available_layers
-
+    layers_to_style = _select_style_targets(state, layer_names)
     if not layers_to_style:
-        message = "No matching layers found to style."
-        return Command(
-            update={
-                "messages": [
-                    *state["messages"],
-                    ToolMessage(
-                        name="apply_intelligent_color_scheme",
-                        content=message,
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "apply_intelligent_color_scheme",
+            "No matching layers found to style.",
+        )
+
+    # Apply colors from the scheme to layers (one solid color per layer)
+    scheme_colors = scheme_info["colors"]
+    styled_objects: List[GeoDataObject] = []
+    styled_names: List[str] = []
+
+    for i, layer in enumerate(layers_to_style):
+        fill_color = scheme_colors[i % len(scheme_colors)]
+        normalized_fill = normalize_color(fill_color)
+        if normalized_fill and isinstance(normalized_fill, str):
+            stroke_color = normalized_fill.replace("ff", "cc")
+        else:
+            stroke_color = fill_color
+
+        layer_dict = layer.model_dump()
+        if not layer_dict.get("style"):
+            layer_dict["style"] = {}
+
+        layer_dict["style"].update(
+            {
+                "fill_color": fill_color,
+                "stroke_color": stroke_color,
+                "fill_opacity": 0.6,
+                "stroke_opacity": 1.0,
+                "stroke_weight": 2,
             }
         )
 
-    # Apply colors from the scheme to layers
-    updated_layers = []
-    scheme_colors = scheme_info["colors"]
-    styled_layers = []
+        styled_objects.append(GeoDataObject(**layer_dict))
+        styled_names.append(layer.name)
 
-    for i, layer in enumerate(available_layers):
-        if layer in layers_to_style:
-            # Get color from scheme (cycle through if more layers than colors)
-            color_index = i % len(scheme_colors)
-            fill_color = scheme_colors[color_index]
-
-            # Safely create stroke color (darker than fill)
-            normalized_fill = normalize_color(fill_color)
-            if normalized_fill and isinstance(normalized_fill, str):
-                stroke_color = normalized_fill.replace("ff", "cc")
-            else:
-                stroke_color = fill_color  # Fallback to original if normalization fails
-
-            # Apply the styling
-            layer_dict = layer.model_dump()
-            if not layer_dict.get("style"):
-                layer_dict["style"] = {}
-
-            layer_dict["style"].update(
-                {
-                    "fill_color": fill_color,
-                    "stroke_color": stroke_color,
-                    "fill_opacity": 0.6,
-                    "stroke_opacity": 1.0,
-                    "stroke_weight": 2,
-                }
-            )
-
-            styled_layer = GeoDataObject(**layer_dict)
-            updated_layers.append(styled_layer)
-            styled_layers.append(layer.name)
-        else:
-            updated_layers.append(layer)
-
-    # Create success message
     message = (
         f"Successfully applied '{scheme_info['name']}' color scheme to "
-        f"{len(styled_layers)} layer(s): {', '.join(styled_layers)}. "
-        f"Description: {scheme_info['description']}"
+        f"{len(styled_names)} layer(s): {', '.join(styled_names)} "
+        f"(promoted to map). Description: {scheme_info['description']}"
     )
 
-    return Command(
-        update={
-            "messages": [
-                *state["messages"],
-                ToolMessage(
-                    name="apply_intelligent_color_scheme",
-                    content=message,
-                    tool_call_id=tool_call_id,
-                ),
-            ],
-            "geodata_layers": updated_layers,
-        }
+    return _style_command(
+        state=state,
+        tool_call_id=tool_call_id,
+        tool_name="apply_intelligent_color_scheme",
+        message=message,
+        styled_layers=styled_objects,
     )
+
+
+@tool
+def color_layers_by_attribute(
+    state: Annotated[Dict[str, Any], InjectedState],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    field: str,
+    layer_names: Optional[List[str]] = None,
+    palette: str = "Set2",
+    max_categories: int = 24,
+) -> Command:
+    """
+    Color features inside one layer by an attribute field (categorical styling).
+
+    Use this when the user asks to color by district / category / type within a
+    single layer (e.g. "按区上色", "按 adname 分类上色"). This writes
+    ``style.style_conditions[field].color_map`` and promotes the layer onto the
+    map so Cesium can render per-feature colors.
+
+    Do NOT use style_map_layers or apply_intelligent_color_scheme for
+    within-layer attribute coloring — those only assign one solid color per layer.
+
+    Args:
+        field: Attribute field name (e.g. "adname", "type", "school").
+        layer_names: Optional layer name/title filter; defaults to map layers or
+            the only available result layer.
+        palette: ColorBrewer-like name ("Set2", "Paired", "Spectral") or
+            "colorblind".
+        max_categories: Cap on distinct values colored (extras keep the layer
+            default fill).
+    """
+    if not field or not str(field).strip():
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "color_layers_by_attribute",
+            "Error: 'field' is required (e.g. adname, type).",
+        )
+
+    field = str(field).strip()
+    layers_to_style = _select_style_targets(state, layer_names)
+    if not layers_to_style:
+        return _empty_style_command(
+            state,
+            tool_call_id,
+            "color_layers_by_attribute",
+            ("No layers available to color by attribute. " "Generate or load a layer first."),
+        )
+
+    # Prefer a single target layer for categorical styling.
+    if len(layers_to_style) > 1 and not layer_names:
+        layers_to_style = layers_to_style[:1]
+
+    palette_key = (palette or "Set2").strip().lower()
+    styled_objects: List[GeoDataObject] = []
+    summaries: List[str] = []
+
+    for layer in layers_to_style:
+        try:
+            value_counts, available_fields = _attribute_value_counts(layer.data_link, field)
+        except Exception as exc:  # noqa: BLE001
+            return _empty_style_command(
+                state,
+                tool_call_id,
+                "color_layers_by_attribute",
+                f"Failed to load layer '{layer.name}' data: {exc}",
+            )
+
+        if value_counts is None:
+            available = ", ".join(str(c) for c in (available_fields or [])[:40])
+            return _empty_style_command(
+                state,
+                tool_call_id,
+                "color_layers_by_attribute",
+                (
+                    f"Field '{field}' not found on layer '{layer.name}'. "
+                    f"Available fields (sample): {available}"
+                ),
+            )
+
+        categories = [item[0] for item in value_counts[: max(1, max_categories)]]
+        n_colors = max(len(categories), 1)
+
+        if palette_key in {"colorblind", "accessible", "safe"}:
+            colors = get_colorblind_safe_palette(n_colors)
+        else:
+            scheme_name = {
+                "set1": "Set1",
+                "set2": "Set2",
+                "set3": "Set3",
+                "paired": "Paired",
+                "spectral": "Spectral",
+                "dark2": "Dark2",
+                "accent": "Accent",
+            }.get(palette_key, palette if palette else "Set2")
+            colors = get_colorbrewer_scheme(scheme_name, n_colors) or get_colorblind_safe_palette(
+                n_colors
+            )
+
+        color_map = {category: colors[i % len(colors)] for i, category in enumerate(categories)}
+
+        layer_dict = layer.model_dump()
+        existing_style = layer_dict.get("style") or {}
+        existing_conditions = dict(existing_style.get("style_conditions") or {})
+        existing_conditions[field] = {"color_map": color_map}
+        existing_style.update(
+            {
+                "stroke_color": existing_style.get("stroke_color") or "#2c3e50",
+                "stroke_weight": existing_style.get("stroke_weight") or 1.5,
+                "stroke_opacity": existing_style.get("stroke_opacity") or 1.0,
+                "fill_opacity": existing_style.get("fill_opacity") or 0.75,
+                "radius": existing_style.get("radius") or 6,
+                "style_conditions": existing_conditions,
+            }
+        )
+        # Keep a neutral default fill for values outside the color_map.
+        if not existing_style.get("fill_color"):
+            existing_style["fill_color"] = "#94a3b8"
+        layer_dict["style"] = existing_style
+        styled_objects.append(GeoDataObject(**layer_dict))
+
+        preview = ", ".join(f"{k}={v}" for k, v in list(color_map.items())[:8])
+        extra = len(value_counts) - len(categories)
+        extra_note = f" (+{extra} unmapped values keep default fill)" if extra > 0 else ""
+        summaries.append(
+            f"'{layer.name}' by '{field}': {len(categories)} categories{extra_note}. "
+            f"Sample: {preview}"
+        )
+
+    message = (
+        "Applied categorical attribute coloring and promoted layer(s) to the map. "
+        + " | ".join(summaries)
+    )
+    return _style_command(
+        state=state,
+        tool_call_id=tool_call_id,
+        tool_name="color_layers_by_attribute",
+        message=message,
+        styled_layers=styled_objects,
+    )
+
+
+def _attribute_value_counts(data_link: str, field: str):
+    """Return [(value, count), ...] sorted by count desc, plus available field names.
+
+    Prefers a lightweight GeoJSON parse to avoid heavy GIS drivers in simple cases.
+    Returns ``(None, available_fields)`` when the field is missing.
+    """
+    import json
+    import os
+    from collections import Counter
+    from urllib.parse import urlparse
+
+    from services.tools.attribute_tools import BASE_URL, LOCAL_UPLOAD_DIR, _load_gdf
+
+    local_path = None
+    if data_link.startswith(f"{BASE_URL}/uploads/") or data_link.startswith(
+        f"{BASE_URL}/api/stream/"
+    ):
+        local_path = os.path.join(LOCAL_UPLOAD_DIR, os.path.basename(urlparse(data_link).path))
+    elif os.path.isfile(data_link):
+        local_path = data_link
+
+    if (
+        local_path
+        and os.path.isfile(local_path)
+        and local_path.lower().endswith((".geojson", ".json"))
+    ):
+        with open(local_path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+        features = payload.get("features") if isinstance(payload, dict) else None
+        if isinstance(features, list):
+            available: set = set()
+            counter: Counter = Counter()
+            for feature in features:
+                props = (feature or {}).get("properties") or {}
+                if isinstance(props, dict):
+                    available.update(str(k) for k in props.keys())
+                    if field in props:
+                        raw = props.get(field)
+                        key = "(空)" if raw is None else str(raw)
+                        counter[key] += 1
+            if field not in available and not counter:
+                return None, sorted(available)
+            return counter.most_common(), sorted(available)
+
+    gdf = _load_gdf(data_link)
+    available_fields = [str(c) for c in gdf.columns]
+    if field not in gdf.columns:
+        return None, available_fields
+    series = gdf[field].fillna("(空)").astype(str)
+    return list(series.value_counts().items()), available_fields
 
 
 def _detect_layers_needing_styling(available_layers):

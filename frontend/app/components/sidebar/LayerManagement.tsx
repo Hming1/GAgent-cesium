@@ -7,14 +7,7 @@ import UploadSection from "./UploadSection";
 import PostgisSection from "./PostgisSection";
 import BasemapSelector from "./BasemapSelector";
 import LayerList from "./LayerList";
-
-type BasemapKey =
-  | "osm"
-  | "carto-positron"
-  | "carto-dark"
-  | "google-satellite"
-  | "google-hybrid"
-  | "google-terrain";
+import { getBasemap } from "../../utils/basemaps";
 
 export default function LayerManagement() {
   const [isSaving, setIsSaving] = useState(false);
@@ -61,36 +54,7 @@ export default function LayerManagement() {
   };
 
   const handleBasemapChange = (selected: string) => {
-    const basemaps: Record<BasemapKey, { url: string; attribution: string }> = {
-      osm: {
-        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-      "carto-positron": {
-        url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
-      },
-      "carto-dark": {
-        url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
-      },
-      "google-satellite": {
-        url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
-        attribution: "&copy; Google Satellite",
-      },
-      "google-hybrid": {
-        url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-        attribution: "&copy; Google Hybrid",
-      },
-      "google-terrain": {
-        url: "https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
-        attribution: "&copy; Google Terrain",
-      },
-    };
-    setBasemap(basemaps[selected as BasemapKey] || basemaps["carto-positron"]);
+    setBasemap(getBasemap(selected));
   };
 
   return (

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolve } from "node:path";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -24,7 +25,7 @@ const nextConfig: NextConfig = {
   // Increase body size limit for server actions to match nginx (100MB)
   experimental: {
     serverActions: {
-      bodySizeLimit: '100mb'
+      bodySizeLimit: '1000mb'
     }
   },
   
@@ -36,6 +37,18 @@ const nextConfig: NextConfig = {
         destination: '/',
       },
     ];
+  },
+
+  // Cesium's optional SPZ Gaussian-splat decoder bundles raw WebAssembly in a
+  // template literal. Next/Webpack emits that binary as a JavaScript chunk,
+  // which Chromium cannot parse. Normal Cesium maps do not use SPZ assets, so
+  // replace only this experimental decoder with an explicit unsupported error.
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@spz-loader/core": resolve(__dirname, "app/shims/spz-loader.ts"),
+    };
+    return config;
   },
 };
 

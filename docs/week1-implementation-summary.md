@@ -46,7 +46,6 @@ Created new module for checking model capabilities:
 
 **Supported Providers**:
 - OpenAI (gpt-4o-mini, gpt-5, etc.)
-- Azure OpenAI
 - Google (Gemini)
 - Mistral
 - DeepSeek

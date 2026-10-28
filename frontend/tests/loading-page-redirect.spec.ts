@@ -21,7 +21,7 @@ test.describe.skip("Loading Page and Redirect", () => {
     await page.goto("/");
 
     // Should show loading page content
-    await expect(page.locator("text=NaLaMap is starting")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=GeoAgent is starting")).toBeVisible({ timeout: 5000 });
     
     // Should have progress indicators
     await expect(page.locator("text=nginx").first()).toBeVisible();
@@ -78,7 +78,7 @@ test.describe.skip("Loading Page and Redirect", () => {
     await expect(page.locator(".leaflet-container")).toBeVisible({ timeout: 10000 });
     
     // Should not show loading page text
-    await expect(page.locator("text=NaLaMap is starting")).not.toBeVisible();
+    await expect(page.locator("text=GeoAgent is starting")).not.toBeVisible();
   });
 
   test("loading page polls health endpoints at regular intervals", async ({ page }) => {
@@ -164,7 +164,7 @@ test.describe.skip("Loading Page and Redirect", () => {
     await page.goto("/");
 
     // Initially should show loading state
-    await expect(page.locator("text=NaLaMap is starting")).toBeVisible();
+    await expect(page.locator("text=GeoAgent is starting")).toBeVisible();
     
     // Wait for health checks to complete
     await page.waitForTimeout(3000);
@@ -178,7 +178,7 @@ test.describe.skip("Loading Page and Redirect", () => {
     await page.goto("/map");
 
     // Should never show loading page
-    await expect(page.locator("text=NaLaMap is starting")).not.toBeVisible();
+    await expect(page.locator("text=GeoAgent is starting")).not.toBeVisible();
     
     // Should show map immediately (or as fast as Next.js can render)
     await expect(page.locator(".leaflet-container")).toBeVisible({ timeout: 10000 });
@@ -236,7 +236,7 @@ test.describe.skip("Loading Page and Redirect", () => {
     expect(page.url()).toContain("/map");
     
     // Should not show loading page
-    await expect(page.locator("text=NaLaMap is starting")).not.toBeVisible();
+    await expect(page.locator("text=GeoAgent is starting")).not.toBeVisible();
   });
 
   test("rewrite configuration: /map shows root page content", async ({ page }) => {
@@ -274,7 +274,7 @@ test.describe.skip("Loading Page Edge Cases", () => {
     await page.goto("/");
 
     // Loading page should still be visible and not crash
-    await expect(page.locator("text=NaLaMap is starting")).toBeVisible();
+    await expect(page.locator("text=GeoAgent is starting")).toBeVisible();
     
     // Should keep polling despite errors
     await page.waitForTimeout(3000);
@@ -318,7 +318,7 @@ test.describe.skip("Loading Page Edge Cases", () => {
     await page.goto("/");
 
     // Should show loading page
-    await expect(page.locator("text=NaLaMap is starting")).toBeVisible();
+    await expect(page.locator("text=GeoAgent is starting")).toBeVisible();
 
     // Wait for services to become ready
     await page.waitForTimeout(6000);

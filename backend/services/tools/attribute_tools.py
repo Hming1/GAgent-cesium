@@ -22,7 +22,7 @@ from models.geodata import DataOrigin, DataType, GeoDataObject
 from models.states import GeoDataAgentState
 from services.ai.llm_config import get_llm, get_llm_for_provider
 from services.storage.file_management import store_file
-from services.tools.utils import match_layer_names
+from services.tools.utils import match_layer_names, resolve_input_layers
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -63,7 +63,9 @@ def _get_llm_from_options(state: Optional[GeoDataAgentState] = None):
             )
             return llm
         except Exception as e:
-            logger.warning(f"Failed to get LLM for provider {provider}: {e}. Using default.")
+            logger.warning(
+                f"Failed to get LLM for provider {provider}: {e}. Using default."
+            )
             return get_llm()
 
     return get_llm()
@@ -75,7 +77,7 @@ def _get_llm_from_options(state: Optional[GeoDataAgentState] = None):
 _token = re.compile(
     r"""
     \s*(?:
-        (?P<kw>AND|OR|NOT|IN|IS|NULL)\b
+        (?P<kw>AND|OR|NOT|IN|IS|NULL|LIKE)\b
       | (?P<ident>[A-Za-z_][A-Za-z0-9_]*)
       | "(?P<identq>[^"]+)"
       | '(?P<string>[^']*)'
@@ -140,7 +142,9 @@ def _bbox(gdf: gpd.GeoDataFrame) -> Optional[List[float]]:
     return None
 
 
-def _suggest_next_steps(gdf: gpd.GeoDataFrame, schema_ctx: Dict[str, Any], llm=None) -> List[str]:
+def _suggest_next_steps(
+    gdf: gpd.GeoDataFrame, schema_ctx: Dict[str, Any], llm=None
+) -> List[str]:
     tips = []
     # Note: geometry name could be used for field-specific suggestions
     # if needed
@@ -152,7 +156,7 @@ def _suggest_next_steps(gdf: gpd.GeoDataFrame, schema_ctx: Dict[str, Any], llm=N
         tips += [
             "Filter by name or class to focus on a single line feature.",
             "Compute length, then style lines by length or class.",
-            "Buffer lines to model influence zones (e.g., 100–500 m).",
+            "Buffer lines to model influence zones (e.g., 100鈥?00 m).",
             "Spatial-join with places or admin areas to count overlaps.",
         ]
     if {"Point", "MultiPoint"} & gtypes:
@@ -168,12 +172,14 @@ def _suggest_next_steps(gdf: gpd.GeoDataFrame, schema_ctx: Dict[str, Any], llm=N
             "Intersect/union with other layers to analyze overlaps.",
         ]
     if not gtypes:
-        tips.append("No geometry detected; you can still filter and summarize attributes.")
+        tips.append(
+            "No geometry detected; you can still filter and summarize attributes."
+        )
 
     # Field-driven ideas
     lower_cols = [c.lower() for c in cols]
     if any(k in lower_cols for k in ["name", "name_en", "label", "title"]):
-        tips.append("Search by a specific name (e.g., `filter name = '…'`).")
+        tips.append("Search by a specific name (e.g., `filter name = '鈥?`).")
     if any(k in lower_cols for k in ["pop", "population", "inhabitants"]):
         tips.append("Style by population, or filter by thresholds.")
     if any(k in lower_cols for k in ["gdp", "gdp_pc", "gdp_per_capita"]):
@@ -241,9 +247,12 @@ def describe_dataset_gdf(
     name_like = [
         c
         for c in cols_meta
-        if c.get("type") != "geometry" and re.search(r"(name|label|title)", c["name"], re.I)
+        if c.get("type") != "geometry"
+        and re.search(r"(name|label|title)", c["name"], re.I)
     ]
-    others = [c for c in cols_meta if c not in name_like and c.get("type") != "geometry"]
+    others = [
+        c for c in cols_meta if c not in name_like and c.get("type") != "geometry"
+    ]
     key_cols = (name_like + others)[:5]
     # attach a few top values if present
     preview_cols = []
@@ -308,7 +317,9 @@ def describe_dataset_gdf(
             # "and 'suggested_next_steps' (list of strings)."
         )
         context_obj = {"metadata": result, "sample_rows": sample_rows}
-        human = f"Dataset context and sample rows: {json.dumps(context_obj, default=str)}"
+        human = (
+            f"Dataset context and sample rows: {json.dumps(context_obj, default=str)}"
+        )
         msgs = [SystemMessage(content=sys), HumanMessage(content=human)]
         resp = llm.generate([msgs])
         text = resp.generations[0][0].text.strip()
@@ -405,6 +416,22 @@ def _parse_primary(state):
                 values.append(v)
                 _advance(state, state["tokens"])
             return ("in", field, values)
+        if cur and cur.group("kw") and cur.group("kw").upper() in {"LIKE", "NOT"}:
+            negated = False
+            if cur.group("kw").upper() == "NOT":
+                negated = True
+                _advance(state, state["tokens"])
+                _expect_kw(state, "LIKE")
+            else:
+                _advance(state, state["tokens"])
+            cur = _peek(state)
+            if not cur:
+                raise ValueError("Expected pattern after LIKE")
+            pattern = _parse_literal(cur)
+            if not isinstance(pattern, str):
+                raise ValueError("LIKE pattern must be a string")
+            _advance(state, state["tokens"])
+            return ("like", field, pattern, negated)
         op = _expect_op(state, {">=", "<=", "!=", "=", ">", "<"})
         cur = _peek(state)
         if not cur:
@@ -428,7 +455,11 @@ def _parse_not(state):
 
 def _parse_and(state):
     node = _parse_not(state)
-    while _peek(state) and _peek(state).group("kw") and _peek(state).group("kw").upper() == "AND":
+    while (
+        _peek(state)
+        and _peek(state).group("kw")
+        and _peek(state).group("kw").upper() == "AND"
+    ):
         _advance(state, state["tokens"])
         rhs = _parse_not(state)
         node = ("and", node, rhs)
@@ -437,7 +468,11 @@ def _parse_and(state):
 
 def _parse_expr(state):
     node = _parse_and(state)
-    while _peek(state) and _peek(state).group("kw") and _peek(state).group("kw").upper() == "OR":
+    while (
+        _peek(state)
+        and _peek(state).group("kw")
+        and _peek(state).group("kw").upper() == "OR"
+    ):
         _advance(state, state["tokens"])
         rhs = _parse_and(state)
         node = ("or", node, rhs)
@@ -482,7 +517,9 @@ def _find_closest_field(
             return (field, True)
 
     # Try fuzzy matching
-    matches = difflib.get_close_matches(field_name, available_fields, n=1, cutoff=cutoff)
+    matches = difflib.get_close_matches(
+        field_name, available_fields, n=1, cutoff=cutoff
+    )
     if matches:
         return (matches[0], False)
 
@@ -499,7 +536,7 @@ def _load_gdf(link: str) -> gpd.GeoDataFrame:
     - Local upload directory files
     - BASE_URL/uploads/ URLs (local dev)
     - BASE_URL/api/stream/ URLs (local dev with central file management)
-    - Azure Blob Storage URLs (SAS tokens supported)
+    - HTTP/HTTPS URLs with query parameters
     - HTTP/HTTPS URLs (external GeoJSON)
     - WFS URLs (adds srsName=EPSG:4326 if missing)
     - Local file paths
@@ -522,7 +559,7 @@ def _load_gdf(link: str) -> gpd.GeoDataFrame:
     if os.path.isfile(link):
         return gpd.read_file(link)
 
-    # Handle HTTP/HTTPS URLs (including Azure Blob Storage with SAS tokens)
+    # Handle HTTP/HTTPS URLs (including signed URLs with query parameters)
     if link.startswith("http://") or link.startswith("https://"):
         request_url = link
         # For WFS requests, ensure srsName=EPSG:4326 is set for consistent coordinate system
@@ -639,7 +676,9 @@ def _clean_layer_name(text: str) -> str:
         return ""
 
     # Remove common GIS file extensions (case-insensitive)
-    cleaned = re.sub(r"\.(geojson|json|shp|kml|gpkg|gml)$", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r"\.(geojson|json|shp|kml|gpkg|gml)$", "", text, flags=re.IGNORECASE
+    )
 
     # Remove parentheses and their content (e.g., "(filtered)" -> "")
     # But keep the words inside for better context
@@ -655,6 +694,71 @@ def _clean_layer_name(text: str) -> str:
     cleaned = cleaned.strip()
 
     return cleaned
+
+
+def concise_layer_title(
+    source_layer_name: str,
+    operation: str,
+    operation_details: Optional[str] = None,
+) -> str:
+    """Build a short layer title that stays distinguishable in the layer list.
+
+    Drops OSM copyright text and keeps place, subject, geometry, and the
+    filter topic instead of the full source name.
+    """
+    text = source_layer_name or "图层"
+    text = re.sub(r"\s*\(Data ©[^)]*\)", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"https?://\S+", "", text)
+    text = re.sub(r"OpenStreetMap contributors.*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"ODbL.*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip(" ,.-")
+
+    if re.search(r"\bAreas\b|面", text, re.IGNORECASE):
+        geometry = "面"
+    elif re.search(r"\bPoints\b|点", text, re.IGNORECASE):
+        geometry = "点"
+    elif re.search(r"\bLines\b|线", text, re.IGNORECASE):
+        geometry = "线"
+    else:
+        geometry = ""
+
+    place_match = re.search(r"near\s+([^,，(]+)", text, re.IGNORECASE)
+    if place_match:
+        place = f"{place_match.group(1).strip()}范围内"
+    elif "·" in text:
+        place = text.split("·")[0].strip()
+    else:
+        place = ""
+
+    if re.search(r"school|学校", text, re.IGNORECASE):
+        subject = "学校"
+    else:
+        subject = re.split(r"\s+near\s+|\(", text, maxsplit=1, flags=re.IGNORECASE)[
+            0
+        ].strip()
+        subject = re.sub(
+            r"\b(Areas|Points|Lines|Filtered|filtered)\b", "", subject
+        ).strip()
+        subject = subject[:12]
+
+    details = operation_details or ""
+    if any(token in details for token in ("中学", "初中", "高中", "secondary")):
+        topic = "中学"
+    elif operation == "filtered":
+        topic = "筛选"
+    elif operation == "sorted":
+        topic = "排序"
+    elif operation == "selected":
+        topic = "字段"
+    else:
+        topic = operation
+
+    parts = []
+    for part in (place, subject, geometry, topic):
+        if part and part not in parts:
+            parts.append(part)
+    title = " · ".join(parts)
+    return title[:48] or "筛选结果"
 
 
 def _generate_smart_layer_name(
@@ -680,8 +784,8 @@ def _generate_smart_layer_name(
     Returns:
         Smart layer name generated by LLM, or falls back to simple naming
     """
-    # Fallback to simple naming
-    simple_name = f"{source_layer_name} {operation.capitalize()}"
+    # Fallback stays short even when the source layer name includes a licence string.
+    simple_name = concise_layer_title(source_layer_name, operation, operation_details)
 
     try:
         # Get LLM instance
@@ -738,15 +842,23 @@ User context: {user_context[:300] if user_context else 'Not available'}
 Generate a concise layer name (2-5 words) for this {operation} layer."""
 
         # Invoke LLM
-        msgs = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
+        msgs = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_prompt),
+        ]
         resp = llm.generate([msgs])
         smart_name = resp.generations[0][0].text.strip()
 
         # Clean up the response (remove quotes, extra whitespace, etc.)
         smart_name = smart_name.strip("\"'").strip()
 
-        # Validate the response - should be reasonable length
-        if smart_name and 2 <= len(smart_name.split()) <= 8 and len(smart_name) <= 100:
+        # Accept short Chinese titles, which have no spaces. Reject licence text.
+        compact = re.sub(r"\s+", "", smart_name)
+        lowered = smart_name.lower()
+        licence = any(
+            token in lowered for token in ("copyright", "odbl", "http", "openstreetmap")
+        )
+        if smart_name and 2 <= len(compact) <= 24 and not licence:
             return smart_name
 
     except Exception as e:
@@ -780,12 +892,14 @@ def _save_gdf_as_geojson(
     # Convert to JSON bytes
     content = json.dumps(fc).encode("utf-8")
 
-    # Use central file management (supports both local and Azure Blob)
+    # Use central file management (uses local file storage)
     url, _ = store_file(filename, content)
 
     # Use detailed description if provided, otherwise create a simple one
     description = (
-        detailed_description if detailed_description else f"Attribute operation: {display_title}"
+        detailed_description
+        if detailed_description
+        else f"Attribute operation: {display_title}"
     )
     llm_desc = detailed_description if detailed_description else display_title
 
@@ -794,7 +908,7 @@ def _save_gdf_as_geojson(
         data_source_id="attribute",
         data_type=DataType.GEOJSON,
         data_origin=DataOrigin.TOOL,
-        data_source="NaLaMapAttribute",
+        data_source="GeoAgentAttribute",
         data_link=url,
         name=slug,
         title=display_title,
@@ -821,7 +935,9 @@ def build_schema_context(
       - for numeric columns: min/max (coerced)
     Geometry examples are never included.
     """
-    geom_name = gdf.geometry.name if getattr(gdf, "geometry", None) is not None else None
+    geom_name = (
+        gdf.geometry.name if getattr(gdf, "geometry", None) is not None else None
+    )
     sample = gdf.head(sample_rows).copy()
 
     # Cap total columns passed, but always include geometry column
@@ -871,13 +987,49 @@ def build_schema_context(
     }
 
 
+# Cap list_fields payloads so OSM-style layers (200+ mostly-null tags) do not
+# blow up SSE/result JSON and freeze the chat UI.
+_LIST_FIELDS_MAX = 48
+_LIST_FIELDS_EXAMPLE_CHARS = 120
+_LIST_FIELDS_PRIORITY = (
+    "name",
+    "name:zh",
+    "name:en",
+    "title",
+    "id",
+    "osm_id",
+    "leisure",
+    "landuse",
+    "type",
+    "class",
+    "display_name",
+    "area",
+    "area_m2",
+    "GIS_AREA",
+)
+
+
+def _truncate_example(value: Any, max_chars: int = _LIST_FIELDS_EXAMPLE_CHARS) -> Any:
+    if isinstance(value, str) and len(value) > max_chars:
+        return value[:max_chars] + "…"
+    return value
+
+
 # ---------- Attribute ops on GeoDataFrame ----------
-def list_fields_gdf(gdf: gpd.GeoDataFrame, sample: int = 2000) -> Dict[str, Any]:
+def list_fields_gdf(
+    gdf: gpd.GeoDataFrame,
+    sample: int = 2000,
+    max_fields: int = _LIST_FIELDS_MAX,
+) -> Dict[str, Any]:
     sample_df = gdf.head(sample)
     dtypes = sample_df.dtypes.astype(str).to_dict()
     nulls = sample_df.isna().sum().to_dict()
+    row_count = int(len(gdf))
+    sampled = int(len(sample_df))
 
-    geom_name = gdf.geometry.name if getattr(gdf, "geometry", None) is not None else None
+    geom_name = (
+        gdf.geometry.name if getattr(gdf, "geometry", None) is not None else None
+    )
     # Make dtype readable
     if geom_name and geom_name in dtypes:
         dtypes[geom_name] = "geometry"
@@ -889,19 +1041,48 @@ def list_fields_gdf(gdf: gpd.GeoDataFrame, sample: int = 2000) -> Dict[str, Any]
             examples[c] = None
             continue
         nonnull = sample_df[c].dropna()
-        examples[c] = _jsonify_scalar(nonnull.iloc[0]) if not nonnull.empty else None
-
-    fields = []
-    for k in sorted(dtypes.keys()):
-        fields.append(
-            {
-                "name": k,
-                "type": dtypes[k],
-                "null_count": int(nulls.get(k, 0)),
-                "example": examples.get(k),  # will be None for geometry
-            }
+        examples[c] = (
+            _truncate_example(_jsonify_scalar(nonnull.iloc[0]))
+            if not nonnull.empty
+            else None
         )
-    return {"fields": fields, "row_count": int(len(gdf)), "sampled": int(len(sample_df))}
+
+    def _priority(name: str) -> tuple:
+        lower = name.lower()
+        if geom_name and name == geom_name:
+            return (0, 0, name)
+        for idx, key in enumerate(_LIST_FIELDS_PRIORITY):
+            if lower == key.lower() or lower.startswith(f"{key.lower()}:"):
+                return (1, idx, name)
+        null_ratio = float(nulls.get(name, sampled)) / float(sampled or 1)
+        # Prefer populated columns over all-null OSM tags.
+        return (2, null_ratio, name)
+
+    ranked = sorted(dtypes.keys(), key=_priority)
+    selected = ranked[: max(1, int(max_fields))]
+    fields = [
+        {
+            "name": k,
+            "type": dtypes[k],
+            "null_count": int(nulls.get(k, 0)),
+            "example": examples.get(k),
+        }
+        for k in selected
+    ]
+    omitted = max(0, len(dtypes) - len(fields))
+    payload: Dict[str, Any] = {
+        "fields": fields,
+        "row_count": row_count,
+        "sampled": sampled,
+        "total_fields": len(dtypes),
+    }
+    if omitted:
+        payload["omitted_fields"] = omitted
+        payload["hint"] = (
+            f"Showing {len(fields)}/{len(dtypes)} fields (priority + populated). "
+            "Ask for a specific field name, or use describe_dataset / filter."
+        )
+    return payload
 
 
 def summarize_gdf(gdf: gpd.GeoDataFrame, fields: List[str]) -> Dict[str, Any]:
@@ -938,12 +1119,15 @@ def unique_values_gdf(
     return {
         "field": field,
         "values": [
-            {"value": _jsonify_scalar(idx), "count": int(val)} for idx, val in counts.items()
+            {"value": _jsonify_scalar(idx), "count": int(val)}
+            for idx, val in counts.items()
         ],
     }
 
 
-def sort_by_gdf(gdf: gpd.GeoDataFrame, fields: List[Tuple[str, str]]) -> gpd.GeoDataFrame:
+def sort_by_gdf(
+    gdf: gpd.GeoDataFrame, fields: List[Tuple[str, str]]
+) -> gpd.GeoDataFrame:
     cols = [c for c, _ in fields]
     for c in cols:
         if c not in gdf.columns:
@@ -969,7 +1153,9 @@ def select_fields_gdf(
         gdf2 = gdf.copy()
     if exclude:
         for c in exclude:
-            if c in gdf2.columns and (not (keep_geometry and geom_name and c == geom_name)):
+            if c in gdf2.columns and (
+                not (keep_geometry and geom_name and c == geom_name)
+            ):
                 gdf2 = gdf2.drop(columns=[c])
     if not keep_geometry and gdf2.geometry is not None:
         # Convert to regular DataFrame (geometry kept separately as null in export)
@@ -1028,6 +1214,26 @@ def _series_cmp(a: pd.Series, op: str, b):
         return pd.Series([False] * len(a), index=a.index)
 
 
+def _like_to_regex(pattern: str) -> str:
+    """Translate a SQL LIKE pattern into an anchored regular expression."""
+    parts = []
+    index = 0
+    while index < len(pattern):
+        char = pattern[index]
+        if char == "\\" and index + 1 < len(pattern):
+            parts.append(re.escape(pattern[index + 1]))
+            index += 2
+            continue
+        if char == "%":
+            parts.append(".*")
+        elif char == "_":
+            parts.append(".")
+        else:
+            parts.append(re.escape(char))
+        index += 1
+    return "^" + "".join(parts) + "$"
+
+
 def _eval_ast_to_mask(
     ast, gdf: gpd.GeoDataFrame, field_suggestions: Optional[Dict[str, str]] = None
 ) -> pd.Series:
@@ -1071,6 +1277,20 @@ def _eval_ast_to_mask(
         s = gdf[matched_field]
         m = s.isin(set(values))
         return m.fillna(False)
+    if kind == "like":
+        _, fld, pattern, negated = ast
+        matched_field, is_exact = _find_closest_field(fld, list(gdf.columns))
+        if matched_field is None:
+            available = ", ".join(sorted(gdf.columns))
+            raise ValueError(f"Field '{fld}' not found. Available fields: {available}")
+        if not is_exact:
+            field_suggestions[fld] = matched_field
+            logger.info(f"Field '{fld}' not found, using close match '{matched_field}'")
+        text = gdf[matched_field].astype("string")
+        mask = text.str.contains(_like_to_regex(str(pattern)), regex=True, na=False)
+        if negated:
+            mask = ~mask
+        return mask.fillna(False)
     if kind == "isnull":
         _, fld, is_not = ast
         matched_field, is_exact = _find_closest_field(fld, list(gdf.columns))
@@ -1097,7 +1317,9 @@ def _eval_ast_to_mask(
     raise ValueError(f"Unknown node {kind}")
 
 
-def filter_where_gdf(gdf: gpd.GeoDataFrame, where: str) -> Tuple[gpd.GeoDataFrame, Dict[str, str]]:
+def filter_where_gdf(
+    gdf: gpd.GeoDataFrame, where: str
+) -> Tuple[gpd.GeoDataFrame, Dict[str, str]]:
     """
     Filter GeoDataFrame by WHERE clause with fuzzy field matching.
 
@@ -1151,7 +1373,8 @@ def get_attribute_values_gdf(
     if not columns or len(columns) == 0:
         return {
             "error": (
-                "The 'columns' parameter is required and must contain " "at least one column name."
+                "The 'columns' parameter is required and must contain "
+                "at least one column name."
             ),
             "row_count": len(gdf),
         }
@@ -1193,7 +1416,9 @@ def get_attribute_values_gdf(
 
     if missing_cols:
         result["missing_columns"] = missing_cols
-        result["available_columns"] = sorted([c for c in gdf.columns if c != gdf.geometry.name])
+        result["available_columns"] = sorted(
+            [c for c in gdf.columns if c != gdf.geometry.name]
+        )
 
     if field_suggestions:
         result["field_suggestions"] = field_suggestions
@@ -1239,11 +1464,15 @@ def aggregate_attributes_across_layers(
 
     for layer_name in layer_names:
         # Find and load the layer
-        matching_layers = match_layer_names(state.get("geodata_layers", []), [layer_name])
+        matching_layers = match_layer_names(
+            state.get("geodata_layers", []), [layer_name]
+        )
         if not matching_layers:
             aggregated_results[layer_name] = {
                 "error": f"Layer '{layer_name}' not found",
-                "available_layers": [layer.name for layer in state.get("geodata_layers", [])],
+                "available_layers": [
+                    layer.name for layer in state.get("geodata_layers", [])
+                ],
             }
             continue
 
@@ -1288,7 +1517,9 @@ def _generate_combined_summary(
     """
     summary = {
         "summary_type": summary_type,
-        "total_layers": len([k for k in aggregated_results.keys() if k != "combined_summary"]),
+        "total_layers": len(
+            [k for k in aggregated_results.keys() if k != "combined_summary"]
+        ),
         "successful_layers": len(
             [
                 k
@@ -1304,7 +1535,9 @@ def _generate_combined_summary(
         if layer_name == "combined_summary":
             continue
         if "error" in result:
-            summary["failed_layers"].append({"layer": layer_name, "error": result["error"]})
+            summary["failed_layers"].append(
+                {"layer": layer_name, "error": result["error"]}
+            )
 
     if summary_type == "compare":
         # Compare row counts across layers
@@ -1371,7 +1604,9 @@ Rules:
 - If the user wants a table/description/summary, set result_handling = "chat".
 - If the user asks e.g. 'countries of layer A with gdp over 100', choose filter_where
   with where="gdp > 100" and result_handling="layer".
-- If the user asks “what is this layer”, “explain/describe this dataset”, or seems unsure/naive,
+- For a category matched by part of a name, use LIKE. Example: name LIKE '%中学%'.
+  Do not list individual feature names with = or IN to stand in for that category.
+- If the user asks 鈥渨hat is this layer鈥? 鈥渆xplain/describe this dataset鈥? or seems unsure/naive,
   choose describe_dataset with result_handling = "chat".
 - Prefer field names as they appear; do NOT invent fields. If unsure, use list_fields first
   with result_handling="chat".
@@ -1385,7 +1620,10 @@ Rules:
 
 
 def attribute_plan_from_prompt(
-    query: str, layer_meta: List[Dict[str, Any]], schema_context: Dict[str, Any], llm=None
+    query: str,
+    layer_meta: List[Dict[str, Any]],
+    schema_context: Dict[str, Any],
+    llm=None,
 ) -> Dict[str, Any]:
     if llm is None:
         llm = get_llm()
@@ -1411,7 +1649,9 @@ def attribute_plan_from_prompt(
     )
     msg = {
         "query": query,
-        "layers": [{"name": m.get("name"), "title": m.get("title")} for m in layer_meta],
+        "layers": [
+            {"name": m.get("name"), "title": m.get("title")} for m in layer_meta
+        ],
         "schema_context": schema_context,  # <<--- new
     }
     messages = [SystemMessage(content=sys), HumanMessage(content=json.dumps(msg))]
@@ -1432,7 +1672,9 @@ def attribute_plan_from_prompt(
         "describe_dataset",
         "get_attribute_values",
     }:
-        raise ValueError(f"Planner chose unsupported operation: {plan.get('operation')}")
+        raise ValueError(
+            f"Planner chose unsupported operation: {plan.get('operation')}"
+        )
     return plan
 
 
@@ -1450,7 +1692,7 @@ def attribute_tool(
     - If result_handling='chat', replies with a ToolMessage summary.
     - If result_handling='layer', saves a new GeoJSON to uploads and appends to geodata_results.
     """
-    layers = state.get("geodata_layers") or []
+    layers = resolve_input_layers(state)
     messages = state.get("messages") or []
     if not layers:
         return Command(
@@ -1471,12 +1713,19 @@ def attribute_tool(
 
     def _last_user(ms):
         for m in reversed(ms):
-            if getattr(m, "type", None) == "human" or m.__class__.__name__ == "HumanMessage":
+            if (
+                getattr(m, "type", None) == "human"
+                or m.__class__.__name__ == "HumanMessage"
+            ):
                 return m.content
         return ""
 
     query = _last_user(messages) or ""
-    selected = match_layer_names(layers, target_layer_names) if target_layer_names else layers[:1]
+    selected = (
+        match_layer_names(layers, target_layer_names)
+        if target_layer_names
+        else layers[:1]
+    )
     if not selected:
         avail = [{"name": layer.name, "title": layer.title} for layer in layers]
         return Command(
@@ -1492,21 +1741,9 @@ def attribute_tool(
             }
         )
     layer = selected[0]
-    if layer.data_type not in (DataType.GEOJSON, DataType.UPLOADED):
-        return Command(
-            update={
-                "messages": [
-                    ToolMessage(
-                        name="attribute_tool",
-                        content=f"Error: Layer '{layer.name}' is not a GeoJSON-like dataset.",
-                        tool_call_id=tool_call_id,
-                        status="error",
-                    )
-                ]
-            }
-        )
 
-    # Load as GeoDataFrame
+    # Load as GeoDataFrame. PostGIS-backed layers are accepted when their
+    # data_link exposes a readable GeoJSON stream.
     try:
         gdf = _load_gdf(layer.data_link)
     except Exception as e:
@@ -1515,7 +1752,13 @@ def attribute_tool(
                 "messages": [
                     ToolMessage(
                         name="attribute_tool",
-                        content=f"Error loading GeoJSON into GeoDataFrame: {e}",
+                        content=(
+                            f"Error loading layer '{layer.name}' into GeoDataFrame "
+                            f"from data_link '{layer.data_link}'. "
+                            f"Layer type: {layer.data_type}. "
+                            "The layer could not be read through the GeoJSON stream. "
+                            f"Details: {e}"
+                        ),
                         tool_call_id=tool_call_id,
                         status="error",
                     )
@@ -1562,7 +1805,11 @@ def attribute_tool(
                         ToolMessage(
                             name="attribute_tool",
                             content=json.dumps(
-                                {"operation": "list_fields", "layer": layer.name, "result": out}
+                                {
+                                    "operation": "list_fields",
+                                    "layer": layer.name,
+                                    "result": out,
+                                }
                             ),
                             tool_call_id=tool_call_id,
                         )
@@ -1595,7 +1842,11 @@ def attribute_tool(
                         ToolMessage(
                             name="attribute_tool",
                             content=json.dumps(
-                                {"operation": "summarize", "layer": layer.name, "result": out}
+                                {
+                                    "operation": "summarize",
+                                    "layer": layer.name,
+                                    "result": out,
+                                }
                             ),
                             tool_call_id=tool_call_id,
                         )
@@ -1628,7 +1879,11 @@ def attribute_tool(
                         ToolMessage(
                             name="attribute_tool",
                             content=json.dumps(
-                                {"operation": "unique_values", "layer": layer.name, "result": out}
+                                {
+                                    "operation": "unique_values",
+                                    "layer": layer.name,
+                                    "result": out,
+                                }
                             ),
                             tool_call_id=tool_call_id,
                         )
@@ -1713,8 +1968,14 @@ def attribute_tool(
             # Add field suggestion info if fuzzy matching was used
             suggestion_info = ""
             if field_suggestions:
-                suggestion_info = "\n\nNote: Field name corrections were applied:\n" + "\n".join(
-                    [f"  - '{req}' → '{actual}'" for req, actual in field_suggestions.items()]
+                suggestion_info = (
+                    "\n\nNote: Field name corrections were applied:\n"
+                    + "\n".join(
+                        [
+                            f"  - '{req}' 鈫?'{actual}'"
+                            for req, actual in field_suggestions.items()
+                        ]
+                    )
                 )
 
             # Provide user guidance similar to geocoding tools

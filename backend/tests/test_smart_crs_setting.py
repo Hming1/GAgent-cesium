@@ -101,7 +101,7 @@ def test_geodata_object_with_processing_metadata():
         data_source_id="geoprocess",
         data_type=DataType.GEOJSON,
         data_origin=DataOrigin.TOOL,
-        data_source="NaLaMapGeoprocess",
+        data_source="GeoAgentGeoprocess",
         data_link="http://example.com/test.geojson",
         name="buffered_layer",
         processing_metadata=metadata,

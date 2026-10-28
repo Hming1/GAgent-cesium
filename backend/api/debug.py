@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from core.config import LOCAL_UPLOAD_DIR
 from models.geodata import DataOrigin, DataType, GeoDataObject
 from models.messages.chat_messages import (
-    NaLaMapRequest,
-    NaLaMapResponse,
+    GeoAgentRequest,
+    GeoAgentResponse,
     OrchestratorRequest,
     OrchestratorResponse,
 )
@@ -29,8 +29,8 @@ from utility.string_methods import clean_allow
 router = APIRouter()
 
 
-@router.post("/search", tags=["debug"], response_model=NaLaMapResponse)
-async def search(req: NaLaMapRequest):
+@router.post("/search", tags=["debug"], response_model=GeoAgentResponse)
+async def search(req: GeoAgentRequest):
     state = SearchState(raw_query=req.query)
     result_state = await executor.ainvoke(state)
     numresults = result_state["num_results"]
@@ -46,7 +46,7 @@ async def search(req: NaLaMapRequest):
     # global_geodata=req.global_geodata
     # global_geodata.extend(results)
 
-    return NaLaMapResponse(
+    return GeoAgentResponse(
         messages=[*req.messages, human_msg, ai_msg],
         results_title="Search Results",
         geodata_results=results,
@@ -55,11 +55,11 @@ async def search(req: NaLaMapRequest):
     )  # , global_geodata=global_geodata)
 
 
-@router.post("/geocode", tags=["debug"], response_model=NaLaMapResponse)
-async def geocode(req: NaLaMapRequest) -> Dict[str, Any]:
+@router.post("/geocode", tags=["debug"], response_model=GeoAgentResponse)
+async def geocode(req: GeoAgentRequest) -> Dict[str, Any]:
     """Geocode the given request using the OpenStreetMap API.
     Returns and geokml some additional information."""
-    # futue input: request: NaLaMapRequest
+    # futue input: request: GeoAgentRequest
     response: str = "Geocoding results:"
     messages: List[BaseMessage] = [
         *(req.messages or []),
@@ -78,7 +78,7 @@ async def geocode(req: NaLaMapRequest) -> Dict[str, Any]:
 
     # TODO: Adapt tool to add GeoDataObject to calling state and summary or so
 
-    geocodeResponse: NaLaMapResponse = NaLaMapResponse(
+    geocodeResponse: GeoAgentResponse = GeoAgentResponse(
         results_title="Geocoding Results:",
         geodata_layers=req.geodata_layers,
         options=req.options,
@@ -126,7 +126,7 @@ async def geocode(req: NaLaMapRequest) -> Dict[str, Any]:
         out_filename = f"{clean_allow(name_prop)}_geocode_{uuid.uuid4().hex}.geojson"
         json_content = json.dumps(geojson_dict).encode("utf-8")
 
-        # Use centralized file management (supports both local and Azure Blob Storage)
+        # Use centralized file management (uses local file storage)
         out_url, stored_filename = store_file(out_filename, json_content)
 
         # Copy selected properties
@@ -193,8 +193,8 @@ class GeoProcessResponse(BaseModel):
     tools_used: Optional[List[str]] = None
 
 
-@router.post("/geoprocess", response_model=NaLaMapResponse)
-async def geoprocess(req: NaLaMapRequest):
+@router.post("/geoprocess", response_model=GeoAgentResponse)
+async def geoprocess(req: GeoAgentRequest):
     """
     Accepts a natural language query and a list of GeoJSON URLs.
     Loads the GeoJSON from local storage, delegates processing to the geoprocess executor,
@@ -269,7 +269,7 @@ async def geoprocess(req: NaLaMapRequest):
         out_filename = f"{out_uuid}_geoprocess.geojson"
         json_content = json.dumps(result_layer).encode("utf-8")
 
-        # Use centralized file management (supports both local and Azure Blob Storage)
+        # Use centralized file management (uses local file storage)
         out_url, stored_filename = store_file(out_filename, json_content)
         out_urls.append(out_url)
         new_geodata.append(
@@ -278,7 +278,7 @@ async def geoprocess(req: NaLaMapRequest):
                 data_source_id="geoprocess",
                 data_type=DataType.GEOJSON,
                 data_origin=DataOrigin.TOOL,
-                data_source="NaLaMapGeoprocess",
+                data_source="GeoAgentGeoprocess",
                 data_link=out_url,
                 name=result_name,
                 title=result_name,
@@ -308,7 +308,7 @@ async def geoprocess(req: NaLaMapRequest):
 
     # Convert to common Geodatamodel
     response_str: str = "Here are the processing results, used Tools: {', '.join(tools_used)}:"
-    geodataResponse: NaLaMapResponse = NaLaMapResponse(
+    geodataResponse: GeoAgentResponse = GeoAgentResponse(
         geodata_layers=req.geodata_layers, options=req.options
     )
     geodataResponse.geodata_results = new_geodata

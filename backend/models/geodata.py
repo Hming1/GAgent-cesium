@@ -68,14 +68,14 @@ class LayerStyle:
     """Enhanced style configuration for different geometry types"""
 
     # Common stroke properties for all geometry types
-    stroke_color: Optional[str] = "#3388f"
+    stroke_color: Optional[str] = "#3388ff"
     stroke_weight: Optional[float] = 2
     stroke_opacity: Optional[float] = 1.0
     stroke_dash_array: Optional[str] = None  # e.g., "5,5" for dashed lines
     stroke_dash_offset: Optional[float] = None
 
     # Fill properties for polygons and circles
-    fill_color: Optional[str] = "#3388f"
+    fill_color: Optional[str] = "#3388ff"
     fill_opacity: Optional[float] = 0.3
     fill_pattern: Optional[str] = None  # For pattern fills (future enhancement)
 

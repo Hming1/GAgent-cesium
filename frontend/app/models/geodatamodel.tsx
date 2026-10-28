@@ -4,6 +4,9 @@ export interface ChatMessage {
   content: string;
   additional_kwargs?: Record<string, any>;
   tool_calls?: any;
+  tool_call_id?: string;
+  name?: string;
+  status?: "success" | "error";
 }
 
 export interface ProcessingMetadata {
@@ -87,20 +90,22 @@ export interface GeoDataObject {
   processing_metadata?: ProcessingMetadata;
 }
 
-export interface NaLaMapRequest {
+export interface GeoAgentRequest {
   messages?: ChatMessage[];
   query?: string;
   geodata_last_results?: GeoDataObject[];
   geodata_layers?: GeoDataObject[];
+  execution_plan?: Record<string, unknown>;
   //global_geodata?: GeoDataObject[]
-  options?: Record<string, unknown[]>;
+  options?: Record<string, unknown>;
 }
 
-export interface NaLaMapResponse {
+export interface GeoAgentResponse {
   messages?: ChatMessage[];
   results_title?: string;
   geodata_results?: GeoDataObject[];
   geodata_layers?: GeoDataObject[];
+  execution_plan?: Record<string, unknown>;
   //global_geodata?: GeoDataObject[]
-  options?: Record<string, unknown[]>;
+  options?: Record<string, unknown>;
 }

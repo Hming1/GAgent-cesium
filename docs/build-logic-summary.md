@@ -1,4 +1,4 @@
-# NaLaMap 项目构建逻辑总览
+# GeoAgent 项目构建逻辑总览
 
 本文基于仓库中的实际配置文件整理，目标是说明项目如何从源码进入可运行状态，以及本地开发、容器部署、CI/CD、测试之间的关系。
 
@@ -10,7 +10,7 @@
 - `frontend`：Next.js + React（Web 界面）
 - `nginx`：反向代理与入口编排（统一对外端口、健康检查、流式代理）
 
-数据层默认使用 PostGIS（`postgis/postgis:16-3.4`），并支持可选 Azure Blob 存储与多种 LLM Provider。
+数据层默认使用 PostGIS（`postgis/postgis:16-3.4`），并使用本地文件存储与多种 LLM Provider。
 
 ## 2. 本地非容器构建链路
 
@@ -46,8 +46,7 @@
 
 数据库配置由 `backend/core/config.py` 从环境变量读取：
 
-- 优先 `DATABASE_AZURE_URL`
-- 回退 `DATABASE_URL`
+- 使用 `DATABASE_URL` 连接本地 PostGIS
 
 `backend/db/session.py` 会将 URL 转为异步驱动形式（如 `postgresql+psycopg://`），并在应用启动时执行 `Base.metadata.create_all`。
 
@@ -104,7 +103,6 @@ Nginx 负责：
 - `docker-compose.yml`：标准整栈运行（frontend + backend + nginx + db）
 - `dev.docker-compose.yml`：开发模式，前后端热更新
 - `cloud-test.docker-compose.yml`：模拟云端 runtime-env 可写挂载
-- `azure-debug.docker-compose.yml`：对齐 Azure Container Apps 的调试拓扑
 - `e2e-performance/docker-compose.e2e.yml`：性能测试专用栈
 
 这意味着项目采用了“同一代码，多编排入口”的策略：

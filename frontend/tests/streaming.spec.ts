@@ -778,5 +778,96 @@ test.describe("Tool Progress UI", () => {
     // Verify final result displayed
     await expect(page.getByText("Found parks in Berlin")).toBeVisible();
   });
+
+  test("should cancel an in-flight stream via stop button", async ({ page }) => {
+    // Slow SSE stream + capture /chat/cancel so we can assert abort survives re-render.
+    await page.addInitScript(() => {
+      const originalFetch = window.fetch;
+      (window as any).__cancelCalls = [] as string[];
+      (window as any).fetch = async function (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ) {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url;
+
+        if (url.includes("/chat/cancel")) {
+          (window as any).__cancelCalls.push(url);
+          return new Response(
+            JSON.stringify({ status: "cancellation_requested" }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        if (url.includes("/chat/stream")) {
+          const encoder = new TextEncoder();
+          const signal = init?.signal;
+          const stream = new ReadableStream({
+            async start(controller) {
+              try {
+                for (let i = 0; i < 40; i++) {
+                  if (signal?.aborted) {
+                    controller.error(new DOMException("Aborted", "AbortError"));
+                    return;
+                  }
+                  const sseMessage = `event: llm_token\ndata: ${JSON.stringify({
+                    token: `t${i} `,
+                  })}\n\n`;
+                  controller.enqueue(encoder.encode(sseMessage));
+                  await new Promise((resolve) => setTimeout(resolve, 200));
+                }
+                controller.close();
+              } catch (err) {
+                try {
+                  controller.error(err);
+                } catch {
+                  /* already closed */
+                }
+              }
+            },
+          });
+          return new Response(stream, {
+            status: 200,
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+            },
+          });
+        }
+
+        return originalFetch(input, init);
+      };
+    });
+
+    await page.goto("/map");
+
+    const input = page.locator("textarea").first();
+    await input.fill("Long running query");
+    await input.press("Enter");
+
+    const cancelButton = page.getByRole("button", { name: "取消请求" });
+    await expect(cancelButton).toBeVisible({ timeout: 5000 });
+    await cancelButton.click();
+
+    await expect
+      .poll(async () => page.evaluate(() => (window as any).__cancelCalls?.length || 0))
+      .toBeGreaterThan(0);
+
+    const cancelUrl = await page.evaluate(
+      () => (window as any).__cancelCalls?.[0] as string,
+    );
+    expect(cancelUrl).toContain("/chat/cancel");
+    expect(cancelUrl).toMatch(/session_id=stream_/);
+
+    await expect(cancelButton).toBeHidden({ timeout: 5000 });
+    await expect(input).toBeEnabled({ timeout: 5000 });
+  });
 });
 

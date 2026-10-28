@@ -6,7 +6,7 @@ test.describe("CRS Metadata Display", () => {
     data_source_id: "geoprocess",
     data_type: "GeoJson",
     data_origin: "tool",
-    data_source: "NaLaMapGeoprocess",
+    data_source: "GeoAgentGeoprocess",
     data_link: "http://localhost:8000/test.geojson",
     name: "buffered_rivers",
     title: "Buffered Rivers",

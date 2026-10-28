@@ -31,12 +31,26 @@ export default function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (isStreaming) {
+        onCancel?.(e);
+        return;
+      }
       onSubmit(e);
     }
   };
 
   return (
-    <form onSubmit={isStreaming ? onCancel : onSubmit} className="relative">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (isStreaming) {
+          onCancel?.(e);
+          return;
+        }
+        onSubmit(e);
+      }}
+      className="relative"
+    >
       <textarea
         value={value}
         onChange={handleTextareaChange}
@@ -50,9 +64,9 @@ export default function ChatInput({
       {isStreaming ? (
         <button
           type="submit"
-          onClick={onCancel}
           className="absolute right-3 bottom-3 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
           title="取消请求"
+          aria-label="取消请求"
         >
           <X size={20} />
         </button>
@@ -62,6 +76,7 @@ export default function ChatInput({
           disabled={disabled || !value.trim()}
           className="absolute right-3 bottom-3 p-2 bg-secondary-600 text-white rounded-full hover:bg-secondary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="发送消息"
+          aria-label="发送消息"
         >
           <ArrowUp size={20} />
         </button>

@@ -57,7 +57,7 @@ class ProviderInfo(BaseModel):
     """Information about an LLM provider.
 
     Attributes:
-        name: Provider identifier (e.g., "openai", "google", "azure")
+        name: Provider identifier (e.g., "deepseek", "kimi", "vllm")
         display_name: Human-readable provider name
         available: Whether the provider is currently available (API key configured)
         models: List of models available from this provider

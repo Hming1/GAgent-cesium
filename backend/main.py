@@ -22,10 +22,13 @@ from api import (
     ai_style,
     auth,
     auto_styling,
+    conversations,
     data_management,
     debug,
     file_streaming,
+    inefficient_space,
     layers,
+    memory,
     mcp,
     maps,
     nalamap,
@@ -59,8 +62,8 @@ tags_metadata = [
     },
     {
         "name": "nalamap",
-        "description": "NaLaMap API endpoints can be used to interact with the "
-        "NaLaMap answer geospatial questions.",
+        "description": "GeoAgent API endpoints can be used to interact with the "
+        "GeoAgent answer geospatial questions.",
     },
 ]
 
@@ -71,7 +74,7 @@ async def lifespan(app: FastAPI):
     from db.session import init_db, engine
 
     # Startup
-    logger.info("NaLaMap API starting up...")
+    logger.info("GeoAgent API starting up...")
 
     # Initialize database (if configured)
     await init_db()
@@ -94,13 +97,13 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("NaLaMap API shutting down...")
+    logger.info("GeoAgent API shutting down...")
     if engine is not None:
         await engine.dispose()
 
 
 app = FastAPI(
-    title="NaLaMap API",
+    title="GeoAgent API",
     description="API for making geospatial data accessible",
     version="0.1.0",
     openapi_tags=tags_metadata,
@@ -133,11 +136,11 @@ mimetypes.add_type("application/geo+json", ".geojson")
 os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
 
 # Legacy /uploads/ endpoint using StaticFiles
-# NOTE: This may have issues with large files in Azure Container Apps
+# NOTE: This may have issues with large files behind reverse proxies
 # Prefer using /api/stream/ for new code (uses async generator)
 # We keep this for backward compatibility, but redirect internally where possible
 # Legacy /uploads/ endpoint using StaticFiles
-# NOTE: This may have issues with large files in Azure Container Apps
+# NOTE: This may have issues with large files behind reverse proxies
 # Prefer using /api/stream/ for new code (uses async generator)
 # We keep this for backward compatibility, but redirect internally where possible
 app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_DIR), name="uploads")
@@ -151,21 +154,24 @@ app.include_router(ai_style.router, prefix="/api")  # AI Style button functional
 app.include_router(auto_styling.router, prefix="/api")  # Automatic styling
 app.include_router(settings.router, prefix="/api")
 app.include_router(file_streaming.router, prefix="/api")  # Streaming files
+app.include_router(memory.router, prefix="/api")  # Memory management
+app.include_router(conversations.router, prefix="/api")  # Chat history
 app.include_router(mcp.router, prefix="/api")  # MCP server endpoint
 app.include_router(proxy.router, prefix="/api/proxy")  # CORS proxy for external data
 app.include_router(maps.router, prefix="/api")
 app.include_router(layers.router, prefix="/api")
 app.include_router(postgis_layers.router, prefix="/api")
+app.include_router(inefficient_space.router, prefix="/api")
 
 
 @app.get("/")
 async def root():
-    return {"message": "NaLaMap API is running"}
+    return {"message": "GeoAgent API is running"}
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "message": "NaLaMap API is running"}
+    return {"status": "healthy", "message": "GeoAgent API is running"}
 
 
 # Exception handlers

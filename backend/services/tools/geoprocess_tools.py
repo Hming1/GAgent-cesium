@@ -34,7 +34,7 @@ from services.tools.geoprocessing.ops.sjoin_nearest import op_sjoin_nearest
 
 # Imports of operation functions from geoprocessing ops and utils
 from services.tools.geoprocessing.utils import get_last_human_content
-from services.tools.utils import match_layer_names
+from services.tools.utils import resolve_input_layers
 
 
 def slugify(text: str) -> str:
@@ -102,6 +102,53 @@ def ensure_unique_name(name: str, existing_names: List[str], uuid_prefix: str = 
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+_AREA_GEOMETRY_TYPES = {"Polygon", "MultiPolygon"}
+
+
+def _layer_geometry_types(layer: dict) -> set:
+    """Geometry types present in a GeoJSON FeatureCollection."""
+    types = set()
+    for feature in layer.get("features") or []:
+        geom_type = ((feature or {}).get("geometry") or {}).get("type")
+        if geom_type:
+            types.add(geom_type)
+    return types
+
+
+def _order_layers_for_op(op_name: str, layers: list, params: dict) -> list:
+    """Swap inputs when a mask-style operation is given its layers backwards.
+
+    ``clip``/``overlay``/``sjoin`` treat ``layers[0]`` as the target and
+    ``layers[1]`` as the mask/right side. A point (or line) layer can never serve
+    as a clip mask, so if the *second* slot holds the only polygonal layer the
+    caller meant the opposite order. Silently correcting this keeps the operation
+    aligned with intent instead of failing with an opaque shapely type error.
+    """
+    if op_name not in {"clip", "overlay", "sjoin"}:
+        return layers
+    if not isinstance(layers, list) or len(layers) < 2:
+        return layers
+    first, second = layers[0], layers[1]
+    if not isinstance(first, dict) or not isinstance(second, dict):
+        return layers
+    first_types = _layer_geometry_types(first)
+    second_types = _layer_geometry_types(second)
+    first_is_area = bool(first_types & _AREA_GEOMETRY_TYPES)
+    second_is_area = bool(second_types & _AREA_GEOMETRY_TYPES)
+    # Correct usage: mask (layer[1]) is the polygonal one, target (layer[0]) is not.
+    # If only layer[0] is polygonal, the arguments are reversed.
+    if first_is_area and not second_is_area:
+        logger.info(
+            "geoprocess_tool: swapping layers for %s "
+            "(first=%s, second=%s) so the polygon acts as the mask",
+            op_name,
+            sorted(first_types),
+            sorted(second_types),
+        )
+        return [second, first] + list(layers[2:])
+    return layers
+
 
 # Registry of available tools
 TOOL_REGISTRY = {
@@ -237,7 +284,7 @@ def geoprocess_executor(state: Dict[str, Any]) -> Dict[str, Any]:
     }
     user_msg = json.dumps(user_payload)
 
-    # Use LangChain chat generate methods since AzureChatOpenAI doesn't have .chat()
+    # Use LangChain chat generate methods for provider-compatible model invocation
     from langchain_core.messages import SystemMessage
 
     messages = [
@@ -293,6 +340,11 @@ def geoprocess_executor(state: Dict[str, Any]) -> Dict[str, Any]:
         params = step.get("params", {})
         func = TOOL_REGISTRY.get(op_name)
         if func:
+            # Clip/overlay/sjoin are order sensitive: layers[0] is the target and
+            # layers[1] the mask. The planner sometimes emits the polygon second,
+            # which makes shapely reject a point-layer mask. Swap when the order
+            # is detectably wrong so the operation still does what was asked.
+            result = _order_layers_for_op(op_name, result, params)
             # Check if user specified a CRS parameter
             user_specified_crs = params.get("crs") or params.get("buffer_crs")
 
@@ -332,7 +384,6 @@ def geoprocess_executor(state: Dict[str, Any]) -> Dict[str, Any]:
             result = func(result, **params)
             executed_ops.append(op_name)
             executed_steps.append({"operation": op_name, "params": params})
-
     # Create a detailed record of the operation
     operation_details = {
         "query": query,
@@ -357,47 +408,47 @@ def geoprocess_tool(
     operation: Optional[str] = None,
 ) -> Union[Dict[str, Any], Command]:
     """
-    Tool to geoprocess specific geospatial layers from the state.
+    对状态中指定的地理空间图层执行地理处理操作。
 
     Args:
-        state: The agent state containing geodata_layers
-        tool_call_id: ID for this tool call
-        target_layer_ids: IDs of the specific layers to process. Try to provide and to read out from state.
-        operation: Optional operation hint (buffer, overlay, etc.)
+        state: 包含 geodata_layers 的智能体状态
+        tool_call_id: 本次工具调用的 ID
+        target_layer_names: 要处理的图层名称列表，请尽量提供并从状态中读取。
+        operation: 可选的操作提示（buffer、overlay 等）
 
-    The tool will apply operations like buffer, overlay, simplify, sjoin, merge, sjoin_nearest, centroid to the specified layers.
+    该工具会对指定图层执行缓冲区(buffer)、叠加(overlay)、简化(simplify)、
+    空间连接(sjoin)、合并(merge)、最近邻连接(sjoin_nearest)、质心(centroid)等操作。
     """
-    # Safely pull out the list (defaults to [] if key missing or None)
-    # 安全地提取列表（如果缺少键或为 None，则默认为 []）
-    layers = state.get("geodata_layers") or []
+    # Named lookups must also see geodata_results (fresh buffer/clip outputs),
+    # otherwise the model is forced to add_layers_to_map mid-pipeline.
     messages = state.get("messages") or []
 
-    if not layers:
-        return Command(
-            update={
-                "messages": [
-                    ToolMessage(
-                        name="geoprocess_tool",
-                        content="Error: No geodata layers found in state. Please add or select layers first.",
-                        tool_call_id=tool_call_id,
-                        status="error",
-                    )
-                ]
-            }
-        )
-
-    # Select layers by ID or default to first
     if target_layer_names:
-        selected = match_layer_names(layers, target_layer_names)
+        selected = resolve_input_layers(state, target_layer_names)
         missing = len(target_layer_names) - len(selected)
         if missing:
-            all_available = [{"name": layer.name, "title": layer.title} for layer in layers]
+            seen_ids = set()
+            avail_pool = []
+            for source in ("geodata_layers", "geodata_results", "geodata_last_results"):
+                for layer in state.get(source) or []:
+                    layer_id = getattr(layer, "id", None)
+                    if layer_id is not None:
+                        if layer_id in seen_ids:
+                            continue
+                        seen_ids.add(layer_id)
+                    avail_pool.append(layer)
+            all_available = [{"name": layer.name, "title": layer.title} for layer in avail_pool]
             return Command(
                 update={
                     "messages": [
                         ToolMessage(
                             name="geoprocess_tool",
-                            content=f"Error: Layer Names not found: {missing}. Available layers: {json.dumps(all_available)}",
+                            content=(
+                                f"Error: Layer Names not found: {missing}. "
+                                f"Available layers: {json.dumps(all_available)}. "
+                                "Do NOT re-run the previous geoprocess; pick a name "
+                                "from the available list or call add_layers_to_map once."
+                            ),
                             tool_call_id=tool_call_id,
                             status="error",
                         )
@@ -405,134 +456,104 @@ def geoprocess_tool(
                 }
             )
     else:
-        selected = layers
+        selected = resolve_input_layers(state)
+        if not selected:
+            return Command(
+                update={
+                    "messages": [
+                        ToolMessage(
+                            name="geoprocess_tool",
+                            content="Error: No geodata layers found in state. Please add or select layers first.",
+                            tool_call_id=tool_call_id,
+                            status="error",
+                        )
+                    ]
+                }
+            )
 
     # Name derived from input layer
     result_name = selected[0].name if selected else ""
 
-    # Load GeoJSONs from either local disk or remote URL
+    # Load GeoJSONs from either local disk or remote URL. PostGIS-backed
+    # layers are accepted when their data_link exposes a readable GeoJSON stream.
     input_layers: List[Dict[str, Any]] = []
     layer_titles: List[str] = []  # Track layer titles for origin_layers metadata
+    load_failures: List[Dict[str, Any]] = []
+
     for layer in selected:
-        if layer.data_type not in (DataType.GEOJSON, DataType.UPLOADED):
-            continue
-
-        # Store layer title for metadata
-        layer_titles.append(layer.title or layer.name)
-
         url = layer.data_link
         gj: Optional[Dict[str, Any]] = None
 
-        # 1) If the URL matches BASE_URL/uploads/, load from LOCAL_UPLOAD_DIR
-        if url.startswith(f"{BASE_URL}/uploads/"):
-            filename = os.path.basename(url)
-            local_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
-            try:
+        try:
+            if not url:
+                raise IOError("Layer has no data_link to load")
+
+            if url.startswith(f"{BASE_URL}/uploads/"):
+                filename = os.path.basename(url)
+                local_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
+                if not os.path.isfile(local_path):
+                    raise IOError(f"Local upload file not found: {local_path}")
                 with open(local_path, "r", encoding="utf-8") as f:
                     gj = json.load(f)
-            except Exception as exc:
-                return {
-                    "update": {
-                        "messages": [
-                            ToolMessage(
-                                name="geoprocess_tool",
-                                content=f"Error: Failed to read local file '{local_path}': {exc}",
-                                tool_call_id=tool_call_id,
-                                status="error",
-                            )
-                        ]
-                    }
-                }
-
-        # 2) Else if url is a local filesystem path
-        elif os.path.isfile(url):
-            try:
+            elif os.path.isfile(url):
                 with open(url, "r", encoding="utf-8") as f:
                     gj = json.load(f)
-            except Exception as exc:
-                return {
-                    "update": {
-                        "messages": [
-                            ToolMessage(
-                                name="geoprocess_tool",
-                                content=f"Error: Failed to read local file '{url}': {exc}",
-                                tool_call_id=tool_call_id,
-                                status="error",
-                            )
-                        ]
-                    }
-                }
-
-        # 3) Else if url is under LOCAL_UPLOAD_DIR by filename
-        else:
-            filename = os.path.basename(url)
-            local_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
-            if os.path.isfile(local_path):
-                try:
+            else:
+                filename = os.path.basename(url)
+                local_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
+                if os.path.isfile(local_path):
                     with open(local_path, "r", encoding="utf-8") as f:
                         gj = json.load(f)
-                except Exception as exc:
-                    return {
-                        "update": {
-                            "messages": [
-                                ToolMessage(
-                                    name="geoprocess_tool",
-                                    content=f"Error: Failed to read local file '{local_path}': {exc}",
-                                    tool_call_id=tool_call_id,
-                                    status="error",
-                                )
-                            ]
-                        }
-                    }
 
-        # 4) Else if it looks like a remote URL, fetch via requests
-        if gj is None:
-            if url.startswith("http://") or url.startswith("https://"):
-                try:
+            if gj is None:
+                if url.startswith("http://") or url.startswith("https://"):
                     resp = requests.get(url, timeout=20)
                     if resp.status_code != 200:
                         raise IOError(f"HTTP {resp.status_code} when fetching {url}")
                     gj = resp.json()
-                except Exception as exc:
-                    return {
-                        "update": {
-                            "messages": [
-                                ToolMessage(
-                                    name="geoprocess_tool",
-                                    content=f"Error: Failed to fetch GeoJSON from '{url}': {exc}",
-                                    tool_call_id=tool_call_id,
-                                    status="error",
-                                )
-                            ]
-                        }
-                    }
-            else:
-                return {
-                    "update": {
-                        "messages": [
-                            ToolMessage(
-                                name="geoprocess_tool",
-                                content=f"Error: GeoJSON path '{url}' is neither a local file nor a valid HTTP URL.",
-                                tool_call_id=tool_call_id,
-                                status="error",
-                            )
-                        ]
-                    }
-                }
+                else:
+                    raise IOError(
+                        f"GeoJSON path '{url}' is neither a local file nor a valid HTTP URL."
+                    )
 
-        # Normalize to FeatureCollection
-        if isinstance(gj, list):
-            gj = gj[0]
-        if gj.get("type") == "FeatureCollection":
-            input_layers.append(gj)
-        elif gj.get("type") == "Feature":
-            input_layers.append(
+            if isinstance(gj, list):
+                gj = gj[0] if gj else {}
+            if isinstance(gj, dict) and gj.get("type") == "FeatureCollection":
+                input_layers.append(gj)
+                layer_titles.append(layer.title or layer.name)
+            elif isinstance(gj, dict) and gj.get("type") == "Feature":
+                input_layers.append({"type": "FeatureCollection", "features": [gj]})
+                layer_titles.append(layer.title or layer.name)
+            else:
+                raise IOError("Loaded data is not a GeoJSON Feature or FeatureCollection")
+        except Exception as exc:
+            load_failures.append(
                 {
-                    "type": "FeatureCollection",
-                    "features": [gj],
+                    "name": layer.name,
+                    "title": layer.title,
+                    "data_type": str(layer.data_type),
+                    "data_link": url,
+                    "error": str(exc),
                 }
             )
 
+    if not input_layers:
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        name="geoprocess_tool",
+                        content=(
+                            "Error: No target layers could be loaded as GeoJSON for "
+                            "geoprocessing. Load failures: "
+                            f"{json.dumps(load_failures, ensure_ascii=False)}"
+                        ),
+                        tool_call_id=tool_call_id,
+                        status="error",
+                    )
+                ]
+            }
+        )
     query = get_last_human_content(messages)
     # If operation was specified, add it to the query for better context
     if operation:
@@ -596,13 +617,22 @@ def geoprocess_tool(
     try:
         # Run the executor
         final_state = geoprocess_executor(processing_state)
-    except ValueError as e:
+    except Exception as e:
+        # Catch every failure, not just ValueError: an unexpected error used to
+        # bubble up as an HTTP 500, so the agent never saw a readable reason and
+        # could not recover.
+        logger.exception("geoprocess_tool: execution failed")
         return Command(
             update={
                 "messages": [
                     ToolMessage(
                         name="geoprocess_tool",
-                        content=f"Error: {str(e)}\n Please fix your mistakes.",
+                        content=(
+                            f"Error: {type(e).__name__}: {str(e)}\n"
+                            "The operation could not be completed. Do not retry the "
+                            "same call; report the failure to the user and propose "
+                            "an alternative."
+                        ),
                         tool_call_id=tool_call_id,
                         status="error",
                     )
@@ -615,6 +645,22 @@ def geoprocess_tool(
     tools_used = final_state.get("tool_sequence", [])
     operation_details = final_state.get("operation_details", {})
 
+    if not result_layers:
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        name="geoprocess_tool",
+                        content=(
+                            "Error: Geoprocess operation produced 0 output layers. "
+                            f"Operations: {', '.join(tools_used) if tools_used else 'none'}."
+                        ),
+                        tool_call_id=tool_call_id,
+                        status="error",
+                    )
+                ]
+            }
+        )
     # Get LLM-generated title and description if available
     llm_title = final_state.get("result_name", "")
     llm_description = final_state.get("result_description", "")
@@ -711,7 +757,7 @@ def geoprocess_tool(
             )
             raise
 
-        # Use centralized file management (supports both local and Azure Blob Storage)
+        # Use centralized file management (uses local file storage)
         logger.info(f"geoprocess_tool: Storing file: {filename}")
         url, stored_filename = store_file(filename, json_content)
         logger.info(f"geoprocess_tool: File stored successfully: {url}")
@@ -751,7 +797,7 @@ def geoprocess_tool(
                 data_source_id="geoprocess",
                 data_type=DataType.GEOJSON,
                 data_origin=DataOrigin.TOOL,
-                data_source="NaLaMapGeoprocess",
+                data_source="GeoAgentGeoprocess",
                 data_link=url,
                 name=unique_name,
                 title=display_title,
@@ -784,7 +830,7 @@ def geoprocess_tool(
     for r in new_geodata:
         if r.processing_metadata:
             pm = r.processing_metadata
-            auto_status = "🎯 AUTO-SELECTED" if pm.auto_selected else "USER-SPECIFIED"
+            auto_status = "馃幆 AUTO-SELECTED" if pm.auto_selected else "USER-SPECIFIED"
             crs_msg = f"{r.title}: Used {pm.crs_used} ({pm.crs_name}) {auto_status}"
             if pm.auto_selected and pm.selection_reason:
                 crs_msg += f" - {pm.selection_reason}"

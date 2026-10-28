@@ -3,7 +3,7 @@
 **Last Updated**: October 14, 2025
 
 This guide walks through setting up a PostGIS database and using Alembic to manage schema migrations
-for the NaLaMap backend, which uses async SQLAlchemy ORM models.
+for the GeoAgent backend, which uses async SQLAlchemy ORM models.
 
 ---
 
@@ -22,13 +22,13 @@ for the NaLaMap backend, which uses async SQLAlchemy ORM models.
 
 ## Overview
 
-NaLaMap backend defines its data models (e.g. `User`) via SQLAlchemy ORM and stores data in a PostGIS-enabled PostgreSQL database.
+GeoAgent backend defines its data models (e.g. `User`) via SQLAlchemy ORM and stores data in a PostGIS-enabled PostgreSQL database.
 Alembic provides a lightweight way to generate and apply schema migrations based on these ORM models.
 
 ## Prerequisites
 
 - PostgreSQL with PostGIS extension installed and running.
-- `DATABASE_AZURE_URL` (or `DATABASE_URL`) environment variable pointing to your PostGIS database.
+- `DATABASE_URL` environment variable pointing to your local PostGIS database.
 - Backend dependencies installed via Poetry.
 
 ## Configure Environment Variables
@@ -36,10 +36,7 @@ Alembic provides a lightweight way to generate and apply schema migrations based
 Ensure your `.env` (or environment) contains a database URL:
 
 ```ini
-# PostGIS-enabled database for local development
-DATABASE_URL=postgis://<user>:<password>@<host>:5432/<database>
-# Or for Azure PostgreSQL
-DATABASE_AZURE_URL=postgresql://<user>@<host>.postgres.database.azure.com:5432/<database>
+DATABASE_URL=postgresql://app:app@localhost:5432/app
 ```
 
 ## Install Dependencies
@@ -127,4 +124,4 @@ poetry run alembic downgrade -1
 
 ---
 
-_This guide is part of the NaLaMap documentation suite._
+_This guide is part of the GeoAgent documentation suite._

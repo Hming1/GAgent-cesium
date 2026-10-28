@@ -26,6 +26,7 @@ def op_area(
     area_column: str = "area",
     auto_optimize_crs: bool = False,
     projection_metadata: bool = False,
+    override_crs: str | None = None,
 ) -> List[Dict[str, Any]]:
     """
     Calculate the area of each geometry and add it as a property.
@@ -41,6 +42,9 @@ def op_area(
         area_column: Name of the property to store the area value
         auto_optimize_crs: Enable smart CRS selection (recommended)
         projection_metadata: Include CRS metadata in response
+        override_crs: Force a specific CRS (set by geoprocess_tool when the
+            planner/user supplies ``crs``). Must be accepted so callers do not
+            crash with ``unexpected keyword argument 'override_crs'``.
 
     Returns:
         List of FeatureCollections with area property added to each feature
@@ -91,13 +95,13 @@ def op_area(
                 gdf.set_crs("EPSG:4326", inplace=True)
 
             # Planar area calculation with smart CRS selection
-            if auto_optimize_crs:
-                # Use smart equal-area CRS selection
+            effective_override = override_crs or (None if crs == "EPSG:3857" else crs)
+            if auto_optimize_crs or effective_override:
                 gdf_calc, crs_info = prepare_gdf_for_operation(
                     gdf,
                     OperationType.AREA,
-                    auto_optimize_crs=True,
-                    override_crs=(None if crs == "EPSG:3857" else crs),
+                    auto_optimize_crs=auto_optimize_crs and not effective_override,
+                    override_crs=effective_override,
                 )
             else:
                 # Use default or specified CRS

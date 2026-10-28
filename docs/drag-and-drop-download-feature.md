@@ -2,7 +2,7 @@
 
 ## Overview
 
-The download button for GeoJSON layers now supports **drag-and-drop functionality**, allowing users to drag layers directly from the NaLaMap interface to their desktop or into other applications like QGIS, ArcGIS, or text editors.
+The download button for GeoJSON layers now supports **drag-and-drop functionality**, allowing users to drag layers directly from the GeoAgent interface to their desktop or into other applications like QGIS, ArcGIS, or text editors.
 
 ## How It Works
 
@@ -118,7 +118,7 @@ Located in: `frontend/tests/layer-management.spec.ts`
 
 ### QGIS
 1. Open QGIS
-2. Drag download button from NaLaMap directly into QGIS map canvas
+2. Drag download button from GeoAgent directly into QGIS map canvas
 3. Layer loads automatically
 
 ### ArcGIS Pro

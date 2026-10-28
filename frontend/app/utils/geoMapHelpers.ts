@@ -96,6 +96,42 @@ if (typeof window !== "undefined") {
 }
 
 // ============================================
+// LAYER DATA URL HELPERS
+// ============================================
+
+const STREAM_MARKER = "/api/stream/";
+
+/**
+ * Rewrite agent/backend data_link values so the browser always hits the same
+ * API base the frontend uses (relative `/api` or absolute host).
+ *
+ * Backend `store_file` embeds `BASE_URL` (often an external IP). When the UI
+ * talks to the API via nginx `/api` or localhost, those absolute links 404 /
+ * CORS-fail and Cesium silently skips rendering.
+ */
+export function resolveLayerDataUrl(dataLink: string | undefined | null): string {
+  if (!dataLink) return "";
+
+  const trimmed = dataLink.trim();
+  if (!trimmed) return "";
+
+  const streamIdx = trimmed.indexOf(STREAM_MARKER);
+  if (streamIdx !== -1) {
+    const filename = trimmed.slice(streamIdx + STREAM_MARKER.length);
+    if (!filename) return trimmed;
+    const apiBase = getApiBase().replace(/\/$/, "");
+    return `${apiBase}/stream/${filename}`;
+  }
+
+  // Relative API paths already match getApiBase() — leave as-is.
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+
+  return trimmed;
+}
+
+// ============================================
 // CORS PROXY HELPER
 // ============================================
 
@@ -203,7 +239,7 @@ export function parseWMTSUrl(access_url: string) {
 
     const versionParam =
       originalParams.get("version") || originalParams.get("VERSION") || "";
-    let version = versionParam;
+    const version = versionParam;
 
     let layerName = originalParams.get("layer") || originalParams.get("LAYER");
 

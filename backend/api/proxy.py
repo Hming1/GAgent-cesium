@@ -110,7 +110,7 @@ async def proxy_geojson(
             request_url,
             headers={
                 "Accept": "application/json, application/geo+json, */*;q=0.1",
-                "User-Agent": "NaLaMap-Proxy/1.0 (github.com/nalamap)",
+                "User-Agent": "GeoAgent-Proxy/1.0 (github.com/nalamap)",
             },
             timeout=REQUEST_TIMEOUT,
             stream=True,
@@ -216,7 +216,7 @@ async def proxy_image(
             url,
             headers={
                 "Accept": "image/png, image/jpeg, image/gif, image/webp, image/svg+xml, */*",
-                "User-Agent": "NaLaMap-Proxy/1.0 (github.com/nalamap)",
+                "User-Agent": "GeoAgent-Proxy/1.0 (github.com/nalamap)",
             },
             timeout=REQUEST_TIMEOUT,
             stream=True,

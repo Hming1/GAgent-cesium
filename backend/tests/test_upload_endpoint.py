@@ -1,3 +1,4 @@
+import hashlib
 import importlib
 import io
 import os
@@ -103,6 +104,8 @@ def test_get_upload_meta_allows_nested_path(client):
     payload = resp.json()
     assert payload["id"] == "nested/data.txt"
     assert payload["size"] == "3"
+    assert payload["storage"] == "local"
+    assert payload["sha256"] == hashlib.sha256(b"abc").hexdigest()
 
 
 def test_get_upload_meta_rejects_traversal(client, tmp_path):

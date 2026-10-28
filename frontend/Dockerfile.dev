@@ -4,12 +4,11 @@
 #
 # 1. Install dependencies layer
 #
-FROM node:25-alpine AS deps
+# Prefer debian/slim: many local caches already have node:*-slim, while
+# alpine pulls often fail when Docker Hub auth is unreachable in CN networks.
+FROM node:25-slim AS deps
 
 WORKDIR /app
-
-# glibc compatibility for some native modules
-RUN apk add --no-cache libc6-compat
 
 # copy only manifests & install
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
@@ -27,7 +26,7 @@ RUN \
 #
 # 2. Dev image
 #
-FROM node:25-alpine AS dev
+FROM node:25-slim AS dev
 
 WORKDIR /app
 

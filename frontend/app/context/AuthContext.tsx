@@ -12,7 +12,12 @@ interface AuthContextValue {
   // undefined = loading, null = not authenticated, User = authenticated
   user: User | null | undefined;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    displayName: string,
+    inviteToken: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -33,13 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(data);
           return;
         }
-      } catch (err) {
+      } catch {
         // ignored - treat as not authenticated
       }
       setUser(null);
     }
     fetchMe();
-  }, []);
+  }, [apiBase]);
 
   async function login(email: string, password: string) {
     const res = await fetch(`${apiBase}/auth/login`, {
@@ -53,14 +58,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   }
 
-  async function signup(email: string, password: string, displayName: string) {
+  async function signup(
+    email: string,
+    password: string,
+    displayName: string,
+    inviteToken: string
+  ) {
     const res = await fetch(`${apiBase}/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ email, password, display_name: displayName }),
+      body: JSON.stringify({ email, password, display_name: displayName, invite_token: inviteToken }),
     });
-    if (!res.ok) throw new Error("注册失败");
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || "注册失败");
+    }
     const data = await res.json();
     setUser(data.user);
   }
@@ -69,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // clear cookie on server
     try {
       await fetch(`${apiBase}/auth/logout`, { method: "POST", credentials: "include" });
-    } catch (err) {
+    } catch {
       // best-effort; still clear local auth state
     }
     setUser(null);

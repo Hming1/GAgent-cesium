@@ -45,7 +45,12 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
-def create_oauth_state(provider: str, redirect_url: str, expires_minutes: int = 10) -> str:
+def create_oauth_state(
+    provider: str,
+    redirect_url: str,
+    expires_minutes: int = 10,
+    invite_hash: str | None = None,
+) -> str:
     """Create a short-lived signed state token for OIDC flows."""
     now = datetime.utcnow()
     payload = {
@@ -55,6 +60,8 @@ def create_oauth_state(provider: str, redirect_url: str, expires_minutes: int = 
         "exp": now + timedelta(minutes=expires_minutes),
         "iat": now,
     }
+    if invite_hash:
+        payload["invite_hash"] = invite_hash
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 

@@ -69,3 +69,38 @@ async def test_sandbox_client_requires_base_url():
 
     with pytest.raises(SandboxClientError):
         await client.execute(SandboxExecutionRequest(analysis_goal="test"))
+
+
+@pytest.mark.asyncio
+async def test_sandbox_client_coerces_string_geojson_outputs(monkeypatch):
+    """Agents often append gdf.to_json() strings; accept and coerce to dict."""
+    import json
+
+    fc = {"type": "FeatureCollection", "features": []}
+    fake_client = FakeAsyncClient(
+        FakeResponse(
+            {
+                "ok": True,
+                "summary": "completed",
+                "result": {"n": 1},
+                "artifacts": [],
+                "geojson_outputs": [
+                    {
+                        "name": "clipped",
+                        "title": "Clipped",
+                        "geojson": json.dumps(fc),
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setattr(
+        "services.sandbox.client.httpx.AsyncClient",
+        lambda timeout: fake_client,
+    )
+
+    client = SandboxClient(base_url="http://sandbox:8080", timeout=3)
+    response = await client.execute(SandboxExecutionRequest(analysis_goal="test"))
+
+    assert response.ok is True
+    assert response.geojson_outputs[0].geojson == fc

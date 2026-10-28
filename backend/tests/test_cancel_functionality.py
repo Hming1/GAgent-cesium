@@ -85,7 +85,24 @@ def test_cancel_endpoint_exists(client):
     assert response.status_code == 200
     result = response.json()
     assert "status" in result
+    assert result["status"] == "cancellation_requested"
     assert result["session_id"] == "test_session"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cancel_stream_id_matches_frontend_format():
+    """Frontend cancels with ephemeral stream_* ids, not the durable session_id."""
+    stream_id = "stream_1710000000000_abc123xyz"
+
+    response_client = TestClient(app)
+    response = response_client.post(f"/api/chat/cancel?session_id={stream_id}")
+    assert response.status_code == 200
+    assert response.json()["session_id"] == stream_id
+    assert await is_cancelled(stream_id) is True
+
+    await clear_cancellation(stream_id)
+    assert await is_cancelled(stream_id) is False
 
 
 @pytest.mark.unit

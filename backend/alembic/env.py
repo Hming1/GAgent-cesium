@@ -6,6 +6,13 @@ import sys
 from pathlib import Path
 from logging.config import fileConfig
 
+# psycopg async connections require a selector event loop on Windows.
+if sys.platform.startswith("win"):
+    policy_cls = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
+    if policy_cls is not None:
+        asyncio.set_event_loop_policy(policy_cls())
+
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 
@@ -38,8 +45,8 @@ if DATABASE_URL:
 
 # Import your ORM's Base and models so Alembic can autogenerate
 from db.base import Base  # noqa: E402
-
-# from db.models.user import User  # noqa: E402
+from db.session import make_async_database_url  # noqa: E402
+import db.models  # noqa: E402, F401
 
 target_metadata = Base.metadata
 
@@ -69,11 +76,11 @@ def do_run_migrations(connection: Connection):
 async def run_migrations_online():
     """Run migrations in 'online' mode using an AsyncEngine."""
     url = config.get_main_option("sqlalchemy.url")
-    # support postgis:// scheme
-    if url and url.startswith("postgis://"):
-        url = url.replace("postgis://", "postgresql+psycopg://", 1)
+    async_url = make_async_database_url(url) if url else None
+    if not async_url:
+        raise RuntimeError("Alembic requires a supported DATABASE_URL")
 
-    connectable = create_async_engine(url, poolclass=pool.NullPool)
+    connectable = create_async_engine(async_url, poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

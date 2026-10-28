@@ -116,6 +116,7 @@ def op_dissolve(
 
         return [fc]
 
-    except Exception as exc:
-        logger.exception(f"Error in op_dissolve: {exc}")
-        return []
+    except Exception:
+        # Surface the failure instead of returning an empty
+        # result, which callers cannot distinguish from "no matches".
+        raise

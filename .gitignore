@@ -10,6 +10,7 @@ docs/sessions/
 *.orig
 
 backend/uploads/
+backend/tests/_tmp_style_fixtures/
 
 # Created by git when using merge tools for conflicts
 *.BACKUP.*
@@ -146,6 +147,8 @@ celerybeat.pid
 # Environments
 .env*
 !.env.example
+!.env.local.example
+!.env.external.example
 !backend/.env.local
 !frontend/.env.local
 .venv
@@ -518,3 +521,19 @@ test-results/.last-run.json
 
 # Editor and manual backup copies.
 *.backup-*
+
+# Offline wheelhouse used to build the analysis sandbox without network access
+sandbox/_wheels/
+
+# Local backups, slide decks, reports, and assistant scratch.
+/backups/
+/reports/
+/NaLaMap阶段工作汇报/
+.workbuddy/
+.slidep/
+.agents/
+
+# One-off eval run outputs. Keep harness code and cases; drop results.
+/backend/evals/live/runs/
+/backend/evals/live/results_*.json
+/backend/test-results/

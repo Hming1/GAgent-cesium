@@ -112,14 +112,16 @@ class TestLargeAttributeDatasets:
         assert "ORIG_NAME" in col_names
 
     def test_list_fields_with_many_attributes(self, large_attribute_gdf):
-        """Test list_fields returns all attributes including extra ones."""
+        """Test list_fields returns prioritized attributes for wide tables."""
         result = list_fields_gdf(large_attribute_gdf)
 
         assert "fields" in result
         assert result["row_count"] == 50
-
-        # Should have all columns (40+ attributes)
-        assert len(result["fields"]) > 40
+        assert result["total_fields"] > 40
+        # Cap keeps chat/SSE payloads browser-safe for OSM-wide schemas.
+        assert len(result["fields"]) <= result["total_fields"]
+        assert len(result["fields"]) >= 20
+        assert any(f["name"] == "NAME" for f in result["fields"])
 
     def test_filter_with_many_attributes_present(self, large_attribute_gdf):
         """Test that filtering works even with many attributes in the dataframe."""

@@ -1,22 +1,29 @@
 """
-Dynamic Tool Selector for NaLaMap Agent.
+Dynamic Tool Selector for GeoAgent Agent.
 
 Intelligently selects relevant tools based on query analysis using semantic similarity
 instead of keyword matching to support multiple languages.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
-from langchain_core.tools import BaseTool
 from langchain_core.embeddings import Embeddings
+from langchain_core.tools import BaseTool
+
+from services.agent_skills import build_selector_tool_metadata, required_tool_keys_for_query
+from services.agent_skills.base import SelectorToolMetadata as ToolMetadata
 
 logger = logging.getLogger(__name__)
 
 # Module-level storage for last selector metrics (Week 3 - Performance Monitoring)
 _last_selector_metrics: Optional[Dict[str, Any]] = None
+
+
+# Tool metadata for semantic matching. Skill modules own the descriptions so the
+# selector and default agent settings stay in sync.
+TOOL_METADATA: Dict[str, ToolMetadata] = build_selector_tool_metadata()
 
 
 def get_last_selector_metrics() -> Optional[Dict[str, Any]]:
@@ -36,119 +43,6 @@ class SelectionStrategy(str, Enum):
     SEMANTIC = "semantic"  # Use semantic similarity with embeddings
     CONSERVATIVE = "conservative"  # Always include common tools + semantic
     MINIMAL = "minimal"  # Only most relevant tools
-
-
-@dataclass
-class ToolMetadata:
-    """Metadata for semantic tool matching."""
-
-    name: str
-    category: str
-    description: str  # Semantic description for embedding
-    always_include: bool = False  # Core tools that should always be available
-    usage_weight: float = 1.0  # Boost factor based on usage frequency
-
-
-# Tool metadata for semantic matching
-# These descriptions are semantic and work across languages
-TOOL_METADATA = {
-    # Geocoding & Location Tools
-    "geocode_using_nominatim_to_geostate": ToolMetadata(
-        name="geocode_using_nominatim_to_geostate",
-        category="geocoding",
-        description=(
-            "Find geographic coordinates and locations by address or place name. "
-            "Search for cities, countries, addresses, points of interest. "
-            "Convert text location to map coordinates."
-        ),
-    ),
-    "geocode_using_overpass_to_geostate": ToolMetadata(
-        name="geocode_using_overpass_to_geostate",
-        category="geocoding",
-        description=(
-            "Search OpenStreetMap for places, buildings, amenities, natural features. "
-            "Find restaurants, shops, parks, rivers, mountains by name or type. "
-            "Query geographic features from OpenStreetMap database."
-        ),
-    ),
-    # Metadata & Discovery
-    "metadata_search": ToolMetadata(
-        name="metadata_search",
-        category="metadata",
-        description=(
-            "Search for geographic datasets, layers, and data sources. "
-            "Find available data portals, geospatial data catalogs. "
-            "Discover what geographic data is available."
-        ),
-        always_include=True,  # Core tool
-    ),
-    # Geoprocessing & Analysis
-    "geoprocess_tool": ToolMetadata(
-        name="geoprocess_tool",
-        category="geoprocessing",
-        description=(
-            "Perform spatial analysis operations: buffer, clip, intersect, union, difference. "
-            "Calculate distances, areas, create zones around features. "
-            "Combine, overlay, and analyze geographic layers."
-        ),
-    ),
-    # Styling & Visualization
-    "style_map_layers": ToolMetadata(
-        name="style_map_layers",
-        category="styling",
-        description=(
-            "Change colors, symbols, and appearance of map layers. "
-            "Apply visual styles, themes, and color schemes to geographic data. "
-            "Customize how layers are displayed on the map."
-        ),
-    ),
-    "auto_style_new_layers": ToolMetadata(
-        name="auto_style_new_layers",
-        category="styling",
-        description=(
-            "Automatically apply appropriate visual styles to newly loaded data. "
-            "Smart styling based on data type and attributes. "
-            "Color and symbolize new layers intelligently."
-        ),
-    ),
-    "check_and_auto_style_layers": ToolMetadata(
-        name="check_and_auto_style_layers",
-        category="styling",
-        description=(
-            "Verify and improve existing layer styling. "
-            "Check if layers have good visual appearance and update if needed. "
-            "Ensure all layers are properly styled and visible."
-        ),
-    ),
-    "apply_intelligent_color_scheme": ToolMetadata(
-        name="apply_intelligent_color_scheme",
-        category="styling",
-        description=(
-            "Apply sophisticated color schemes and palettes to layers. "
-            "Use color theory for better visualization and data distinction. "
-            "Create visually harmonious and accessible map colors."
-        ),
-    ),
-    # Attributes & Data
-    "attribute_tool": ToolMetadata(
-        name="attribute_tool",
-        category="attributes",
-        description=(
-            "Work with attribute data, properties, and fields of geographic features. "
-            "Query, filter, and analyze feature attributes and metadata. "
-            "Access data values associated with map features."
-        ),
-    ),
-    "attribute_tool2": ToolMetadata(
-        name="attribute_tool2",
-        category="attributes",
-        description=(
-            "Advanced attribute operations: get unique values, filter by properties. "
-            "Analyze feature characteristics and data fields. "
-            "Extract specific attribute information from layers."
-        ),
-    ),
-}
 
 
 class DynamicToolSelector:
@@ -292,6 +186,12 @@ class DynamicToolSelector:
             # Fallback to all tools
             return list(available_tools.keys()), {}
 
+    def _keyword_required_tools(
+        self, query: str, available_tools: Dict[str, BaseTool]
+    ) -> List[str]:
+        """Return tools that should be included for explicit Skill routing keywords."""
+        return required_tool_keys_for_query(query, available_tools.keys())
+
     def _conservative_selection(
         self, semantic_tools: List[str], available_tools: Dict[str, BaseTool]
     ) -> List[str]:
@@ -391,6 +291,10 @@ class DynamicToolSelector:
                 selected_names = self._minimal_selection(semantic_tools, similarities)
             else:  # SEMANTIC
                 selected_names = semantic_tools
+
+            for required_tool in self._keyword_required_tools(query, available_tools):
+                if required_tool not in selected_names:
+                    selected_names.append(required_tool)
 
             # Get tool instances
             selected_tools = [

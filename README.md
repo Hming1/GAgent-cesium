@@ -1,14 +1,15 @@
-# NaLaMap
+# GeoAgent
 
-NaLaMap is an open-source platform that helps users find and analyze geospatial data in a natural way. It combines modern web technologies with AI capabilities to create an intuitive interface for interacting with geographic information.
+GeoAgent is an open-source platform that helps users find and analyze geospatial data in a natural way. It combines modern web technologies with AI capabilities to create an intuitive interface for interacting with geographic information.
 
 ## Features
 
 * Upload and display vector data on a map. 
 * Geocode Locations using OSM and GeoNames (e.g. hospitals, schools, roads, railways). Intelligent geometry filtering ensures queries return the correct feature types (e.g., road segments instead of bus stops). See [OSM Geometry Filtering Documentation](docs/geocoding-osm-geometry-filtering.md).
 * Find and integrate data from existing Open Data Portals or own databases.
+* **Urban inefficient-space identification**：独立工作台按容积率、建筑密度、闲置年限、税收产出、用地性质等指标识别工业/商业/居住低效与闲置空地。See [Inefficient Space](docs/inefficient-space.md).
 * Chat with AI-agent to retrieve information on data content and quality.
-* **Multi-Provider LLM Support**: Choose from OpenAI, Azure OpenAI, Google Gemini, Mistral AI, or DeepSeek.
+* **Multi-Provider LLM Support**: Choose from vLLM, Kimi, or DeepSeek.
 * AI-assisted map and layer styling. 
 * Automated Geoprocessing using natural language (e.g buffer, centroids, intersections).
 * Create and share GIS-AI-Applications for people without geodata expertise based on custom use-cases, processing logic and data-sources.
@@ -22,7 +23,7 @@ NaLaMap is an open-source platform that helps users find and analyze geospatial 
 
 ## Versioning Strategy
 
-**NaLaMap follows [Semantic Versioning](https://semver.org/) for all releases using the format `MAJOR.MINOR.PATCH`:**
+**GeoAgent follows [Semantic Versioning](https://semver.org/) for all releases using the format `MAJOR.MINOR.PATCH`:**
 
 - **MAJOR** version increments for incompatible API changes, significant architectural changes, or breaking changes to existing functionality
 - **MINOR** version increments for new features, enhancements, or backwards-compatible functionality additions (e.g., new geospatial tools, additional data sources, UI improvements)
@@ -60,7 +61,7 @@ nalamap/
 > 📖 **For detailed architecture documentation**, see [ARCHITECTURE.md](ARCHITECTURE.md)  
 > 🤖 **For AI agent development guidelines**, see [AGENTS.md](AGENTS.md)
 ## Simplified Entitiy Relationship Model
-The following model was created to give you a high level overview of how NaLaMap works. It shows an example user-request to change the sytling of a vector layer in the map. 
+The following model was created to give you a high level overview of how GeoAgent works. It shows an example user-request to change the sytling of a vector layer in the map. 
 <img width="950" height="534" alt="image" src="https://github.com/user-attachments/assets/6a09918a-fbd0-4860-a362-a5d4f55e871a" />
 
 
@@ -95,10 +96,12 @@ cp .env.example .env
 **Configure your environment variables:**
 Edit the `.env` file to include your configuration. The environment file contains several categories of settings:
 
-- **AI Provider Configuration**: Choose between OpenAI, Azure OpenAI, Google AI, Mistral AI, or DeepSeek and provide the corresponding API keys
-- **Database Settings**: PostgreSQL connection details (a demo database is pre-configured)
+- **AI Provider Configuration**: Choose between vLLM, Kimi, or DeepSeek and provide the corresponding API keys
+- **Database Settings**: Local PostGIS databases provided by Docker Compose (`app` and `layers`)
 - **API Endpoints**: Backend API base URL configuration
+- **Registration Security**: New accounts require one-time invitations by default. See [Invitation-only registration](docs/invite-registration.md).
 - **Optional Services**: LangSmith tracing for monitoring AI interactions
+- **Geocoding fallbacks**: Set `AMAP_WEB_SERVICE_KEY` (Web Service key) and/or `BAIDU_GEOCODING_AK` in `.env`. Nominatim is tried first for place/boundary lookup, then Amap, then Baidu. For **domestic POI search** (schools, hospitals, etc.), Amap Place Search is preferred when the location looks Chinese and `AMAP_WEB_SERVICE_KEY` is set; Overpass/OSM is the fallback overseas or when Amap returns nothing. Coordinates from Chinese providers are converted to WGS84 for GeoJSON.
 
 **Map / WMTS Projection Safety**:
 
@@ -112,46 +115,38 @@ Set to `false` to allow all WMTS layers (may lead to visual misalignment unless 
 
 Details: see `docs/wmts.md`.
 
-> **Note**: The `.env.example` includes a demo database connection that you can use for testing. For production use, configure your own database credentials.
+> **Note**: The default database URLs connect only to the local PostGIS container. Change the local credentials before exposing the deployment beyond your machine.
 
 **⚠️ Important: Single Provider Selection**
-You can only use **ONE AI provider at a time**. The active provider is determined by the `LLM_PROVIDER` environment variable. To switch providers, change this value and restart the application.
+Configure any available providers. The UI prioritizes `DEFAULT_LLM_PROVIDER` or `LLM_PROVIDER`; explicit model selections override environment fallbacks.
 
 **Supported LLM_PROVIDER values and their models:**
 
 | Provider | LLM_PROVIDER Value | Default Model | Model Configuration | Additional Configuration |
 |----------|-------------------|---------------|-------------------|--------------------------|
-| OpenAI | `openai` | `gpt-4o-mini` | `OPENAI_MODEL` | `OPENAI_API_KEY` |
-| Azure OpenAI | `azure` | User-defined | `AZURE_OPENAI_DEPLOYMENT` | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION` |
-
-| Google AI | `google` | `gemini-1.5-pro-latest` | `GOOGLE_MODEL` | `GOOGLE_API_KEY` |
-| Mistral AI | `mistral` | `mistral-large-latest` | `MISTRAL_MODEL` | `MISTRAL_API_KEY` |
+| vLLM | `vllm` | `Qwen3.8-27B` | `VLLM_MODEL` | `VLLM_BASE_URL`, optional `VLLM_API_KEY` |
+| Kimi | `kimi` | `kimi-k2.6` | `KIMI_MODEL` | `KIMI_API_KEY` |
 | DeepSeek | `deepseek` | `deepseek-chat` | `DEEPSEEK_MODEL` | `DEEPSEEK_API_KEY` |
 
 **Example configuration:**
 ```bash
 # Choose your provider
-LLM_PROVIDER=openai
-
-# Configure the model (optional - defaults to recommended model)
-OPENAI_MODEL=gpt-4o-mini
-
-# Add the corresponding API key
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Note: You only need to configure the provider you're using
+LLM_PROVIDER=vllm
+DEFAULT_LLM_PROVIDER=vllm
+VLLM_BASE_URL=http://localhost:18000/v1
+VLLM_MODEL=Qwen3.8-27B
+VLLM_API_KEY=none
+# In Docker, use an endpoint reachable from the backend container.
 ```
 
 **🎯 Model Selection:**
-All providers now support configurable model selection via environment variables. If you don't specify a model, NaLaMap uses cost-effective default models optimized for geospatial tasks.
+All providers now support configurable model selection via environment variables. If you don't specify a model, GeoAgent uses cost-effective default models optimized for geospatial tasks.
 
 **⚙️ Advanced Parameter Customization:**
 To modify advanced LLM parameters (temperature, max_tokens, timeout, etc.), edit the provider files in `backend/services/ai/`:
-- `openai.py` - OpenAI configuration
-- `google_genai.py` - Google AI configuration
-- `mistralai.py` - Mistral AI configuration
+- `vllm.py` - vLLM configuration
+- `kimi.py` - Kimi configuration
 - `deepseek.py` - DeepSeek configuration
-- `azureai.py` - Azure OpenAI configuration
 
 Each file contains a `get_llm()` function where you can adjust parameters like `temperature`, `max_tokens`, `max_retries`, etc.
 
@@ -196,8 +191,12 @@ If you prefer using Docker:
    docker-compose up
    ```
 
-3. Access the application at `http://localhost:80`
+3. Access the application at `http://localhost:80`.
 
+   Nginx also exposes a second frontend proxy at `http://localhost:8081`. By
+   default it forwards to `http://host.docker.internal:3001`. Override the
+   ports or upstream with `SECOND_FRONTEND_PROXY_PORT`,
+   `SECOND_FRONTEND_PROTOCOL`, and `SECOND_FRONTEND_URL`.
 ### Docker Development Environment
 
 For a complete development environment with hot-reload capabilities:
@@ -206,13 +205,17 @@ For a complete development environment with hot-reload capabilities:
 docker-compose -f dev.docker-compose.yml up --build
 ```
 
+Local debugging and external deployment use separate URL and cookie profiles.
+See [Docker environment profiles](docs/environment-profiles.md) before starting
+the corresponding Compose stack.
+
 ## Technologies Used
 
 ### Backend
 - **FastAPI**: Modern, fast web framework for building APIs
 - **LangChain**: Framework for developing applications powered by language models
 - **LangGraph**: For building complex AI agent workflows
-- **OpenAI/Azure/DeepSeek**: AI model providers for natural language processing
+- **vLLM/Kimi/DeepSeek**: AI model providers for natural language processing
 - **Uvicorn**: ASGI server for serving the FastAPI application
 
 ### Frontend
@@ -275,8 +278,8 @@ npx playwright test --ui
 
 **LLM API errors:**
 - Verify your `.env` file is in the root directory
-- Check that your provider's API key is set correctly (e.g., `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `MISTRAL_API_KEY`, etc.)
-- Ensure `LLM_PROVIDER` matches your chosen provider (openai, azure, google, mistral, or deepseek)
+- Check that your provider's API key is set correctly (e.g., `KIMI_API_KEY`, `DEEPSEEK_API_KEY`; also check `VLLM_BASE_URL`)
+- Ensure `LLM_PROVIDER` matches your chosen provider (vllm, kimi, or deepseek)
 
 **Frontend fails to start:**
 - Ensure Node.js 18+ is installed: `node --version`
@@ -304,7 +307,7 @@ If you discover a security vulnerability, please send an email to [info@nalamap.
 
 ## Documentation
 
-NaLaMap has comprehensive documentation to help you get started and contribute:
+GeoAgent has comprehensive documentation to help you get started and contribute:
 
 ### Core Documentation
 - **[README.md](README.md)** (this file) - Project overview and quick start guide
@@ -332,13 +335,15 @@ NaLaMap has comprehensive documentation to help you get started and contribute:
 - **[frontend/tests/README.md](frontend/tests/README.md)** - Frontend testing guide
 - **[docs/](docs/)** - Feature-specific documentation
   - Color customization
-  - Azure deployment
+  - [Local storage and vector search](docs/local-storage-and-search.md)
+  - [Urban inefficient-space identification](docs/inefficient-space.md)
+  - [Conversation history persistence](docs/conversation-history.md)
   - Performance optimizations
   - And more...
 
 ## Contributing
 
-We welcome contributions from the community! If you're interested in helping improve NaLaMap, please check out our documentation:
+We welcome contributions from the community! If you're interested in helping improve GeoAgent, please check out our documentation:
 
 - **[Contributing Guide](CONTRIBUTING.md)** - Guidelines for development and testing
 - **[AGENTS.md](AGENTS.md)** - Context for AI coding assistants
@@ -356,3 +361,19 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Inspired by the need for more intuitive geospatial data exploration
 - Built with open-source mapping libraries and AI technologies
 - Special thanks to all contributors and the open-source community
+
+### Local storage and search
+
+Files use local storage. GeoServer search defaults to hashing embeddings and SQLite-vec; custom local embedding factories remain supported. See [local storage and search](docs/local-storage-and-search.md) for persistence and index migration.
+
+## 地图底图
+
+Cesium 默认使用高德标准地图；切换界面主题不会覆盖已选底图。可选底图包括 OSM、Carto 浅色/深色、Google 卫星/混合/地形、高德标准/卫星/混合、天地图矢量/卫星/混合。
+
+天地图需要浏览器类型令牌。Docker 部署请在根目录的 `.env`（或覆盖它的 `.env.external`）设置 `NEXT_PUBLIC_TIANDITU_TOKEN`，重建/替换前端容器后生效；仅修改令牌时重新创建容器即可。令牌由 `/runtime-env.js` 在运行时提供，无需写入镜像。`frontend/.env.local` 仅供本地开发使用，会被 Docker 构建排除。请在天地图控制台配置实际访问域名的限制。高德 Web 服务密钥和百度地理编码 AK 用于地址查询，不用于这里的瓦片底图。
+
+首次瓦片请求持续 12 秒未成功，或重试一次仍失败时，页面会尝试备用底图并明确显示实际使用的来源，可点击“重试原底图”恢复。卫星底图优先回退到卫星来源。备用来源不会循环重试；全部失败时提示检查网络。天地图从第 1 级请求，并限制各来源最大瓦片级别，避免请求不支持的级别。
+
+各来源仍需浏览器能正常访问其服务域名；配置正确和自动回退无法替代服务商权限、有效令牌或网络连通性。高德标准瓦片使用[官方示例中的 wprd 地址](https://lbs.amap.com/api/maps-javascript-api/reference/layer/tilelayer)。
+
+若高德和天地图经系统代理出现 `ERR_CONNECTION_CLOSED`，而直连正常，可在代理软件中为 `*.is.autonavi.com` 和 `*.tianditu.gov.cn` 配置直连，或加入 Windows 当前用户的代理绕过列表。此项属于访问地图的电脑网络设置，不由前端容器修改；代理软件重设系统代理时可能覆盖绕过列表。

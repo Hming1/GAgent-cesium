@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Layers } from "lucide-react";
 import { GeoDataObject } from "../../models/geodatamodel";
 import WorldBankChart, {
   ChartDataItem,
@@ -12,6 +12,7 @@ interface SearchResultsProps {
   results: GeoDataObject[];
   loading: boolean;
   onSelectLayer: (result: GeoDataObject) => void;
+  onSelectAllLayers: (results: GeoDataObject[]) => void;
 }
 
 // Check if a result is from World Bank and has chart data
@@ -46,6 +47,7 @@ export default function SearchResults({
   results,
   loading,
   onSelectLayer,
+  onSelectAllLayers,
 }: SearchResultsProps) {
   const [showAllResults, setShowAllResults] = useState(false);
   const [activeDetailsId, setActiveDetailsId] = useState<string | null>(null);
@@ -72,11 +74,23 @@ export default function SearchResults({
     return null;
   }
 
-  const resultsToShow = showAllResults ? results : results.slice(0, 5);
+  const resultsToShow = showAllResults ? results : results.slice(0, 2);
 
   return (
-    <div className="mt-6 mb-2 px-2 bg-neutral-50 rounded border">
-      <div className="font-semibold p-1">搜索结果：</div>
+        <div className="mt-6 mb-2 px-2 bg-neutral-50 rounded border">
+      <div className="search-results-header">
+        <div className="font-semibold p-1">
+          搜索结果{results.length > 2 ? `（共 ${results.length} 条）` : "："}
+        </div>
+        <button
+          type="button"
+          className="search-results-load-all inline-flex items-center gap-1"
+          onClick={() => onSelectAllLayers(results)}
+        >
+          <Layers size={14} />
+          加载所有图层
+        </button>
+      </div>
       {resultsToShow.map((result) => {
         const isWorldBank = isWorldBankResult(result);
         const chartDataResult = isWorldBank ? getChartData(result) : null;
@@ -321,14 +335,14 @@ export default function SearchResults({
         );
       })()}
 
-      {results.length > 5 && (
+      {results.length > 2 && (
         <button
           onClick={() => setShowAllResults((s) => !s)}
           className="w-full py-2 text-center text-blue-600 hover:underline"
         >
           {showAllResults
             ? "收起"
-            : `查看更多（还有 ${results.length - 5} 条）`}
+            : `查看更多（还有 ${results.length - 2} 条）`}
         </button>
       )}
     </div>

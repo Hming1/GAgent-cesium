@@ -16,7 +16,7 @@ class MCPToolWrapper(BaseTool):
     """Wrapper to use MCP tools as LangChain tools.
 
     Bridges external MCP tools into LangChain's tool framework,
-    allowing NaLaMap agents to seamlessly use external tools.
+    allowing GeoAgent agents to seamlessly use external tools.
     """
 
     name: str

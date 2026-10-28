@@ -19,9 +19,9 @@ import UserDataInitializer from "./components/UserDataInitializer";
 // });
 
 export const metadata: Metadata = {
-  title: "NaLaMap",
+  title: "GeoAgent",
   description:
-    "NaLaMap 是一个开源平台，帮助用户以自然语言方式查找和分析地理空间数据。它结合现代 Web 技术与 AI 能力，为地理信息交互提供直观界面。",
+    "GeoAgent 是一个开源平台，帮助用户以自然语言方式查找和分析地理空间数据。它结合现代 Web 技术与 AI 能力，为地理信息交互提供直观界面。",
   icons: {
     icon: '/favicon.ico',
   },

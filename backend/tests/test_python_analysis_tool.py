@@ -83,4 +83,74 @@ def test_python_analysis_tool_registered():
 
     assert "run_python_analysis" in DEFAULT_AVAILABLE_TOOLS
     assert TOOL_METADATA["run_python_analysis"]["category"] == "analysis"
-    assert TOOL_METADATA["run_python_analysis"]["enabled"] is False
+    assert TOOL_METADATA["run_python_analysis"]["enabled"] is True
+
+
+def test_with_helpers_fallback_injects_find_layer():
+    from services.tools.python_analysis_tool import _with_helpers_fallback
+
+    wrapped = _with_helpers_fallback("result = {'ok': True}")
+    assert "def find_layer" in wrapped
+    assert "result = {'ok': True}" in wrapped
+    # Do not double-inject when agent already defined helpers.
+    again = _with_helpers_fallback(wrapped)
+    assert again.count("def find_layer") == wrapped.count("def find_layer")
+
+
+@pytest.mark.asyncio
+async def test_run_python_analysis_warns_when_layer_truncated(monkeypatch):
+    from models.geodata import GeoDataObject
+    from models.sandbox import SandboxLayerInput
+
+    async def fake_execute(request):
+        assert request.layers
+        return SandboxExecutionResponse(
+            ok=True,
+            summary="Python analysis completed.",
+            result={"ok": True},
+            geojson_outputs=[],
+        )
+
+    def fake_serialize(layer, max_features):
+        return SandboxLayerInput(
+            layer_id=layer.id,
+            data_source_id=layer.data_source_id or "test",
+            name=layer.name,
+            title=layer.title,
+            geojson={"type": "FeatureCollection", "features": []},
+            feature_count=900,
+            sent_feature_count=max_features,
+            truncated=True,
+        )
+
+    monkeypatch.setattr(python_analysis_tool, "execute_python_analysis", fake_execute)
+    monkeypatch.setattr(python_analysis_tool, "_serialize_layer", fake_serialize)
+
+    layer = GeoDataObject(
+        id="clip-1",
+        data_source_id="geoprocess",
+        data_source="GeoAgentGeoprocess",
+        name="parks-clipped-by-buffer",
+        title="Parks Clipped by Buffer",
+        data_type="GeoJson",
+        data_origin="tool",
+        data_link="http://example/clip.geojson",
+    )
+    state = {
+        "messages": [],
+        "geodata_layers": [],
+        "geodata_results": [layer],
+        "options": {"session_id": "truncate-test"},
+    }
+    command = await _run_python_analysis_tool(
+        state=state,
+        tool_call_id="tool-call-trunc",
+        analysis_goal="area top5",
+        code="result = {'ok': True}",
+        layer_names=["Parks Clipped by Buffer"],
+    )
+
+    content = command.update["messages"][0].content
+    assert "WARNING" in content
+    assert "truncated" in content.lower()
+    assert "find_layer" in content

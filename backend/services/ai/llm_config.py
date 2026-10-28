@@ -1,26 +1,24 @@
-import os
+﻿import os
+import logging
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+logger = logging.getLogger(__name__)
+
+# Load local development overrides before the shared .env file.
+load_dotenv(".env.local", override=True)
 load_dotenv()
-llm_provider = os.getenv("LLM_PROVIDER", "openai").lower()
+llm_provider = os.getenv("LLM_PROVIDER", "deepseek").lower()
 
 
-if llm_provider == "openai":
-    from .openai import get_llm
-elif llm_provider == "azure":
-    from .azureai import get_llm
-elif llm_provider == "google":
-    from .google_genai import get_llm
-elif llm_provider == "mistral":
-    from .mistralai import get_llm
-elif llm_provider == "deepseek":
-    from .deepseek import get_llm 
+if llm_provider == "deepseek":
+    from .deepseek import get_llm
 elif llm_provider == "kimi":
-    from .kimi import get_llm   # noqa: F401
+    from .kimi import get_llm  # noqa: F401
+elif llm_provider == "vllm":
+    from .vllm import get_llm  # noqa: F401
 else:
     raise ValueError(f"Unsupported LLM provider: {llm_provider}")
 
@@ -40,7 +38,7 @@ def get_llm_for_provider(
     """Get LLM instance and capabilities for a specific provider with validated max_tokens.
 
     Args:
-        provider_name: Provider identifier (openai, azure, google, mistral, deepseek)
+        provider_name: Provider identifier (deepseek, kimi, vllm)
         max_tokens: Maximum tokens to generate (will be validated against model's limit)
         model_name: Specific model to use (optional, provider-specific default if not provided)
 
@@ -52,46 +50,61 @@ def get_llm_for_provider(
     """
     provider_name = provider_name.lower()
 
+    if provider_name not in ("deepseek", "kimi", "vllm"):
+        logger.warning(
+            f"Unsupported LLM provider '{provider_name}' requested, "
+            f"falling back to default '{llm_provider}'"
+        )
+        provider_name = llm_provider
+
     # Get model info and validate max_tokens
     validated_max_tokens, capabilities = _validate_max_tokens_and_get_capabilities(
         provider_name, max_tokens, model_name
     )
 
-    if provider_name == "openai":
-        from .openai import get_llm as openai_get_llm
+    # Fallback model_name if unsupported by the resolved provider
+    target_model_name = model_name
+    try:
+        if provider_name == "deepseek":
+            from .deepseek import get_available_models
 
-        llm = openai_get_llm(max_tokens=validated_max_tokens, model_name=model_name)
-        return llm, capabilities
-    elif provider_name == "azure":
-        from .azureai import get_llm as azure_get_llm
+            models = get_available_models()
+            if model_name and not any(m.name == model_name for m in models) and models:
+                target_model_name = models[0].name
+        elif provider_name == "kimi":
+            from .kimi import get_available_models
 
-        llm = azure_get_llm(max_tokens=validated_max_tokens, model_name=model_name)
-        return llm, capabilities
-    elif provider_name == "google":
-        from .google_genai import get_llm as google_get_llm
+            models = get_available_models()
+            if model_name and not any(m.name == model_name for m in models) and models:
+                target_model_name = models[0].name
+        elif provider_name == "vllm":
+            from .vllm import get_available_models
 
-        llm = google_get_llm(max_tokens=validated_max_tokens, model_name=model_name)
-        return llm, capabilities
-    elif provider_name == "mistral":
-        from .mistralai import get_llm as mistral_get_llm
+            models = get_available_models()
+            if model_name and not any(m.name == model_name for m in models) and models:
+                target_model_name = models[0].name
+    except Exception:
+        pass
 
-        llm = mistral_get_llm(max_tokens=validated_max_tokens, model_name=model_name)
-        return llm, capabilities
-    elif provider_name == "deepseek":
+    if provider_name == "deepseek":
         from .deepseek import get_llm as deepseek_get_llm
 
-        llm = deepseek_get_llm(max_tokens=validated_max_tokens, model_name=model_name)
+        llm = deepseek_get_llm(max_tokens=validated_max_tokens, model_name=target_model_name)
         return llm, capabilities
     elif provider_name == "kimi":
         from .kimi import get_llm as kimi_get_llm
 
-        llm = kimi_get_llm(max_tokens=validated_max_tokens, model_name=model_name)
-        return llm, capabilities    
-    
+        llm = kimi_get_llm(max_tokens=validated_max_tokens, model_name=target_model_name)
+        return llm, capabilities
+    elif provider_name == "vllm":
+        from .vllm import get_llm as vllm_get_llm
+
+        llm = vllm_get_llm(max_tokens=validated_max_tokens, model_name=target_model_name)
+        return llm, capabilities
     else:
         raise ValueError(
             f"Unsupported LLM provider: {provider_name}. "
-            "Supported providers: openai, azure, google, mistral, deepseek, kimi"
+            "Supported providers: deepseek, kimi, vllm"
         )
 
 
@@ -113,18 +126,12 @@ def _validate_max_tokens_and_get_capabilities(
 
     # Import provider module to get available models
     try:
-        if provider_name == "openai":
-            from .openai import get_available_models
-        elif provider_name == "azure":
-            from .azureai import get_available_models
-        elif provider_name == "google":
-            from .google_genai import get_available_models
-        elif provider_name == "mistral":
-            from .mistralai import get_available_models
-        elif provider_name == "deepseek":
+        if provider_name == "deepseek":
             from .deepseek import get_available_models
         elif provider_name == "kimi":
             from .kimi import get_available_models
+        elif provider_name == "vllm":
+            from .vllm import get_available_models
         else:
             # Unknown provider, return defaults
             return max_tokens, capabilities

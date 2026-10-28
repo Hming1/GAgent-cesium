@@ -1,3 +1,4 @@
+# 地图名称定义的静态映射
 AMENITY_MAPPING = {
     "restaurant": "amenity=restaurant",
     "restaurants": "amenity=restaurant",

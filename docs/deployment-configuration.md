@@ -1,10 +1,10 @@
 # Deployment Configuration Guide
 
-This guide explains how to customize NaLaMap deployments using configuration files.
+This guide explains how to customize GeoAgent deployments using configuration files.
 
 ## Overview
 
-NaLaMap supports custom deployment configurations that allow operators to:
+GeoAgent supports custom deployment configurations that allow operators to:
 
 - **Pre-configure GeoServer backends** with automatic embedding on startup
 - **Enable/disable specific tools** based on organizational needs
@@ -93,11 +93,11 @@ Override default LLM configuration:
 ```json
 {
   "model_settings": {
-    "model_provider": "azure",
-    "model_name": "gpt-4o",
+    "model_provider": "vllm",
+    "model_name": "Qwen3.8-27B",
     "max_tokens": 8000,
     "enable_smart_crs": true,
-    "enable_dynamic_tools": false,
+    "enable_dynamic_tools": true,
     "tool_selection_strategy": "conservative",
     "tool_similarity_threshold": 0.3,
     "use_summarization": false
@@ -107,7 +107,7 @@ Override default LLM configuration:
 
 **Available Providers:**
 - `openai` - OpenAI API
-- `azure` - Azure OpenAI Service
+- `vllm` - OpenAI-compatible vLLM endpoint
 - `google` - Google Gemini
 - `mistral` - Mistral AI
 - `anthropic` - Anthropic Claude
@@ -247,14 +247,14 @@ When backends have `preload_on_startup: true`:
 }
 ```
 
-### Production with Azure OpenAI
+### Production with vLLM
 
 ```json
 {
   "config_name": "Production",
   "model_settings": {
-    "model_provider": "azure",
-    "model_name": "gpt-4o",
+    "model_provider": "vllm",
+    "model_name": "Qwen3.8-27B",
     "max_tokens": 8000,
     "enable_performance_metrics": true
   },
@@ -301,7 +301,7 @@ The tool name doesn't match any available tool. Check spelling or use `/api/sett
 
 The configured provider's API key is not set. Configure the appropriate environment variable:
 - OpenAI: `OPENAI_API_KEY`
-- Azure: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`
+- vLLM: `VLLM_BASE_URL`, optional `VLLM_API_KEY`
 - Google: `GOOGLE_API_KEY`
 - Mistral: `MISTRAL_API_KEY`
 - Anthropic: `ANTHROPIC_API_KEY`

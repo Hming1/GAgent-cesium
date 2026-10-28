@@ -1,0 +1,3739 @@
+[
+  {
+    "id": "registry-core-tools",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tools_present": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "geoprocess",
+      "attribute_tool2",
+      "style_layers",
+      "search_metadata",
+      "list_user_layers",
+      "create_execution_plan",
+      "get_custom_geoserver_data",
+      "analyze_inefficient_space",
+      "infer_inefficient_field_mapping",
+      "get_inefficient_presets"
+    ]
+  },
+  {
+    "id": "registry-osint-python",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tools_present": [
+      "world_bank_indicators",
+      "ecmwf_weather",
+      "nasa_fire_data",
+      "nasa_gibs_layer",
+      "list_nasa_gibs_layers",
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "registry-styling-tools",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tools_present": [
+      "style_layers",
+      "apply_color_scheme",
+      "autostyle_new_layers",
+      "check_and_autostyle",
+      "color_by_attribute"
+    ]
+  },
+  {
+    "id": "registry-metadata-categories",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tool_metadata": {
+      "list_postgis_layers": {
+        "category": "data_retrieval"
+      },
+      "load_postgis_layer": {
+        "category": "data_retrieval"
+      },
+      "geoprocess": {
+        "category": "geoprocessing"
+      },
+      "attribute_tool2": {
+        "category": "attributes"
+      },
+      "style_layers": {
+        "category": "styling"
+      },
+      "search_metadata": {
+        "category": "metadata"
+      },
+      "create_execution_plan": {
+        "category": "planning"
+      },
+      "geocode_nominatim": {
+        "category": "geocoding"
+      },
+      "geocode_overpass": {
+        "category": "geocoding"
+      },
+      "analyze_inefficient_space": {
+        "category": "analysis"
+      }
+    }
+  },
+  {
+    "id": "registry-no-azure-leftovers",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "forbid_tools_present": [
+      "azure_blob_search",
+      "azure_openai",
+      "fake_tool"
+    ]
+  },
+  {
+    "id": "prompt-chinese-reply",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "You MUST ALWAYS reply in Chinese"
+    ]
+  },
+  {
+    "id": "prompt-skill-rules",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "Skill 调用规则",
+      "geodata_layers"
+    ]
+  },
+  {
+    "id": "prompt-clarify-one",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "只问一个会真正阻塞执行的澄清问题"
+    ]
+  },
+  {
+    "id": "prompt-style-optin",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "样式是 opt-in"
+    ]
+  },
+  {
+    "id": "prompt-fail-converge",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "工具失败收敛",
+      "最多再尝试 1 次合理回退",
+      "禁止空转"
+    ]
+  },
+  {
+    "id": "prompt-postgis-routing",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "别管 GeoServer",
+      "不要把 GeoServer 当作默认兜底"
+    ]
+  },
+  {
+    "id": "prompt-inefficient",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "低效空间",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "prompt-geoprocess",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "geoprocess"
+    ]
+  },
+  {
+    "id": "analyze-fixture-basic",
+    "skill": "inefficient_space",
+    "mode": "analyze_fixture",
+    "fixture": "inefficient_parcels.geojson",
+    "expect_min_matched": 2,
+    "expect_types_present": [
+      "idle_vacant",
+      "industrial"
+    ],
+    "expect_types_absent": [
+      "efficient"
+    ]
+  },
+  {
+    "id": "analyze-fixture-has-idle",
+    "skill": "inefficient_space",
+    "mode": "analyze_fixture",
+    "fixture": "inefficient_parcels.geojson",
+    "expect_min_matched": 1,
+    "expect_types_present": [
+      "idle_vacant"
+    ]
+  },
+  {
+    "id": "analyze-fixture-has-industrial",
+    "skill": "inefficient_space",
+    "mode": "analyze_fixture",
+    "fixture": "inefficient_parcels.geojson",
+    "expect_min_matched": 1,
+    "expect_types_present": [
+      "industrial"
+    ]
+  },
+  {
+    "id": "plan-aliases-chunk-01",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "add_layers_to_map": "add_layers_to_map",
+      "add_to_map": "add_layers_to_map",
+      "analyze_inefficient_space": "analyze_inefficient_space",
+      "analyze_inefficient_space_tool": "analyze_inefficient_space",
+      "apply_color_scheme": "apply_color_scheme",
+      "apply_intelligent_color_scheme": "apply_color_scheme"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-02",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "attribute": "attribute_tool2",
+      "attribute_tool": "attribute_tool",
+      "attribute_tool2": "attribute_tool2",
+      "attribute_tool_2": "attribute_tool2",
+      "attributes": "attribute_tool2",
+      "auto_style_new_layers": "autostyle_new_layers"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-03",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "autostyle_new_layers": "autostyle_new_layers",
+      "buffer": "geoprocess",
+      "check_and_auto_style_layers": "check_and_autostyle",
+      "check_and_autostyle": "check_and_autostyle",
+      "clip": "geoprocess",
+      "color_by_attribute": "color_by_attribute"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-04",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "color_layers_by_attribute": "color_by_attribute",
+      "create_execution_plan": "create_execution_plan",
+      "database": "list_postgis_layers",
+      "database_layers": "list_postgis_layers",
+      "ecmwf": "ecmwf_weather",
+      "ecmwf_weather": "ecmwf_weather"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-05",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "execution_plan": "create_execution_plan",
+      "fire": "nasa_fire_data",
+      "geocode_nominatim": "geocode_nominatim",
+      "geocode_overpass": "geocode_overpass",
+      "geocode_using_nominatim_to_geostate": "geocode_nominatim",
+      "geocode_using_overpass_to_geostate": "geocode_overpass"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-06",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "geopandas": "run_python_analysis",
+      "geoprocess": "geoprocess",
+      "geoprocess_tool": "geoprocess",
+      "geoprocessing": "geoprocess",
+      "geoserver": "get_custom_geoserver_data",
+      "get_custom_geoserver_data": "get_custom_geoserver_data"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-07",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "get_inefficient_presets": "get_inefficient_presets",
+      "idle_vacant": "analyze_inefficient_space",
+      "inefficient_space": "analyze_inefficient_space",
+      "infer_inefficient_field_mapping": "infer_inefficient_field_mapping",
+      "intersect": "geoprocess",
+      "layers": "list_user_layers"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-08",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "list_layers": "list_user_layers",
+      "list_nasa_gibs_layers": "list_nasa_gibs_layers",
+      "list_postgis_layers": "list_postgis_layers",
+      "list_user_layers": "list_user_layers",
+      "load_postgis_layer": "load_postgis_layer",
+      "low_efficiency": "analyze_inefficient_space"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-09",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "metadata": "search_metadata",
+      "metadata_search": "search_metadata",
+      "nasa_fire": "nasa_fire_data",
+      "nasa_fire_data": "nasa_fire_data",
+      "nasa_gibs": "nasa_gibs_layer",
+      "nasa_gibs_layer": "nasa_gibs_layer"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-10",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "nominatim": "geocode_nominatim",
+      "ogc": "get_custom_geoserver_data",
+      "overpass": "geocode_overpass",
+      "pandas": "run_python_analysis",
+      "plan": "create_execution_plan",
+      "poi_search": "geocode_overpass"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-11",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "postgis": "list_postgis_layers",
+      "postgis_database": "list_postgis_layers",
+      "postgis_layer": "load_postgis_layer",
+      "promote_layers": "add_layers_to_map",
+      "python": "run_python_analysis",
+      "python_analysis": "run_python_analysis"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-12",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "run_python_analysis": "run_python_analysis",
+      "search_metadata": "search_metadata",
+      "spatial_table": "list_postgis_layers",
+      "style": "style_layers",
+      "style_layers": "style_layers",
+      "style_map_layers": "style_layers"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-13",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "styling": "style_layers",
+      "table": "attribute_tool2",
+      "wcs": "get_custom_geoserver_data",
+      "weather": "ecmwf_weather",
+      "wfs": "get_custom_geoserver_data",
+      "wms": "get_custom_geoserver_data"
+    }
+  },
+  {
+    "id": "plan-aliases-chunk-14",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "wmts": "get_custom_geoserver_data",
+      "world_bank": "world_bank_indicators",
+      "world_bank_indicators": "world_bank_indicators",
+      "低效空间": "analyze_inefficient_space",
+      "容积率判别": "analyze_inefficient_space",
+      "闲置空地": "analyze_inefficient_space"
+    }
+  },
+  {
+    "id": "neg-routing-001",
+    "skill": "none",
+    "mode": "routing",
+    "query": "你好，你是谁？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-002",
+    "skill": "none",
+    "mode": "routing",
+    "query": "平台支持哪些空间分析算子？列出 buffer 和 overlay",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-003",
+    "skill": "none",
+    "mode": "routing",
+    "query": "先不要连库，也不要跑判别，只介绍能力",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-004",
+    "skill": "none",
+    "mode": "routing",
+    "query": "从已配置 GeoServer 找道路相关 WMS 图层",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-005",
+    "skill": "none",
+    "mode": "routing",
+    "query": "把杭州市行政边界加到地图，只要多边形",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-006",
+    "skill": "none",
+    "mode": "routing",
+    "query": "以上海人民广场为中心找医院 POI",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-007",
+    "skill": "none",
+    "mode": "routing",
+    "query": "杭州市明天的天气怎么样？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-008",
+    "skill": "none",
+    "mode": "routing",
+    "query": "看看北京最近有没有火点",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-009",
+    "skill": "none",
+    "mode": "routing",
+    "query": "只把 rivers 图层改成蓝色透明",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-010",
+    "skill": "none",
+    "mode": "routing",
+    "query": "对当前图层做 200 米缓冲区（图层已在地图）",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-011",
+    "skill": "none",
+    "mode": "routing",
+    "query": "帮我找中学，地点还没定，先问我城市",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-012",
+    "skill": "none",
+    "mode": "routing",
+    "query": "WMS/WFS 服务目录有哪些",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-013",
+    "skill": "none",
+    "mode": "routing",
+    "query": "列出会话里已有图层，不要重新外网搜索",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-014",
+    "skill": "none",
+    "mode": "routing",
+    "query": "把全世界学校都找出来——请先收敛到一个城市",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "neg-routing-015",
+    "skill": "none",
+    "mode": "routing",
+    "query": "对当前选中图层做空间关系分析，可能是相交或裁剪，你看着办",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "style_layers",
+      "ecmwf_weather"
+    ],
+    "expect_required_tools": [],
+    "forbid_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "analyze_inefficient_space",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping"
+    ]
+  },
+  {
+    "id": "infer-full-zh",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "税收",
+      "idle_years": "闲置年限"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-full-en",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "floor_area_ratio",
+      "building_density",
+      "land_use",
+      "tax_per_mu",
+      "vacant_years"
+    ],
+    "expect_matched": {
+      "far": "floor_area_ratio",
+      "building_density": "building_density",
+      "land_use": "land_use",
+      "tax_output": "tax_per_mu",
+      "idle_years": "vacant_years"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-short-aliases",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "rjl",
+      "jzmd",
+      "ydxz",
+      "shuishou",
+      "idle_year"
+    ],
+    "expect_matched": {
+      "far": "rjl",
+      "building_density": "jzmd",
+      "land_use": "ydxz",
+      "tax_output": "shuishou",
+      "idle_years": "idle_year"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-case-insensitive",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "FAR",
+      "Density",
+      "LANDUSE",
+      "TAX",
+      "IDLE_YEARS"
+    ],
+    "expect_matched": {
+      "far": "FAR",
+      "building_density": "Density",
+      "land_use": "LANDUSE",
+      "tax_output": "TAX",
+      "idle_years": "IDLE_YEARS"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-missing-01",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "name",
+      "area_m2"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-02",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "id",
+      "geom"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-03",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "用地性质"
+    ],
+    "expect_critical_missing_contains": [
+      "far"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-04",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-05",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "建筑密度",
+      "闲置年限"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-06",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "税收产出"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-07",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "type_code",
+      "area"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-missing-08",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "parcel_id"
+    ],
+    "expect_critical_missing_contains": [
+      "land_use"
+    ],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "infer-alias-far-001",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "far",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "far",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-far-002",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-far-003",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "plot_ratio",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "plot_ratio",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-far-004",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "floor_area_ratio",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "floor_area_ratio",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-far-005",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "rjl",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "rjl",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-building_density-006",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "building_density",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "building_density",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-building_density-007",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-building_density-008",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "density",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "density",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-building_density-009",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "jzmd",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "jzmd",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-building_density-010",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "bd",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "bd",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-idle_years-011",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "idle_years"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "idle_years": "idle_years"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-idle_years-012",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "idle_years": "闲置年限"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-idle_years-013",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "idle_year"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "idle_years": "idle_year"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-idle_years-014",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "vacant_years"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "idle_years": "vacant_years"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-tax_output-015",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "tax_output",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "tax_output"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-tax_output-016",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收产出",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "税收产出"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-tax_output-017",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "税收"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-tax_output-018",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "tax",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "tax"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-tax_output-019",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "tax_per_mu",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "tax_per_mu"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-tax_output-020",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "shuishou",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "shuishou"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-land_use-021",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "land_use",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "land_use"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-land_use-022",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地性质",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-land_use-023",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "用地类型",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地类型"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-land_use-024",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "ydxz",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "ydxz"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-land_use-025",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "landuse",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "landuse"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "infer-alias-land_use-026",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": [
+      "容积率",
+      "建筑密度",
+      "type",
+      "税收",
+      "闲置年限"
+    ],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "type"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "postgis-list-001",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看postgis里有哪些内容",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-002",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "帮我列出postgis",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-003",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请查询postgis有哪些可用项",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-004",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "我想盘点一下postgis",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-005",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "先不要加载，只看postgis",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-006",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "有哪些postgis可以分析？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-007",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请用postgis做一次表清单",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-008",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "检查当前配置的postgis",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-009",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看postgres里有哪些内容",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-010",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "帮我列出postgres",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-011",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请查询postgres有哪些可用项",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-012",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "我想盘点一下postgres",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-013",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "先不要加载，只看postgres",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-014",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "有哪些postgres可以分析？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-015",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请用postgres做一次表清单",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-016",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "检查当前配置的postgres",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-017",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看postgresql里有哪些内容",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-018",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "帮我列出postgresql",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-019",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请查询postgresql有哪些可用项",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-020",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "我想盘点一下postgresql",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-021",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "先不要加载，只看postgresql",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-022",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "有哪些postgresql可以分析？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-023",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请用postgresql做一次表清单",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-024",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "检查当前配置的postgresql",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-025",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看geometry_columns里有哪些内容",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-026",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "帮我列出geometry_columns",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-027",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请查询geometry_columns有哪些可用项",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-028",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "我想盘点一下geometry_columns",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-029",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "先不要加载，只看geometry_columns",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-030",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "有哪些geometry_columns可以分析？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-031",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请用geometry_columns做一次表清单",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-032",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "检查当前配置的geometry_columns",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-033",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看schema.table里有哪些内容",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-034",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "帮我列出schema.table",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-035",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请查询schema.table有哪些可用项",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-036",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "我想盘点一下schema.table",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-037",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "先不要加载，只看schema.table",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-038",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "有哪些schema.table可以分析？",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-039",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "请用schema.table做一次表清单",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-040",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "检查当前配置的schema.table",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-041",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看数据库里有哪些内容",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-list-042",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "帮我列出数据库",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers"
+    ],
+    "forbid_required_tools": [
+      "get_custom_geoserver_data"
+    ]
+  },
+  {
+    "id": "postgis-load-001",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "load PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-002",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库load public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-003",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "add PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-004",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库add public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-005",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "加载 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-006",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库加载 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-007",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "載入 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-008",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库載入 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-009",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "加入 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-010",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库加入 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-011",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "添加 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-012",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库添加 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-013",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "导入 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-014",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库导入 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-015",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "載入地图 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-016",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库載入地图 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-017",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "导入到当前地图 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-018",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库导入到当前地图 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-019",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "加载到地图 PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-020",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库加载到地图 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-021",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "add to map PostGIS 的 public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-022",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库add to map public.city_parks",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-023",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "load PostGIS 的 public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-024",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库load public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-025",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "add PostGIS 的 public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-026",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库add public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-027",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "加载 PostGIS 的 public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-028",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "从数据库加载 public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "postgis-load-029",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "載入 PostGIS 的 public.parcels",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2",
+      "search_metadata"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ]
+  },
+  {
+    "id": "ineff-routing-001",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请识别低效",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-002",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "帮我做一次低效",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-003",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "按规则执行低效分析",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-004",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "我想做低效判别并上图",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-005",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "开始低效，先不要用 Python 沙箱",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-006",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "对当前地块跑低效",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-007",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请用专用工具完成低效",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-008",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "Evaluate 低效 for parcels",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-009",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请识别低效空间",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-010",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "帮我做一次低效空间",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-011",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "按规则执行低效空间分析",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-012",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "我想做低效空间判别并上图",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-013",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "开始低效空间，先不要用 Python 沙箱",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-014",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "对当前地块跑低效空间",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-015",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请用专用工具完成低效空间",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-016",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "Evaluate 低效空间 for parcels",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-017",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请识别低效用地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-018",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "帮我做一次低效用地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-019",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "按规则执行低效用地分析",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-020",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "我想做低效用地判别并上图",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-021",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "开始低效用地，先不要用 Python 沙箱",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-022",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "对当前地块跑低效用地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-023",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请用专用工具完成低效用地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-024",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "Evaluate 低效用地 for parcels",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-025",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请识别闲置空地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-026",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "帮我做一次闲置空地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-027",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "按规则执行闲置空地分析",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-028",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "我想做闲置空地判别并上图",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "ineff-routing-029",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "开始闲置空地，先不要用 Python 沙箱",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "run_python_analysis",
+      "geoprocess"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": [
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "combo-routing-001",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "从数据库加载地块后识别低效空间和闲置空地",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-002",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "先查看数据库空间表，再做低效用地判别",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-003",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "加载 PostGIS parcels 后做容积率判别",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-004",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "查询数据库地块表并识别工业低效",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-005",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "从资料库导入地块，然后做闲置空地分析",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-006",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "postgis 加载地块后 analyze inefficient space",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-007",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "查看数据库有哪些表，接着做低效空间",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-008",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "加载数据库空间表再识别居住低效",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-009",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "先 list 数据库表，再做建筑密度判别",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-010",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "数据库里找 parcels，加载后做闲置用地判别",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-011",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "从 postgresql 加载地块并识别商业低效",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-012",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "查询数据库并执行 inefficient 分析",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-013",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "加载 postgis 表后做 vacant land 判别",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-014",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "查看空间表并识别低效用地",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-015",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "从数据库导入地块做低效空间上图",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-016",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "postgis + 低效空间组合分析",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "combo-routing-017",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "资料库加载地块后容积率判别",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "get_custom_geoserver_data",
+      "run_python_analysis"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  }
+]

@@ -79,8 +79,10 @@ export interface ModelSettings {
   message_window_size?: number | null; // Optional: Max recent messages to keep (default: 20 from env)
   enable_parallel_tools?: boolean; // Optional: Enable parallel tool execution (default: false, experimental)
   enable_performance_metrics?: boolean; // Optional: Enable performance metrics tracking (default: false)
+  enable_agent_audit?: boolean; // Optional: Persist agent run audit traces (default: true)
+  agent_audit_level?: "summary" | "tool" | "full"; // Optional: Audit detail level
   // Dynamic Tool Selection (Week 3)
-  enable_dynamic_tools?: boolean; // Optional: Enable dynamic tool selection (default: false)
+  enable_dynamic_tools?: boolean; // Optional: Enable dynamic tool selection (default: true)
   tool_selection_strategy?: string; // Optional: Strategy for tool selection (default: "conservative")
   tool_similarity_threshold?: number; // Optional: Minimum similarity score 0.0-1.0 (default: 0.3)
   max_tools_per_query?: number | null; // Optional: Maximum tools to load per query (default: null = unlimited)
@@ -88,6 +90,12 @@ export interface ModelSettings {
   use_summarization?: boolean; // Optional: Enable automatic conversation summarization (default: false)
   // Intelligent CRS Selection (Projection Improvements)
   enable_smart_crs?: boolean; // Optional: Enable intelligent CRS selection for geoprocessing (default: true)
+  // Plan Mode Toggle
+  plan_mode?: boolean; // Scheme B: Toggle to force plan mode
+  // Memory settings
+  enable_memory?: boolean;
+  enable_short_term_memory?: boolean;
+  enable_long_term_memory?: boolean;
 }
 
 export interface ColorScale {
@@ -146,6 +154,7 @@ export interface SettingsState extends SettingsSnapshot {
     color_settings: ColorSettings;
     session_id: string;
     deployment_config_name?: string | null;
+    default_model_settings?: Partial<ModelSettings>;
   }) => void;
 
   // Portal & Backend actions (kept for backward compatibility, but deprecated)
@@ -174,6 +183,8 @@ export interface SettingsState extends SettingsSnapshot {
   setMessageWindowSize: (size: number | null) => void;
   setEnableParallelTools: (enabled: boolean) => void;
   setEnablePerformanceMetrics: (enabled: boolean) => void;
+  setEnableAgentAudit: (enabled: boolean) => void;
+  setAgentAuditLevel: (level: "summary" | "tool" | "full") => void;
   // Dynamic Tool Selection (Week 3)
   setEnableDynamicTools: (enabled: boolean) => void;
   setToolSelectionStrategy: (strategy: string) => void;
@@ -183,6 +194,12 @@ export interface SettingsState extends SettingsSnapshot {
   setUseSummarization: (enabled: boolean) => void;
   // Intelligent CRS Selection (Projection Improvements)
   setEnableSmartCrs: (enabled: boolean) => void;
+  // Plan Mode Toggle
+  setPlanMode: (enabled: boolean) => void;
+  // Memory Settings
+  setEnableMemory: (enabled: boolean) => void;
+  setEnableShortTermMemory: (enabled: boolean) => void;
+  setEnableLongTermMemory: (enabled: boolean) => void;
 
   // Tool config actions
   addToolConfig: (name: string) => void;
@@ -281,7 +298,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       setMaxTokens,
       setColorSettings,
       model_settings,
-      available_tools,
       available_example_geoservers,
       available_example_mcp_servers,
       model_options,
@@ -305,12 +321,55 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       setSystemPrompt(opts.system_prompt);
     }
 
-    if (available_tools.length === 0) {
-      const tools = Object.keys(opts.tool_options);
-      setAvailableTools(tools);
-      setToolOptions(opts.tool_options);
-      tools.forEach(addToolConfig);
-    }
+    // Apply server/deployment defaults for agent toggles on every cold init.
+    // This keeps the UI aligned with backend defaults (dynamic tools on) and
+    // clears stale in-memory false values left by older bundles / HMR.
+    const defaults = opts.default_model_settings || {};
+    set((state) => ({
+      model_settings: {
+        ...state.model_settings,
+        enable_dynamic_tools: defaults.enable_dynamic_tools ?? true,
+        tool_selection_strategy:
+          defaults.tool_selection_strategy ??
+          state.model_settings.tool_selection_strategy ??
+          "conservative",
+        tool_similarity_threshold:
+          defaults.tool_similarity_threshold ??
+          state.model_settings.tool_similarity_threshold ??
+          0.3,
+        enable_smart_crs:
+          defaults.enable_smart_crs ?? state.model_settings.enable_smart_crs ?? true,
+        enable_agent_audit:
+          defaults.enable_agent_audit ?? state.model_settings.enable_agent_audit ?? true,
+        agent_audit_level:
+          defaults.agent_audit_level ?? state.model_settings.agent_audit_level ?? "tool",
+        plan_mode: defaults.plan_mode ?? state.model_settings.plan_mode ?? false,
+        use_summarization:
+          defaults.use_summarization ?? state.model_settings.use_summarization ?? false,
+        enable_memory: defaults.enable_memory ?? state.model_settings.enable_memory ?? true,
+        enable_short_term_memory:
+          defaults.enable_short_term_memory ??
+          state.model_settings.enable_short_term_memory ??
+          true,
+        enable_long_term_memory:
+          defaults.enable_long_term_memory ??
+          state.model_settings.enable_long_term_memory ??
+          false,
+        enable_parallel_tools:
+          defaults.enable_parallel_tools ??
+          state.model_settings.enable_parallel_tools ??
+          false,
+        enable_performance_metrics:
+          defaults.enable_performance_metrics ??
+          state.model_settings.enable_performance_metrics ??
+          false,
+      },
+    }));
+
+    const tools = Object.keys(opts.tool_options);
+    setAvailableTools(tools);
+    setToolOptions(opts.tool_options);
+    tools.forEach(addToolConfig);
 
     if (available_example_geoservers.length === 0) {
       // Combine example and preconfigured geoservers for the dropdown
@@ -392,8 +451,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     message_window_size: null, // null = use backend default (20)
     enable_parallel_tools: false, // Default: disabled (experimental)
     enable_performance_metrics: false, // Default: disabled
+    enable_agent_audit: true, // Default: enabled to persist every agent run
+    agent_audit_level: "tool", // Default: store tool events plus final state
     // Dynamic Tool Selection (Week 3)
-    enable_dynamic_tools: false, // Default: disabled
+    enable_dynamic_tools: true, // Default: on — shrinks tool schemas for long multi-turn chats
     tool_selection_strategy: "conservative", // Default strategy
     tool_similarity_threshold: 0.3, // Default threshold
     max_tools_per_query: null, // null = unlimited
@@ -401,6 +462,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     use_summarization: false, // Default: disabled
     // Intelligent CRS Selection (Projection Improvements)
     enable_smart_crs: true, // Default: enabled for better geometric accuracy
+    plan_mode: false, // Default: disabled
+    // Memory settings
+    enable_memory: true,
+    enable_short_term_memory: true,
+    enable_long_term_memory: false,
   },
   tools: [],
 
@@ -544,7 +610,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set((state) => ({
       model_settings: { ...state.model_settings, enable_performance_metrics: enabled },
     })),
-  
+  setEnableAgentAudit: (enabled) =>
+    set((state) => ({
+      model_settings: { ...state.model_settings, enable_agent_audit: enabled },
+    })),
+  setAgentAuditLevel: (level) =>
+    set((state) => ({
+      model_settings: { ...state.model_settings, agent_audit_level: level },
+    })),  
   // Dynamic Tool Selection (Week 3)
   setEnableDynamicTools: (enabled: boolean) =>
     set((state) => ({
@@ -573,6 +646,26 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setEnableSmartCrs: (enabled: boolean) =>
     set((state) => ({
       model_settings: { ...state.model_settings, enable_smart_crs: enabled },
+    })),
+
+  // Plan Mode
+  setPlanMode: (enabled: boolean) =>
+    set((state) => ({
+      model_settings: { ...state.model_settings, plan_mode: enabled },
+    })),
+
+  // Memory Settings
+  setEnableMemory: (enabled: boolean) =>
+    set((state) => ({
+      model_settings: { ...state.model_settings, enable_memory: enabled },
+    })),
+  setEnableShortTermMemory: (enabled: boolean) =>
+    set((state) => ({
+      model_settings: { ...state.model_settings, enable_short_term_memory: enabled },
+    })),
+  setEnableLongTermMemory: (enabled: boolean) =>
+    set((state) => ({
+      model_settings: { ...state.model_settings, enable_long_term_memory: enabled },
     })),
 
   // tools

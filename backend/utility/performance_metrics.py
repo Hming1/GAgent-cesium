@@ -184,7 +184,14 @@ class PerformanceCallbackHandler(BaseCallbackHandler):
             error: The error that occurred
             **kwargs: Additional arguments
         """
-        self.metrics["errors"].append({"type": "llm", "error": str(error)})
+        llm_call_id = kwargs.get("run_id")
+        self.metrics["errors"].append(
+            {
+                "type": "llm",
+                "llm_call_id": str(llm_call_id) if llm_call_id else None,
+                "error": str(error),
+            }
+        )
         if self._llm_start_time:
             self._llm_start_time = None
 

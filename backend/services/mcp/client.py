@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class MCPClient:
     """Client for connecting to external MCP servers.
 
-    Allows NaLaMap to discover and use tools from external MCP servers,
+    Allows GeoAgent to discover and use tools from external MCP servers,
     enabling integration with third-party AI tools and services.
     """
 

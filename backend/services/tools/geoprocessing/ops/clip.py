@@ -51,6 +51,18 @@ def op_clip(
     # Layer to clip by (mask)
     mask_layer = layers[1]
 
+    # A clip mask must bound an area. Passing a point layer as the mask is a
+    # caller mistake (usually swapped arguments); fail with an actionable message
+    # instead of letting shapely raise a cryptic type error deep inside.
+    mask_geoms = [(f.get("geometry") or {}).get("type") for f in (mask_layer.get("features") or [])]
+    area_types = {"Polygon", "MultiPolygon"}
+    if mask_geoms and not any(t in area_types for t in mask_geoms):
+        raise ValueError(
+            "clip requires a polygon mask, but the second layer contains "
+            f"{sorted({t for t in mask_geoms if t})}. "
+            "Ensure the polygon boundary layer is passed as the mask (second layer)."
+        )
+
     try:
         # Convert target layer to GeoDataFrame
         target_features = flatten_features([target_layer])
@@ -113,5 +125,7 @@ def op_clip(
         return [fc]
 
     except Exception as exc:
+        # Do not swallow: a genuine failure must not look like "the clip matched
+        # nothing" (which is a legitimate, reportable result).
         logger.exception(f"Error in op_clip: {exc}")
-        return []
+        raise

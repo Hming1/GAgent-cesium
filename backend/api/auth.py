@@ -30,6 +30,12 @@ from core.security import (
 from jose import JWTError
 from db.models.user import User
 from db.session import get_session
+from services.auth.invitations import (
+    authorize_registration,
+    consume_invite,
+    hash_invite_token,
+    normalize_email,
+)
 
 from pydantic import BaseModel
 
@@ -40,6 +46,7 @@ class SignUpForm(BaseModel):
     email: str
     password: str
     display_name: str | None = None
+    invite_token: str | None = None
 
 
 class LoginForm(BaseModel):
@@ -119,8 +126,11 @@ async def _fetch_oidc_metadata(client: AsyncOAuth2Client, issuer: str) -> dict:
 @router.post("/auth/signup", status_code=status.HTTP_201_CREATED)
 async def signup(form: SignUpForm, db: AsyncSession = Depends(get_session)) -> JSONResponse:
     """Register a new user and set a session cookie."""
+    email = normalize_email(form.email)
+    invite = await authorize_registration(db, email, invite_token=form.invite_token)
+
     # Check if email already exists
-    result = await db.execute(select(User).filter_by(email=form.email))
+    result = await db.execute(select(User).filter_by(email=email))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -130,8 +140,10 @@ async def signup(form: SignUpForm, db: AsyncSession = Depends(get_session)) -> J
         # Surface a clear, client-friendly error when password is too long
         raise HTTPException(status_code=400, detail=str(exc))
 
-    user = User(email=form.email, display_name=form.display_name, password_hash=password_hash)
+    user = User(email=email, display_name=form.display_name, password_hash=password_hash)
     db.add(user)
+    await db.flush()
+    consume_invite(invite, user.id)
     await db.commit()
     return _issue_session_response(user)
 
@@ -139,7 +151,7 @@ async def signup(form: SignUpForm, db: AsyncSession = Depends(get_session)) -> J
 @router.post("/auth/login")
 async def login(form: LoginForm, db: AsyncSession = Depends(get_session)) -> JSONResponse:
     """Authenticate user credentials and set a session cookie."""
-    result = await db.execute(select(User).filter_by(email=form.email))
+    result = await db.execute(select(User).filter_by(email=normalize_email(form.email)))
     user = result.scalars().first()
     if not user or not user.password_hash:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -198,6 +210,7 @@ async def list_oidc_providers():
 async def oidc_login(
     provider: str = Query(..., description="OIDC provider name"),
     redirect: str | None = Query(None, description="Redirect URL after login"),
+    invite: str | None = Query(None, description="Invitation token for a new account"),
 ):
     """Initiate an OIDC login by redirecting to the provider's authorization endpoint."""
     provider_cfg = _get_provider_config(provider)
@@ -215,7 +228,11 @@ async def oidc_login(
     if not authorization_endpoint:
         raise HTTPException(status_code=502, detail="OIDC authorization endpoint not found")
 
-    state_token = create_oauth_state(provider=provider, redirect_url=redirect_url)
+    state_token = create_oauth_state(
+        provider=provider,
+        redirect_url=redirect_url,
+        invite_hash=hash_invite_token(invite) if invite else None,
+    )
     auth_url, _ = client.create_authorization_url(
         authorization_endpoint,
         state=state_token,
@@ -278,7 +295,14 @@ async def oidc_callback(
     result = await db.execute(select(User).filter_by(oidc_provider=provider_name, oidc_subject=sub))
     user = result.scalars().first()
 
-    if not user and email:
+    if not user:
+        if not email or userinfo.get("email_verified") is not True:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="A verified email address is required",
+            )
+        email = normalize_email(email)
+
         # Link to an existing email-based account if present
         email_match = await db.execute(select(User).filter_by(email=email))
         user = email_match.scalars().first()
@@ -287,8 +311,13 @@ async def oidc_callback(
             user.oidc_subject = sub
 
     if not user:
+        invite = await authorize_registration(
+            db,
+            email,
+            invite_hash=state_payload.get("invite_hash"),
+        )
         user = User(
-            email=email or f"{provider_name}:{sub}",
+            email=email,
             display_name=display_name,
             oidc_provider=provider_name,
             oidc_subject=sub,
@@ -296,6 +325,7 @@ async def oidc_callback(
         )
         db.add(user)
         await db.flush()
+        consume_invite(invite, user.id)
 
     await db.commit()
 

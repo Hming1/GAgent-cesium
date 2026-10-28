@@ -70,6 +70,7 @@ def op_sjoin_nearest(
                 left_gdf, right_gdf, how=how, max_distance=max_distance, distance_col=distance_col
             )
             return [json.loads(joined.to_json())]
-    except Exception as e:
-        logger.exception(f"Error in op_sjoin_nearest: {e}")
-        return []
+    except Exception:
+        # Surface the failure instead of returning an empty
+        # result, which callers cannot distinguish from "no matches".
+        raise

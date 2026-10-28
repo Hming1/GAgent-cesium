@@ -1,0 +1,47 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "far": 0.02,
+        "building_density": 0.01,
+        "idle_years": 0,
+        "tax_output": 0,
+        "land_use": "空地"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "far": 0.3,
+        "building_density": 0.2,
+        "idle_years": 1,
+        "tax_output": 20,
+        "land_use": "工业用地"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "far": 2.0,
+        "building_density": 0.55,
+        "idle_years": 0,
+        "tax_output": 300,
+        "land_use": "工业用地"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[2, 0], [3, 0], [3, 1], [2, 1], [2, 0]]]
+      }
+    }
+  ]
+}

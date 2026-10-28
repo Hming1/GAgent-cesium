@@ -1,6 +1,6 @@
-import logging
+﻿import logging
 
-from core.config import DATABASE_URL
+from core.config import GEODATA_DATABASE_URL
 
 # Try to import psycopg_pool, handle missing dependency gracefully
 try:
@@ -19,8 +19,20 @@ db_initialization_failed = False
 logger = logging.getLogger(__name__)
 
 
+def _normalize_conninfo(url: str) -> str:
+    """Normalize a SQLAlchemy-style DB URL to a plain libpq conninfo for psycopg."""
+    return url.replace("postgresql+psycopg://", "postgresql://").replace(
+        "postgis://", "postgresql://"
+    )
+
+
 async def init_db():
-    """Initialize the async database pool."""
+    """Initialize the async pool for the geodata / dataset-catalog database.
+
+    This pool backs the librarian dataset search (``dataset_resources_search``)
+    and other user-independent geospatial queries, so it follows
+    ``GEODATA_DATABASE_URL`` rather than the main application ``DATABASE_URL``.
+    """
     global db_pool, db_initialization_failed
     if db_pool is None and not db_initialization_failed:  # Ensure we only initialize once
         try:
@@ -32,10 +44,10 @@ async def init_db():
                 db_initialization_failed = True
                 return
 
-            if not DATABASE_URL:
+            if not GEODATA_DATABASE_URL:
                 logger.warning(
-                    "DATABASE_AZURE_URL environment variable is not set. "
-                    "Database features will be unavailable."
+                    "GEODATA_DATABASE_URL (or DATABASE_URL) is not set. "
+                    "Geodata/catalog database features will be unavailable."
                 )
                 db_initialization_failed = True
                 return
@@ -44,11 +56,12 @@ async def init_db():
             if AsyncConnectionPool is None:
                 raise RuntimeError("AsyncConnectionPool is not available")
 
-            db_pool = AsyncConnectionPool(conninfo=DATABASE_URL, min_size=1, max_size=10)
+            conninfo = _normalize_conninfo(GEODATA_DATABASE_URL)
+            db_pool = AsyncConnectionPool(conninfo=conninfo, min_size=1, max_size=10)
             await db_pool.open()  # Ensure the pool is open
-            logger.info("Database connection pool initialized successfully")
+            logger.info("Geodata database connection pool initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize database connection pool: {e}")
+            logger.error(f"Failed to initialize geodata database connection pool: {e}")
             db_initialization_failed = True
             db_pool = None
 
@@ -66,8 +79,8 @@ async def get_db():
     """Provide an async database connection."""
     if db_initialization_failed:
         raise RuntimeError(
-            "Database is not available. Please check your DATABASE_AZURE_URL environment variable "
-            "and ensure the database server is accessible."
+            "Geodata database is not available. Please check your GEODATA_DATABASE_URL "
+            "environment variable and ensure the database server is accessible."
         )
     if db_pool is None:
         raise RuntimeError("Database pool is not initialized!")

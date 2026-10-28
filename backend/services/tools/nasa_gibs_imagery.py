@@ -36,7 +36,6 @@ import logging
 import uuid
 from typing import Any, Optional
 
-import requests
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 from langchain_core.tools.base import InjectedToolCallId
@@ -232,36 +231,10 @@ LAYER_CATEGORIES = {
 
 
 def geocode_location_to_bbox(location: str) -> Optional[dict]:
-    """Geocode a location name to a bounding box using Nominatim."""
-    try:
-        url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            "q": location,
-            "format": "json",
-            "limit": 1,
-        }
-        headers = {"User-Agent": "NaLaMap-OSINT/1.0"}
+    """Geocode a place. Nominatim first, then Amap, then Baidu."""
+    from services.tools.nasa_firms_fire import geocode_location_to_bbox as firms_bbox
 
-        response = requests.get(url, params=params, headers=headers, timeout=10)
-        response.raise_for_status()
-
-        data = response.json()
-        if not data:
-            return None
-
-        result = data[0]
-        boundingbox = result.get("boundingbox")
-        if boundingbox and len(boundingbox) == 4:
-            return {
-                "south": float(boundingbox[0]),
-                "north": float(boundingbox[1]),
-                "west": float(boundingbox[2]),
-                "east": float(boundingbox[3]),
-            }
-        return None
-    except Exception as e:
-        logger.error(f"Geocoding error: {e}")
-        return None
+    return firms_bbox(location)
 
 
 @tool

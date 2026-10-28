@@ -2,26 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { useMapStore } from "../../stores/mapStore";
 import { Moon, Sun, Monitor, ChevronDown, ChevronUp } from "lucide-react";
-
-const BASEMAPS = {
-  light: {
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
-  },
-  dark: {
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
-  },
-};
 
 export default function ThemeToggleComponent() {
   const theme = useSettingsStore((state) => state.theme);
   const setTheme = useSettingsStore((state) => state.setTheme);
-  const setBasemap = useMapStore((state) => state.setBasemap);
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -34,10 +19,8 @@ export default function ThemeToggleComponent() {
     if (mounted) {
       // Apply theme class to document element
       document.documentElement.classList.toggle("dark", theme === "dark");
-      // Switch basemap to match theme
-      setBasemap(theme === "dark" ? BASEMAPS.dark : BASEMAPS.light);
     }
-  }, [theme, mounted, setBasemap]);
+  }, [theme, mounted]);
 
   if (!mounted) {
     return null;
@@ -156,7 +139,7 @@ export default function ThemeToggleComponent() {
                   • <strong>深色模式</strong>：在弱光环境下降低眼部疲劳
                 </li>
                 <li>
-                  • 地图底图会自动切换以匹配当前主题
+                  • 地图底图可在地图侧栏独立选择
                 </li>
                 <li>
                   • 你的偏好会被保存，并在后续会话中保持

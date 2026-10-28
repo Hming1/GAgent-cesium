@@ -10,13 +10,10 @@ services:
       # Do not set DATABASE_URL - skips async database initialization
       # This avoids needing PostgreSQL for e2e file transfer tests
       - SECRET_KEY=e2e-test-secret-key-change-in-production
-      - USE_AZURE_STORAGE=false
       - CORS_ORIGINS=http://localhost,http://localhost:3000,http://localhost
       # Do not set OpenAI API keys - forces fallback to mock/hashing embeddings
       # This avoids API costs and makes tests faster/more reliable
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
-      # - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
     volumes:
       - ../backend:/app
       - /app/.venv  # Preserve the venv from the Docker image
@@ -55,7 +52,6 @@ services:
       - BACKEND_URL=backend:8000
       - FRONTEND_PROTOCOL=http
       - FRONTEND_URL=frontend:3000
-      - AZURE_BLOB_DOMAIN=
       - DNS_RESOLVER=127.0.0.11
     depends_on:
       - backend

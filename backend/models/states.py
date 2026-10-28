@@ -137,6 +137,13 @@ class GeoDataAgentState(MessagesState):
         default=10, description="Number of remaining steps for the agent"
     )
 
+    # Plan mode: stores a pending execution plan awaiting user confirmation.
+    # Set by create_execution_plan tool; cleared after user confirms/cancels.
+    execution_plan: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Pending execution plan created by the agent, awaiting user confirmation",
+    )
+
     # --- Internal-only fields (excluded from LLM prompt) ---
     # global_geodata: Optional[List[GeoDataObject]] = Field(
     #     default_factory=list, exclude=True, validate_default=False

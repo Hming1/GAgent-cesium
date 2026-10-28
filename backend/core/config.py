@@ -13,17 +13,13 @@ load_dotenv()  # Load .env if exists (won't override existing vars)
 
 # File & Data Management
 
-# Optional Azure Blob storage
-USE_AZURE = os.getenv("USE_AZURE_STORAGE", "false").lower() == "true"
-AZ_CONN = os.getenv("AZURE_CONN_STRING", "")
-AZ_CONTAINER = os.getenv("AZURE_CONTAINER", "")
-
-# Azure SAS token expiry (in hours) - default 24 hours for secure time-limited access
-AZURE_SAS_EXPIRY_HOURS = int(os.getenv("AZURE_SAS_EXPIRY_HOURS", "24"))
-
 # Local upload directory and base URL
 LOCAL_UPLOAD_DIR = os.getenv("LOCAL_UPLOAD_DIR", "./uploads")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+
+# Memory storage
+MEMORY_STORAGE_DIR = os.getenv("MEMORY_STORAGE_DIR", "./memory")
+MEMORY_SHORT_TERM_MAX_MESSAGES = int(os.getenv("MEMORY_SHORT_TERM_MAX_MESSAGES", "12"))
 
 # CORS configuration
 # Comma-separated list of allowed origins; if empty, allow all (not recommended with credentials)
@@ -34,21 +30,20 @@ ALLOWED_CORS_ORIGINS = [o.strip() for o in RAW_ALLOWED_ORIGINS.split(",") if o.s
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
 
 # Cookie Security Configuration
-# In Azure Container Apps, nginx handles HTTPS termination, so backend receives HTTP.
-# Set COOKIE_SECURE=false in such environments while still using HTTPS externally.
+# Set COOKIE_SECURE according to the browser-facing URL scheme, including behind a proxy.
 # Default to True for production security.
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
 COOKIE_HTTPONLY = os.getenv("COOKIE_HTTPONLY", "true").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")  # "lax", "strict", or "none"
 
 # File size limit (100MB)
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB in bytes
+MAX_FILE_SIZE = 1000 * 1024 * 1024  # 100MB in bytes
 
 
 # Database
 
 # Database connection URL
-DATABASE_URL = os.getenv("DATABASE_AZURE_URL") or os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Secondary connection specifically for fetching spatial map layers.
 # If not explicitly set, falls back to the main DATABASE_URL
@@ -57,6 +52,9 @@ GEODATA_DATABASE_URL = os.getenv("GEODATA_DATABASE_URL") or DATABASE_URL
 # Authentication settings
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+REGISTRATION_MODE = os.getenv("REGISTRATION_MODE", "invite").strip().lower()
+if REGISTRATION_MODE not in {"closed", "invite", "open"}:
+    raise ValueError("REGISTRATION_MODE must be one of: closed, invite, open")
 OIDC_PROVIDERS = [p.strip() for p in os.getenv("OIDC_PROVIDERS", "google").split(",") if p.strip()]
 
 
@@ -135,7 +133,7 @@ DEFAULT_GEOSERVER_VECTOR_DB_PATH = Path("data/geoserver_vectors.db")
 
 # Embedding provider configuration
 # Determines which embedding provider to use for GeoServer vector store
-# Options: "hashing" (default), "openai", "azure"
+# Options: "hashing" (default), "openai"; custom local models use the embedding factory.
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "hashing").lower()
 
 # OpenAI embeddings configuration (legacy - kept for backward compatibility)
@@ -143,14 +141,6 @@ EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "hashing").lower()
 USE_OPENAI_EMBEDDINGS = os.getenv("USE_OPENAI_EMBEDDINGS", "false").lower() == "true"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-
-# Azure AI embeddings configuration
-# Set EMBEDDING_PROVIDER=azure to enable Azure AI embeddings
-USE_AZURE_EMBEDDINGS = os.getenv("USE_AZURE_EMBEDDINGS", "false").lower() == "true"
-AZURE_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_EMBEDDING_DEPLOYMENT", "")
-AZURE_EMBEDDING_MODEL = os.getenv(
-    "AZURE_EMBEDDING_MODEL", "text-embedding-3-small"
-)  # Model name for Azure OpenAI
 
 
 def get_geoserver_vector_db_path() -> Path:
@@ -171,7 +161,7 @@ def get_geoserver_embedding_factory_path() -> Optional[str]:
 
 # MCP (Model Context Protocol) Configuration --------------------------------------------
 
-# Enable MCP server to expose NaLaMap tools to external AI assistants
+# Enable MCP server to expose GeoAgent tools to external AI assistants
 MCP_ENABLED = _env_bool("MCP_ENABLED", default="false")
 
 # MCP server port (if running standalone, not used with FastAPI integration)
@@ -189,8 +179,10 @@ MCP_EXTERNAL_SERVERS = [url.strip() for url in RAW_MCP_EXTERNAL_SERVERS.split(",
 # disable dynamic Python execution outside Docker deployments.
 PYTHON_ANALYSIS_SANDBOX_URL = os.getenv("PYTHON_ANALYSIS_SANDBOX_URL", "").rstrip("/")
 PYTHON_ANALYSIS_SANDBOX_TIMEOUT = float(os.getenv("PYTHON_ANALYSIS_SANDBOX_TIMEOUT", "35"))
+# Default high enough for city-scale clip results (e.g. ~800 parks) so area
+# TopN is not silently computed on a truncated sample.
 PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER = int(
-    os.getenv("PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER", "500")
+    os.getenv("PYTHON_ANALYSIS_MAX_FEATURES_PER_LAYER", "2000")
 )
 PYTHON_ANALYSIS_MAX_OUTPUT_BYTES = int(
     os.getenv("PYTHON_ANALYSIS_MAX_OUTPUT_BYTES", str(1024 * 1024))

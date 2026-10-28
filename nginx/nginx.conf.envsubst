@@ -18,8 +18,8 @@ http {
   keepalive_requests 1000;
   send_timeout 300s;
 
-  # DNS resolver for variable proxy_pass targets (required in Azure ACA when using FQDNs)
-  # Default can be overridden via DNS_RESOLVER (e.g., 168.63.129.16 for Azure).
+  # DNS resolver for variable proxy_pass targets using service hostnames
+  # Override the default resolver via DNS_RESOLVER for your deployment.
   resolver ${DNS_RESOLVER} valid=30s ipv6=off;
   resolver_timeout 5s;
 
@@ -49,17 +49,15 @@ http {
   # Ensure SNI uses the logical upstream host
   proxy_ssl_name $proxy_host;
 
-  # Map for allowed CORS origins including Azure Blob Storage
-  # Azure Blob domain can be configured via AZURE_BLOB_DOMAIN env var (e.g., stnalamapdev.blob.core.windows.net)
-  map $http_origin $cors_allowed {
-    default "";
-    "~^https?://${AZURE_BLOB_DOMAIN}$" "$http_origin";
-    "~^https?://[^/]+\.blob\.core\.windows\.net$" "$http_origin";
-  }
-
   server {
     listen 80;
     server_name _;
+
+    # Keep service discovery resilient to container recreation. Using a
+    # variable makes proxy_pass use the resolver declared above instead of
+    # retaining the IP address resolved only when Nginx starts.
+    set $backend_upstream ${BACKEND_PROTOCOL}://${BACKEND_URL};
+    set $frontend_upstream ${FRONTEND_PROTOCOL}://${FRONTEND_URL};
 
     # ============================================================================
     # LOADING PAGE FOR COLD STARTS
@@ -99,7 +97,7 @@ http {
       proxy_set_header X-Forwarded-Proto  $scheme;
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL}/health;
+      proxy_pass $backend_upstream/health;
       proxy_connect_timeout 5s;
       proxy_read_timeout 5s;
       # NO proxy_intercept_errors - return actual upstream errors for monitoring
@@ -113,7 +111,7 @@ http {
       proxy_set_header X-Forwarded-Proto  $scheme;
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-      proxy_pass ${FRONTEND_PROTOCOL}://${FRONTEND_URL}/health;
+      proxy_pass $frontend_upstream/health;
       proxy_connect_timeout 3s;
       proxy_read_timeout 3s;
       # NO proxy_intercept_errors - return actual upstream errors for monitoring
@@ -146,7 +144,7 @@ http {
       proxy_set_header Upgrade            $http_upgrade;
       proxy_set_header Connection         $connection_upgrade;
 
-      proxy_pass ${FRONTEND_PROTOCOL}://${FRONTEND_URL};
+      proxy_pass $frontend_upstream;
 
       # Streaming-friendly timeouts and buffering
       proxy_read_timeout 300s;
@@ -167,10 +165,10 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${FRONTEND_PROTOCOL}://${FRONTEND_URL}/favicon.ico;
+      proxy_pass $frontend_upstream/favicon.ico;
 
-      # CRITICAL: Disable nginx buffering for static files in Azure Container Apps
-      # Azure's proxy layer handles buffering; nginx buffering causes truncation
+      # CRITICAL: Disable nginx buffering for static files behind an upstream proxy
+      # An upstream proxy may handle buffering; nginx buffering causes truncation
       # Similar to /api/stream/ - let the response flow through without buffering
       proxy_buffering off;
       proxy_request_buffering off;
@@ -220,10 +218,10 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${FRONTEND_PROTOCOL}://${FRONTEND_URL};
+      proxy_pass $frontend_upstream;
 
-      # CRITICAL: Disable nginx buffering for icon files in Azure Container Apps
-      # Azure's proxy layer handles buffering; nginx buffering causes truncation
+      # CRITICAL: Disable nginx buffering for icon files behind an upstream proxy
+      # An upstream proxy may handle buffering; nginx buffering causes truncation
       proxy_buffering off;
       proxy_request_buffering off;
       proxy_max_temp_file_size 0;
@@ -263,10 +261,10 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${FRONTEND_PROTOCOL}://${FRONTEND_URL};
+      proxy_pass $frontend_upstream;
 
-      # CRITICAL: Disable nginx buffering for Next.js static assets in Azure Container Apps
-      # Azure's proxy layer handles buffering; nginx buffering causes issues with large files
+      # CRITICAL: Disable nginx buffering for Next.js static assets behind an upstream proxy
+      # An upstream proxy may handle buffering; nginx buffering causes issues with large files
       # JS bundles can be several MB - let them stream through without nginx buffering
       proxy_buffering off;
       proxy_request_buffering off;
@@ -299,7 +297,7 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
 
       # Extended timeouts for long-running agent operations
       proxy_connect_timeout 600s;
@@ -333,7 +331,7 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
 
       proxy_connect_timeout 600s;
       proxy_read_timeout    600s;
@@ -359,7 +357,7 @@ http {
     }
 
     # Search, geocode, and geoprocess endpoints - same large buffer requirements
-    # These endpoints also return NaLaMapResponse with potentially large geodata arrays
+    # These endpoints also return GeoAgentResponse with potentially large geodata arrays
     location ~ ^/api/(search|geocode|geoprocess|chat2)$ {
       proxy_http_version 1.1;
       proxy_set_header Host               $proxy_host;
@@ -367,7 +365,7 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
 
       proxy_connect_timeout 600s;
       proxy_read_timeout    600s;
@@ -398,7 +396,7 @@ http {
       proxy_set_header Upgrade            $http_upgrade;
       proxy_set_header Connection         $connection_upgrade;
 
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
 
       # Streaming-friendly API defaults
       proxy_read_timeout 600s;
@@ -424,7 +422,7 @@ http {
       # Pass through Accept-Encoding to allow backend gzip
       proxy_set_header Accept-Encoding    $http_accept_encoding;
 
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
 
       # CRITICAL: Completely disable buffering for streaming
       proxy_buffering off;
@@ -456,7 +454,7 @@ http {
       proxy_set_header X-Forwarded-Host   $host;
       proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
 
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
 
       proxy_connect_timeout 600s;
       proxy_read_timeout    600s;
@@ -483,7 +481,7 @@ http {
     # Upload POST endpoint proxy (CORS + long timeouts)
     # Aligns with backend router mounted at /api and frontend default at /api/upload
     location ^~ /api/upload {
-      proxy_pass ${BACKEND_PROTOCOL}://${BACKEND_URL};
+      proxy_pass $backend_upstream;
       proxy_http_version 1.1;
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection $connection_upgrade;
@@ -531,7 +529,7 @@ http {
       proxy_set_header Upgrade            $http_upgrade;
       proxy_set_header Connection         $connection_upgrade;
 
-      proxy_pass ${FRONTEND_PROTOCOL}://${FRONTEND_URL};
+      proxy_pass $frontend_upstream;
 
       proxy_connect_timeout 300s;
       proxy_read_timeout    300s;
@@ -541,6 +539,38 @@ http {
       proxy_buffers 32 64k;
       proxy_buffer_size 64k;
       proxy_busy_buffers_size 128k;
+    }
+  }
+
+  # Second frontend entry point. The container listens on 81, which Compose
+  # publishes as 8081 by default, and proxies to the host service on 3001.
+  server {
+    listen 81;
+    server_name _;
+
+    location = /health/nginx {
+      access_log off;
+      default_type application/json;
+      return 200 '{"status":"ok","service":"nginx","frontend":"second"}';
+    }
+
+    location / {
+      proxy_http_version 1.1;
+      proxy_set_header Host               $proxy_host;
+      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_set_header X-Forwarded-Host   $host;
+      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+
+      proxy_set_header Upgrade            $http_upgrade;
+      proxy_set_header Connection         $connection_upgrade;
+
+      # Resolve the host-gateway entry through /etc/hosts at Nginx startup.
+      # Nginx's runtime resolver does not consult Compose extra_hosts entries.
+      proxy_pass ${SECOND_FRONTEND_PROTOCOL}://${SECOND_FRONTEND_URL};
+      proxy_connect_timeout 30s;
+      proxy_read_timeout    300s;
+      proxy_send_timeout    300s;
+      proxy_buffering off;
     }
   }
 }

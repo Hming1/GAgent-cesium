@@ -68,7 +68,7 @@ async def mcp_info():
         "endpoint": "/api/mcp",
         "documentation": "https://modelcontextprotocol.io",
         "tools_count": len(mcp_server.tools),
-        "description": "NaLaMap MCP Server - Geospatial AI tools for mapping and analysis",
+        "description": "GeoAgent MCP Server - Geospatial AI tools for mapping and analysis",
     }
 
 

@@ -1,17 +1,17 @@
-# ARCHITECTURE.md - NaLaMap 系统架构
+# ARCHITECTURE.md - GeoAgent 系统架构
 
-> **新增架构补充**：本文后续代码已引入 Agent Harness、Skill 与 Python 分析沙盒的最小实现路径。该补充说明 NaLaMap 如何把新 agent 能力显式暴露为工具，并把动态 Python 数据分析隔离到独立 sandbox 容器中。
+> **新增架构补充**：本文后续代码已引入 Agent Harness、Skill 与 Python 分析沙盒的最小实现路径。该补充说明 GeoAgent 如何把新 agent 能力显式暴露为工具，并把动态 Python 数据分析隔离到独立 sandbox 容器中。
 
 ## Agent Harness、Skill 与 Python 分析沙盒
 
-本节补充 NaLaMap 后续扩展 agent 能力时推荐采用的架构：用 harness 做可重复评估，用 skill 表达 agent 可调用能力，用独立 sandbox 容器执行高风险 Python 数据分析。
+本节补充 GeoAgent 后续扩展 agent 能力时推荐采用的架构：用 harness 做可重复评估，用 skill 表达 agent 可调用能力，用独立 sandbox 容器执行高风险 Python 数据分析。
 
 ### 设计目标
 
 - 主 FastAPI backend 只负责编排、状态管理、可信业务逻辑和结果落图。
 - 新能力应显式暴露为 LangChain `@tool` 或 MCP tool，而不是只藏在 prompt 里。
 - agent 或用户提供的动态 Python 代码不能在主 backend 进程里执行。
-- Python 分析结果如果产生新图层，应继续遵守 NaLaMap 现有约定：把结果写成 `GeoDataObject` 并更新到 `geodata_results`，由前端地图选择和渲染。
+- Python 分析结果如果产生新图层，应继续遵守 GeoAgent 现有约定：把结果写成 `GeoDataObject` 并更新到 `geodata_results`，由前端地图选择和渲染。
 
 ### 概念架构
 
@@ -19,7 +19,7 @@
 用户请求
     |
     v
-NaLaMap Chat API
+GeoAgent Chat API
     |
     v
 LangGraph GeoAgent
@@ -51,10 +51,10 @@ LangGraph GeoAgent
 
 ### Agent Skill 边界
 
-在 NaLaMap 中，skill 不建议做成隐式 prompt 能力，而应落成明确的工具接口：
+在 GeoAgent 中，skill 不建议做成隐式 prompt 能力，而应落成明确的工具接口：
 
 - **本地 skill**：放在 `backend/services/tools/` 下，用 LangChain `@tool` 定义，并注册到 `backend/services/default_agent_settings.py`。适合可信、核心、需要直接更新 `GeoDataAgentState` 的能力。
-- **外部 skill**：由独立 MCP server 提供，NaLaMap 通过现有 MCP 集成加载。适合组织私有、可插拔、单独部署或高风险能力。
+- **外部 skill**：由独立 MCP server 提供，GeoAgent 通过现有 MCP 集成加载。适合组织私有、可插拔、单独部署或高风险能力。
 
 每个 skill 都应有清晰的参数 schema、明确 docstring、资源上限、稳定输出结构。如果会生成地图图层，应返回或持久化 GeoJSON，并更新 `geodata_results`。
 
@@ -109,7 +109,7 @@ harness 是 agent 行为的可重复评估层，建议放在 `backend/evals/` �
 
 ---
 
-> **用途**：全面说明 NaLaMap 的系统架构、组件组织方式与设计模式。  
+> **用途**：全面说明 GeoAgent 的系统架构、组件组织方式与设计模式。  
 > **面向对象**：需要理解系统结构的开发者、架构师与贡献者。
 
 ---
@@ -131,7 +131,7 @@ harness 是 agent 行为的可重复评估层，建议放在 `backend/evals/` �
 
 ## 系统概览
 
-**NaLaMap** 是一个地理空间 AI 平台，允许用户使用自然语言与地理数据进行交互。系统将现代 Web 技术与 AI 能力结合起来，为地理空间分析提供直观的操作界面。
+**GeoAgent** 是一个地理空间 AI 平台，允许用户使用自然语言与地理数据进行交互。系统将现代 Web 技术与 AI 能力结合起来，为地理空间分析提供直观的操作界面。
 
 ### 核心能力
 
@@ -146,9 +146,9 @@ harness 是 agent 行为的可重复评估层，建议放在 `backend/evals/` �
 
 | 层级 | 技术 |
 |------|------|
-| **前端** | Next.js 15、React 19、TypeScript、Leaflet、Tailwind CSS |
+| **前端** | Next.js 15、React 19、TypeScript、Leaflet、Cesium、Tailwind CSS |
 | **后端** | Python 3.11+、FastAPI、Uvicorn |
-| **AI / ML** | LangChain、LangGraph、OpenAI / Azure / Google / Mistral / DeepSeek |
+| **AI / ML** | LangChain、LangGraph、vLLM / Kimi / DeepSeek |
 | **数据库** | PostgreSQL（含 PostGIS）、SQLite-vec |
 | **基础设施** | Docker、Docker Compose、Nginx |
 | **地图能力** | Leaflet、OpenStreetMap、WMS / WFS / WMTS / WCS |
@@ -179,13 +179,13 @@ harness 是 agent 行为的可重复评估层，建议放在 `backend/evals/` �
 ┌──────────────────────────┐    ┌──────────────────────────┐
 │      FastAPI 后端        │    │       外部服务           │
 │       （端口 8000）      │    │                          │
-│                          │    │  - OpenAI / Azure AI     │
+│                          │    │  - vLLM / Kimi          │
 │  ┌────────────────────┐  │    │  - Google Gemini         │
 │  │    API 接口层      │  │    │  - Mistral AI            │
 │  └────────────────────┘  │    │  - DeepSeek              │
 │  ┌────────────────────┐  │◄───┤  - OSM / GeoNames        │
 │  │   AI Agent 系统    │  │    │  - OGC 服务              │
-│  │    （LangGraph）   │  │    │  - Azure Blob Storage    │
+│  │    （LangGraph）   │  │    │  - Local files           │
 │  └────────────────────┘  │    └──────────────────────────┘
 │  ┌────────────────────┐  │
 │  │  地理空间工具集合  │  │
@@ -236,7 +236,7 @@ backend/
 │   ├── settings_model.py      # 设置相关模型
 │   ├── user.py                # 用户模型
 │   └── messages/              # 消息模型
-│       └── chat_messages.py   # NaLaMapRequest、NaLaMapResponse
+│       └── chat_messages.py   # GeoAgentRequest、GeoAgentResponse
 │
 ├── services/                  # 业务逻辑
 │   ├── single_agent.py        # 单 ReAct Agent（当前方案）
@@ -253,7 +253,6 @@ backend/
 │   ├── ai/                    # LLM Provider 集成
 │   │   ├── llm_config.py      # LLM 配置管理
 │   │   ├── openai.py          # OpenAI 集成
-│   │   ├── azureai.py         # Azure OpenAI 集成
 │   │   ├── google_genai.py    # Google Gemini 集成
 │   │   ├── mistralai.py       # Mistral AI 集成
 │   │   └── deepseek.py        # DeepSeek 集成
@@ -265,7 +264,6 @@ backend/
 │   │   ├── attribute_tools.py # 属性分析
 │   │   ├── librarian_tools.py # 数据发现 / 搜索
 │   │   ├── geostate_management.py # 图层状态管理
-│   │   ├── wms_tools.py       # OGC 服务工具
 │   │   └── geoprocessing/     # 更细粒度的地理处理操作
 │   │       └── ops/           # 单个空间操作
 │   │
@@ -273,7 +271,7 @@ backend/
 │   │   └── database.py        # PostgreSQL 连接
 │   │
 │   └── storage/               # 文件存储抽象层
-│       └── ...                # Azure Blob / 本地存储
+│       └── ...                # Local file storage
 │
 ├── tests/                     # 测试套件
 │   ├── conftest.py            # pytest fixtures
@@ -302,7 +300,7 @@ API 层使用 FastAPI 定义 REST 接口。关键接口包括：
 
 ```python
 @router.post("/chat")
-async def chat_with_nalamap(request: NaLaMapRequest) -> NaLaMapResponse:
+async def chat_with_nalamap(request: GeoAgentRequest) -> GeoAgentResponse:
     """AI Agent 聊天主入口。"""
     # 处理请求，调用 agent，返回响应
 ```
@@ -457,7 +455,6 @@ frontend/
 │   │
 │   ├── components/            # React 组件
 │   │   ├── ColorInjector.tsx  # 动态颜色注入
-│   │   ├── StoreProvider.tsx  # Zustand Store Provider
 │   │   │
 │   │   ├── chat/              # 聊天界面组件
 │   │   │   ├── AgentInterface.tsx
@@ -711,7 +708,7 @@ UI 更新（颜色、工具等）
 
 **位置**：`backend/services/single_agent.py`
 
-NaLaMap 使用一个基于 LangGraph `create_react_agent` 的**单一 ReAct Agent**。它可以访问多个专业工具，并通过推理循环决定该调用哪些工具来回应用户请求。
+GeoAgent 使用一个基于 LangGraph `create_react_agent` 的**单一 ReAct Agent**。它可以访问多个专业工具，并通过推理循环决定该调用哪些工具来回应用户请求。
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -856,7 +853,6 @@ Agent 推理："我已经拿到数据，可以回复用户"
 
 - `llm_config.py`：配置管理
 - `openai.py`：OpenAI GPT 模型
-- `azureai.py`：Azure OpenAI 模型
 - `google_genai.py`：Google Gemini 模型
 - `mistralai.py`：Mistral AI 模型
 - `deepseek.py`：DeepSeek 模型
@@ -922,11 +918,7 @@ CREATE TABLE settings (
 - 位置：`backend/uploads/`
 - 用于存放上传文件，如 GeoJSON、Shapefile、KML
 
-**Azure Blob Storage**（生产环境）：
-
-- 通过环境变量 `USE_AZURE_STORAGE` 配置
-- 使用 SAS Token 提供安全的上传 / 下载
-- 元数据保存在 PostgreSQL 中
+**Local persistent storage**: Configure `LOCAL_UPLOAD_DIR` and persist it across container recreation. Files use `/api/stream/`; metadata remains in PostgreSQL. See `docs/local-storage-and-search.md`.
 
 ---
 
@@ -1014,14 +1006,9 @@ docker-compose -f dev.docker-compose.yml up --build
 docker-compose up --build
 ```
 
-### 云部署（Azure Container Apps）
+### 容器部署
 
-**参考文档**：`docs/azure-container-apps-config.md`
-
-- 后端与前端分别部署为独立容器应用
-- 文件上传使用 Azure Blob Storage
-- 数据库使用托管 PostgreSQL
-- 环境变量通过 Azure Key Vault 管理
+使用 Docker Compose、PostGIS 和 Nginx；将上传目录和本地向量数据库配置为持久化存储。环境配置见 `docs/environment-profiles.md`，本地检索说明见 `docs/local-storage-and-search.md`。
 
 ---
 
@@ -1118,9 +1105,8 @@ def my_new_tool(param: str) -> dict:
 - **贡献说明**：`CONTRIBUTING.md`
 - **颜色自定义**：`docs/color-customization.md`
 - **运行时环境**：`docs/runtime-environment.md`
-- **Azure 部署**：`docs/azure-container-apps-config.md`
 
 ---
 
 **最后更新**：2025 年 10 月  
-**维护团队**：NaLaMap Development Team
+**维护团队**：GeoAgent Development Team

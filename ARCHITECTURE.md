@@ -1,6 +1,6 @@
-# ARCHITECTURE.md - NaLaMap System Architecture
+# ARCHITECTURE.md - GeoAgent System Architecture
 
-> **Purpose**: Comprehensive guide to the NaLaMap system architecture, component organization, and design patterns.  
+> **Purpose**: Comprehensive guide to the GeoAgent system architecture, component organization, and design patterns.  
 > **Audience**: Developers, architects, and contributors who need to understand the system structure.
 
 ---
@@ -22,7 +22,7 @@
 
 ## 🌐 System Overview
 
-**NaLaMap** is a geospatial AI platform that enables users to interact with geographic data using natural language. The system combines modern web technologies with AI capabilities to provide an intuitive interface for geospatial analysis.
+**GeoAgent** is a geospatial AI platform that enables users to interact with geographic data using natural language. The system combines modern web technologies with AI capabilities to provide an intuitive interface for geospatial analysis.
 
 ### Core Capabilities
 - 🗺️ **Geospatial Data Management**: Upload, display, and manage vector/raster data
@@ -38,7 +38,7 @@
 |-------|-------------|
 | **Frontend** | Next.js 15, React 19, TypeScript, Leaflet, Tailwind CSS |
 | **Backend** | Python 3.11+, FastAPI, Uvicorn |
-| **AI/ML** | LangChain, LangGraph, OpenAI/Azure/Google/Mistral/DeepSeek |
+| **AI/ML** | LangChain, LangGraph, vLLM / Kimi / DeepSeek |
 | **Database** | PostgreSQL (with PostGIS), SQLite-vec |
 | **Infrastructure** | Docker, Docker Compose, Nginx |
 | **Maps** | Leaflet, OpenStreetMap, WMS/WFS/WMTS/WCS |
@@ -69,13 +69,13 @@
 ┌──────────────────────────┐    ┌──────────────────────────┐
 │   FastAPI Backend        │    │   External Services      │
 │      (Port 8000)         │    │                          │
-│                          │    │  - OpenAI / Azure AI     │
+│                          │    │  - vLLM / Kimi          │
 │  ┌────────────────────┐  │    │  - Google Gemini         │
 │  │   API Endpoints    │  │    │  - Mistral AI            │
 │  └────────────────────┘  │    │  - DeepSeek              │
 │  ┌────────────────────┐  │    │  - OSM / GeoNames        │
 │  │  AI Agent System   │  │◄───┤  - OGC Services          │
-│  │  (LangGraph)       │  │    │  - Azure Blob Storage    │
+│  │  (LangGraph)       │  │    │  - Local files           │
 │  └────────────────────┘  │    └──────────────────────────┘
 │  ┌────────────────────┐  │
 │  │  Geospatial Tools  │  │
@@ -126,7 +126,7 @@ backend/
 │   ├── settings_model.py     # Settings models
 │   ├── user.py               # User models
 │   └── messages/             # Message models
-│       └── chat_messages.py  # NaLaMapRequest, NaLaMapResponse
+│       └── chat_messages.py  # GeoAgentRequest, GeoAgentResponse
 │
 ├── services/                  # Business logic
 │   ├── single_agent.py       # Single ReAct agent (current)
@@ -143,7 +143,6 @@ backend/
 │   ├── ai/                   # LLM provider integrations
 │   │   ├── llm_config.py    # LLM configuration management
 │   │   ├── openai.py        # OpenAI integration
-│   │   ├── azureai.py       # Azure OpenAI integration
 │   │   ├── google_genai.py  # Google Gemini integration
 │   │   ├── mistralai.py     # Mistral AI integration
 │   │   └── deepseek.py      # DeepSeek integration
@@ -155,7 +154,6 @@ backend/
 │   │   ├── attribute_tools.py # Attribute analysis
 │   │   ├── librarian_tools.py # Data discovery/search
 │   │   ├── geostate_management.py # Layer state management
-│   │   ├── wms_tools.py     # OGC service tools
 │   │   └── geoprocessing/   # Detailed geoprocessing ops
 │   │       └── ops/         # Individual operations
 │   │
@@ -163,7 +161,7 @@ backend/
 │   │   └── database.py      # PostgreSQL connection
 │   │
 │   └── storage/              # File storage abstractions
-│       └── ...              # Azure Blob / Local storage
+│       └── ...              # Local file storage
 │
 ├── tests/                    # Test suite
 │   ├── conftest.py          # pytest fixtures
@@ -191,7 +189,7 @@ The API layer defines REST endpoints using FastAPI. Key endpoints include:
 **Example Endpoint** (`api/nalamap.py`):
 ```python
 @router.post("/chat")
-async def chat_with_nalamap(request: NaLaMapRequest) -> NaLaMapResponse:
+async def chat_with_nalamap(request: GeoAgentRequest) -> GeoAgentResponse:
     """Main chat endpoint for AI agent interaction."""
     # Process request, invoke agent, return response
 ```
@@ -340,7 +338,6 @@ frontend/
 │   │
 │   ├── components/           # React components
 │   │   ├── ColorInjector.tsx # Dynamic color injection
-│   │   ├── StoreProvider.tsx # Zustand store provider
 │   │   │
 │   │   ├── chat/            # Chat interface components
 │   │   │   ├── AgentInterface.tsx
@@ -590,7 +587,7 @@ UI Updates (colors, tools, etc.)
 
 **Location**: `backend/services/single_agent.py`
 
-NaLaMap uses a **single ReAct agent** built with LangGraph's `create_react_agent` that has access to multiple specialized tools. The agent uses a reasoning loop to decide which tools to call based on user queries.
+GeoAgent uses a **single ReAct agent** built with LangGraph's `create_react_agent` that has access to multiple specialized tools. The agent uses a reasoning loop to decide which tools to call based on user queries.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -732,7 +729,6 @@ Multiple LLM providers are supported through a unified interface:
 
 - `llm_config.py`: Configuration management
 - `openai.py`: OpenAI GPT models
-- `azureai.py`: Azure OpenAI models
 - `google_genai.py`: Google Gemini models
 - `mistralai.py`: Mistral AI models
 - `deepseek.py`: DeepSeek models
@@ -795,10 +791,7 @@ CREATE TABLE settings (
 - Location: `backend/uploads/`
 - Used for uploaded files (GeoJSON, Shapefiles, KML)
 
-**Azure Blob Storage** (Production):
-- Configurable via `USE_AZURE_STORAGE` environment variable
-- Secure file upload/download with SAS tokens
-- Metadata stored in PostgreSQL
+**Local persistent storage**: Configure `LOCAL_UPLOAD_DIR` and persist it across container recreation. Files use `/api/stream/`; metadata remains in PostgreSQL. See `docs/local-storage-and-search.md`.
 
 ---
 
@@ -883,14 +876,9 @@ docker-compose -f dev.docker-compose.yml up --build
 docker-compose up --build
 ```
 
-### Cloud Deployment (Azure Container Apps)
+### Container deployment
 
-**Reference**: `docs/azure-container-apps-config.md`
-
-- Backend and Frontend deployed as separate container apps
-- Azure Blob Storage for file uploads
-- PostgreSQL managed database
-- Environment variables managed via Azure Key Vault
+Use Docker Compose with persistent local uploads and vector database storage, PostGIS and the existing Nginx reverse proxy. See `docs/environment-profiles.md`.
 
 ---
 
@@ -986,12 +974,11 @@ def my_new_tool(param: str) -> dict:
 - **Contributing**: `CONTRIBUTING.md`
 - **Color Customization**: `docs/color-customization.md`
 - **Runtime Environment**: `docs/runtime-environment.md`
-- **Azure Deployment**: `docs/azure-container-apps-config.md`
 
 ---
 
 **Last Updated**: October 2025  
-**Maintainers**: NaLaMap Development Team
+**Maintainers**: GeoAgent Development Team
 
 ---
 
@@ -1008,7 +995,7 @@ new agent skills, and isolated Python data analysis execution.
   embedding hidden behavior in prompts.
 - Run dynamic or user/agent-authored Python code outside the main backend
   process in a restricted sandbox container.
-- Preserve NaLaMap's current map-result contract by returning generated
+- Preserve GeoAgent's current map-result contract by returning generated
   geospatial outputs as `GeoDataObject` records in `geodata_results`.
 
 ### Conceptual Architecture
@@ -1017,7 +1004,7 @@ new agent skills, and isolated Python data analysis execution.
 User request
     |
     v
-NaLaMap chat API
+GeoAgent chat API
     |
     v
 LangGraph GeoAgent
@@ -1055,7 +1042,7 @@ supported integration styles:
 - **Local skill**: A LangChain `@tool` implemented under
   `backend/services/tools/` and registered in
   `backend/services/default_agent_settings.py`. Use this for trusted, core
-  NaLaMap capabilities that update `GeoDataAgentState` directly.
+  GeoAgent capabilities that update `GeoDataAgentState` directly.
 - **External skill**: A tool served by an MCP server and loaded through the
   existing MCP integration. Use this for optional, organization-specific, or
   separately deployed capabilities.

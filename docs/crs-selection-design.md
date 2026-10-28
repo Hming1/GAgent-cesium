@@ -2,7 +2,7 @@
 
 ## Overview
 
-NaLaMap implements a **smart planar CRS selection system** that automatically chooses optimal projections for geoprocessing operations based on data extent, location, and operation type. The system combines:
+GeoAgent implements a **smart planar CRS selection system** that automatically chooses optimal projections for geoprocessing operations based on data extent, location, and operation type. The system combines:
 - **LLM-based planning**: The agent reasons about user intent, data characteristics, and operation types
 - **Rule-based execution**: Deterministic projection selection with full transparency and auditability
 

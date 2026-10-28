@@ -10,11 +10,17 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteToken, setInviteToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<Array<{ name: string; issuer: string }>>([]);
   const apiBase = getApiBase();
 
   useEffect(() => {
+    const tokenFromUrl = new URLSearchParams(window.location.search).get("invite");
+    if (tokenFromUrl) {
+      setInviteToken(tokenFromUrl);
+    }
+
     async function loadProviders() {
       try {
         const res = await fetch(`${apiBase}/auth/oidc/providers`);
@@ -31,10 +37,10 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signup(email, password, displayName);
+      await signup(email, password, displayName, inviteToken);
       router.push('/map');
-    } catch {
-      setError("注册失败");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "注册失败");
     }
   };
 
@@ -76,6 +82,19 @@ export default function SignupPage() {
             required
           />
         </div>
+        <div>
+          <label>邀请码</label>
+          <input
+            type="text"
+            name="inviteToken"
+            value={inviteToken}
+            onChange={(e) => setInviteToken(e.target.value)}
+            className="w-full border border-primary-300 p-2 rounded"
+            autoComplete="off"
+            required
+          />
+          <p className="mt-1 text-xs text-neutral-600">请使用管理员发送的邀请链接或邀请码。</p>
+        </div>
         <button
           type="submit"
           className="w-full bg-second-primary-600 text-neutral-50 p-2 rounded hover:bg-second-primary-700"
@@ -94,10 +113,11 @@ export default function SignupPage() {
                   const redirect = `${window.location.origin}/map`;
                   const url = `${apiBase}/auth/oidc/login?provider=${p.name}&redirect=${encodeURIComponent(
                     redirect
-                  )}`;
+                  )}&invite=${encodeURIComponent(inviteToken)}`;
                   window.location.href = url;
                 }}
-                className="w-full border border-primary-300 p-2 rounded hover:bg-primary-50"
+                disabled={!inviteToken}
+                className="w-full border border-primary-300 p-2 rounded hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 使用 {p.name.charAt(0).toUpperCase() + p.name.slice(1)} 继续
               </button>

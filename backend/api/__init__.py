@@ -1,1 +1,1 @@
-"""API router package for NaLaMap backend endpoints."""
+"""API router package for GeoAgent backend endpoints."""

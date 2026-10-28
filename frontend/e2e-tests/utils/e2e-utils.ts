@@ -1,9 +1,9 @@
 import { Page, expect, Locator } from "@playwright/test";
 
 /**
- * E2E Test Utilities for NaLaMap
+ * E2E Test Utilities for GeoAgent
  * 
- * Generic test utilities for E2E testing of NaLaMap features:
+ * Generic test utilities for E2E testing of GeoAgent features:
  * - Chat interface interactions
  * - Map layer management
  * - GeoServer integration

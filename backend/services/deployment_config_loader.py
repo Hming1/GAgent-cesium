@@ -1,7 +1,7 @@
 """
 Deployment Configuration Loader
 
-Loads and validates custom deployment configurations for NaLaMap.
+Loads and validates custom deployment configurations for GeoAgent.
 Configurations can be provided via environment variable DEPLOYMENT_CONFIG_PATH
 pointing to a JSON file.
 
@@ -449,7 +449,7 @@ def get_deployment_identifier() -> str:
     1. DEPLOYMENT_NAME environment variable
     2. deployment_name from deployment config JSON
     3. BASE_URL environment variable
-    4. Default "NaLaMap" identifier
+    4. Default "GeoAgent" identifier
 
     Returns:
         A string identifier for this deployment
@@ -470,7 +470,7 @@ def get_deployment_identifier() -> str:
         return base_url
 
     # Priority 4: Default identifier
-    return "NaLaMap"
+    return "GeoAgent"
 
 
 def clear_config_cache():

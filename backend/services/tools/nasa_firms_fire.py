@@ -70,47 +70,33 @@ CONFIDENCE_LEVELS = {
 
 
 def geocode_location_to_bbox(location: str) -> Optional[Dict[str, float]]:
-    """
-    Geocode a location name to a bounding box using Nominatim.
+    """Geocode a place. Nominatim first, then Amap district or point, then Baidu."""
+    from services.tools.geocoding import _parse_place_bbox, resolve_place
 
-    Args:
-        location: Place name (country, region, city)
-
-    Returns:
-        Dictionary with west, south, east, north coordinates or None
-    """
-    try:
-        url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            "q": location,
-            "format": "json",
-            "limit": 1,
-        }
-        headers = {"User-Agent": "NaLaMap-OSINT/1.0"}
-
-        response = requests.get(url, params=params, headers=headers, timeout=10)
-        response.raise_for_status()
-
-        data = response.json()
-        if not data:
-            logger.warning(f"Could not geocode location: {location}")
+    place = resolve_place(location)
+    bbox = _parse_place_bbox(place) if place else None
+    if bbox is None:
+        boundary = resolve_place(location, require_boundary=True)
+        boundary_bbox = _parse_place_bbox(boundary) if boundary else None
+        if boundary_bbox:
+            place, bbox = boundary, boundary_bbox
+    if bbox:
+        south, west, north, east = bbox
+        return {"south": south, "west": west, "north": north, "east": east}
+    if place and place.get("lat") is not None and place.get("lon") is not None:
+        try:
+            lat, lon = float(place["lat"]), float(place["lon"])
+        except (TypeError, ValueError):
             return None
-
-        result = data[0]
-        bbox = result.get("boundingbox", [])
-
-        if len(bbox) >= 4:
-            return {
-                "south": float(bbox[0]),
-                "north": float(bbox[1]),
-                "west": float(bbox[2]),
-                "east": float(bbox[3]),
-            }
-        return None
-
-    except Exception as e:
-        logger.error(f"Geocoding error for {location}: {e}")
-        return None
+        pad = 0.05
+        return {
+            "south": lat - pad,
+            "north": lat + pad,
+            "west": lon - pad,
+            "east": lon + pad,
+        }
+    logger.warning("Could not geocode location: %s", location)
+    return None
 
 
 def fetch_firms_data(

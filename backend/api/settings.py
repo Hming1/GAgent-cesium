@@ -165,6 +165,24 @@ class ColorSettings(BaseModel):
     corporate_3: ColorScale  # Corporate brand color 3
 
 
+class DefaultModelSettings(BaseModel):
+    """Server-side defaults the frontend should apply on first settings init."""
+
+    enable_dynamic_tools: bool = True
+    tool_selection_strategy: str = "conservative"
+    tool_similarity_threshold: float = 0.3
+    enable_smart_crs: bool = True
+    enable_agent_audit: bool = True
+    agent_audit_level: str = "tool"
+    plan_mode: bool = False
+    use_summarization: bool = False
+    enable_memory: bool = True
+    enable_short_term_memory: bool = True
+    enable_long_term_memory: bool = False
+    enable_parallel_tools: bool = False
+    enable_performance_metrics: bool = False
+
+
 class SettingsOptions(BaseModel):
     system_prompt: str
     tool_options: Dict[str, ToolOption]  # per-tool settings
@@ -177,6 +195,7 @@ class SettingsOptions(BaseModel):
     preconfigured_geoserver_backends: List[ExampleGeoServer] = []  # From deployment config
     preconfigured_mcp_servers: List[ExampleMCPServer] = []  # From deployment config
     deployment_config_name: Optional[str] = None  # Name of active deployment config
+    default_model_settings: DefaultModelSettings = DefaultModelSettings()
 
 
 class GeoServerPreloadRequest(BaseModel):
@@ -543,6 +562,29 @@ async def get_settings_options(request: Request, response: Response):
     if deployment_config:
         deployment_config_name = deployment_config.config_name
 
+    # Build frontend defaults from ModelSettings + optional deployment overrides.
+    default_model_settings = DefaultModelSettings()
+    if deployment_config and deployment_config.model_settings:
+        dep_ms = deployment_config.model_settings
+        override_fields = {
+            "enable_dynamic_tools": dep_ms.enable_dynamic_tools,
+            "tool_selection_strategy": dep_ms.tool_selection_strategy,
+            "tool_similarity_threshold": dep_ms.tool_similarity_threshold,
+            "enable_smart_crs": dep_ms.enable_smart_crs,
+            "enable_agent_audit": dep_ms.enable_agent_audit,
+            "agent_audit_level": dep_ms.agent_audit_level,
+            "use_summarization": dep_ms.use_summarization,
+            "enable_parallel_tools": dep_ms.enable_parallel_tools,
+            "enable_performance_metrics": dep_ms.enable_performance_metrics,
+        }
+        applied = {k: v for k, v in override_fields.items() if v is not None}
+        if applied:
+            default_model_settings = default_model_settings.model_copy(update=applied)
+            logger.info(
+                "Applied deployment model_settings defaults for frontend: %s",
+                sorted(applied.keys()),
+            )
+
     return SettingsOptions(
         system_prompt=system_prompt,
         tool_options=tool_options,
@@ -554,6 +596,7 @@ async def get_settings_options(request: Request, response: Response):
         preconfigured_geoserver_backends=preconfigured_geoserver_backends,
         preconfigured_mcp_servers=preconfigured_mcp_servers,
         deployment_config_name=deployment_config_name,
+        default_model_settings=default_model_settings,
     )
 
 

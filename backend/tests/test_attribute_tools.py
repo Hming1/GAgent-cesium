@@ -217,6 +217,20 @@ class TestListFieldsGdf:
         field1 = next(f for f in result["fields"] if f["name"] == "field1")
         assert field1["null_count"] == 1
 
+    def test_list_fields_caps_wide_osm_style_schema(self):
+        data = {f"tag_{i}": [None] * 3 for i in range(120)}
+        data["name"] = ["Park A", "Park B", "Park C"]
+        data["geometry"] = [Point(0, 0), Point(1, 1), Point(2, 2)]
+        gdf = gpd.GeoDataFrame(data, crs="EPSG:4326")
+
+        result = list_fields_gdf(gdf, max_fields=40)
+
+        assert result["total_fields"] >= 120
+        assert len(result["fields"]) <= 40
+        assert result["omitted_fields"] > 0
+        assert any(f["name"] == "name" for f in result["fields"])
+        assert any(f["name"] == "geometry" for f in result["fields"])
+
 
 class TestSummarizeGdf:
     """Test summarize operation."""
@@ -283,9 +297,23 @@ class TestParseWhere:
         assert ast[2] == "="
         assert ast[3] == "Feature A"
 
+    def test_parse_like(self):
+        ast = parse_where("\"name\" LIKE '%中学%'")
+        assert ast == ("like", "name", "%中学%", False)
+
 
 class TestFilterWhereGdf:
     """Test filter_where operation."""
+
+    def test_filter_like_keeps_category_not_one_name(self, sample_gdf):
+        sample_gdf = sample_gdf.copy()
+        sample_gdf.loc[sample_gdf.index[:2], "name"] = [
+            "翠园初级中学",
+            "深圳中学（泥岗校区）",
+        ]
+        sample_gdf.loc[sample_gdf.index[2], "name"] = "园岭小学"
+        result, _ = filter_where_gdf(sample_gdf, "\"name\" LIKE '%中学%'")
+        assert set(result["name"]) == {"翠园初级中学", "深圳中学（泥岗校区）"}
 
     def test_filter_simple_comparison(self, sample_gdf):
         result, suggestions = filter_where_gdf(sample_gdf, "value > 15")
@@ -434,7 +462,9 @@ class TestLoadGdfWFS:
             # Verify that requests.get was called with modified URL
             assert mock_get.called
             called_url = mock_get.call_args[0][0]
-            assert "srsName=EPSG%3A4326" in called_url or "srsName=EPSG:4326" in called_url
+            assert (
+                "srsName=EPSG%3A4326" in called_url or "srsName=EPSG:4326" in called_url
+            )
             assert isinstance(result, gpd.GeoDataFrame)
 
     @patch("services.tools.attribute_tools.requests.get")
@@ -607,6 +637,25 @@ class TestAttributeToolIntegration:
         assert obj.data_origin == DataOrigin.TOOL.value
         assert mock_store_file.called
 
+    def test_concise_layer_title_drops_osm_licence(self):
+        from services.tools.attribute_tools import concise_layer_title
+
+        source = (
+            "School (Areas) near 深圳市, 广东省, 中国 "
+            "(Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright)"
+        )
+        title = concise_layer_title(source, "filtered", "\"name\" LIKE '%中学%'")
+        assert title == "深圳市范围内 · 学校 · 面 · 中学"
+        assert "copyright" not in title.lower()
+        assert "http" not in title
+
+        scoped = concise_layer_title(
+            "深圳市中心40公里内 · School · 点",
+            "filtered",
+            "\"name\" LIKE '%中学%'",
+        )
+        assert scoped == "深圳市中心40公里内 · 学校 · 点 · 中学"
+
     def test_clean_layer_name_helper(self):
         """Test the _clean_layer_name helper function."""
         from services.tools.attribute_tools import _clean_layer_name
@@ -638,3 +687,34 @@ class TestAttributeToolIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@patch("services.tools.attribute_tools.attribute_plan_from_prompt")
+@patch("services.tools.attribute_tools._load_gdf")
+def test_attribute_tool_postgis_layer_uses_data_link(
+    mock_load, mock_plan, sample_gdf, sample_layer
+):
+    from services.tools.attribute_tools import attribute_tool
+
+    postgis_layer = sample_layer.model_copy(
+        update={
+            "data_type": DataType.POSTGIS,
+            "data_link": "http://localhost:8000/api/stream/postgis.geojson",
+            "name": "public.test_postgis",
+        }
+    )
+    state = {"geodata_layers": [postgis_layer], "geodata_results": [], "messages": []}
+    mock_load.return_value = sample_gdf
+    mock_plan.return_value = {"operation": "list_fields", "params": {}}
+
+    result = attribute_tool.func(
+        state=state,
+        tool_call_id="postgis-call",
+        target_layer_names=["public.test_postgis"],
+    )
+
+    mock_load.assert_called_once_with(
+        "http://localhost:8000/api/stream/postgis.geojson"
+    )
+    content = json.loads(result.update["messages"][0].content)
+    assert content["operation"] == "list_fields"

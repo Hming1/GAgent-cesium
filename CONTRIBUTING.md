@@ -1,6 +1,6 @@
-# Contributing to NaLaMap
+# Contributing to GeoAgent
 
-Thank you for your interest in contributing to NaLaMap! This guide provides comprehensive instructions for setting up your environment, developing features, and submitting changes.
+Thank you for your interest in contributing to GeoAgent! This guide provides comprehensive instructions for setting up your environment, developing features, and submitting changes.
 
 > **Note for AI Agents**: This file is the **Single Source of Truth** for development standards, testing procedures, and workflows. Please follow these instructions strictly.
 
@@ -191,7 +191,7 @@ npm run lint
 ### Adding an AI Tool
 1. Create tool in `backend/services/tools/`.
 2. Add tests in `backend/tests/`.
-3. Register tool in `backend/services/default_agent_settings.py`.
+3. Register tool in the matching Skill under `backend/services/agent_skills/`.
 4. Update frontend UI if needed.
 5. Verify with `backend/services/tools/README.md`.
 
@@ -233,6 +233,6 @@ We maintain a comprehensive documentation structure to help both human developer
 - **[e2e-tests/README.md](e2e-tests/README.md)**: Guide for full-stack end-to-end testing.
 
 ### Feature Documentation
-Specific feature guides (e.g., Color Customization, Azure Deployment) are located in the `docs/` directory.
+Specific feature guides (e.g., Color Customization, Local Storage) are located in the `docs/` directory.
 
 **When contributing, please ensure you update the relevant documentation.**

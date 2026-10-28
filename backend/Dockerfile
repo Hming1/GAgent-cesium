@@ -22,7 +22,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
  RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
- && pip install --no-cache-dir poetry==$POETRY_VERSION poetry-plugin-export
+ && pip install --trusted-host mirrors.aliyun.com --no-cache-dir poetry==$POETRY_VERSION poetry-plugin-export
  
 WORKDIR /app
 COPY pyproject.toml poetry.lock ./
@@ -61,7 +61,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --from=export /app/requirements.txt ./
 
-RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+# Override with --build-arg PIP_INDEX_URL=https://pypi.org/simple when the mirror is unreachable.
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+RUN pip config set global.index-url ${PIP_INDEX_URL}
 RUN pip install --no-cache-dir -r requirements.txt
 
 

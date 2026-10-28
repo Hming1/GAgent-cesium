@@ -13,7 +13,7 @@ from db.base import Base
 logger = logging.getLogger(__name__)
 
 
-def _make_async_url(url: str) -> Optional[str]:
+def make_async_database_url(url: str) -> Optional[str]:
     """Convert a DB URL to the async driver form.
 
     Returns None if the URL scheme is not supported for async operations.
@@ -40,7 +40,7 @@ if DATABASE_URL:
     scheme = DATABASE_URL.split("://", 1)[0] if "://" in DATABASE_URL else "unknown"
     logger.info("DATABASE_URL configured: yes (scheme=%s)", scheme)
 
-    ASYNC_DATABASE_URL = _make_async_url(DATABASE_URL)
+    ASYNC_DATABASE_URL = make_async_database_url(DATABASE_URL)
     if ASYNC_DATABASE_URL:
         engine = create_async_engine(ASYNC_DATABASE_URL, echo=False)
         AsyncSessionLocal = sessionmaker(
@@ -56,6 +56,8 @@ async def init_db() -> None:
     """Initialize the database by creating all tables defined on Base metadata."""
     if engine is None:
         return
+    import db.models  # noqa: F401
+
     async with engine.begin() as conn:
         # run_sync executes a synchronous callable in the async engine
         await conn.run_sync(Base.metadata.create_all)
@@ -64,9 +66,6 @@ async def init_db() -> None:
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Async generator yielding a database session for dependency injection."""
     if AsyncSessionLocal is None:
-        raise RuntimeError(
-            "Database session factory is not configured; set DATABASE_URL first."
-        )
+        raise RuntimeError("Database session factory is not configured; set DATABASE_URL first.")
     async with AsyncSessionLocal() as session:
         yield session
-

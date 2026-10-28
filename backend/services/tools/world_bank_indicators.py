@@ -410,44 +410,26 @@ def create_indicators_geojson(
     bbox = None
 
     try:
-        url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            "q": country,
-            "format": "json",
-            "limit": 1,
-            "polygon_geojson": 1,  # Request polygon geometry
-            "featuretype": "country",  # Specifically request country boundaries
-        }
-        headers = {"User-Agent": "NaLaMap-OSINT/1.0"}
+        from services.tools.geocoding import resolve_place
 
-        response = requests.get(url, params=params, headers=headers, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-
-        if data:
-            result = data[0]
+        result = resolve_place(country, require_boundary=True) or resolve_place(country)
+        if result:
             lat = float(result.get("lat", 0))
             lon = float(result.get("lon", 0))
-
-            # Get bounding box
             if "boundingbox" in result:
                 bb = result["boundingbox"]
                 bbox = [float(bb[2]), float(bb[0]), float(bb[3]), float(bb[1])]
-
-            # Get polygon geometry if available
-            if "geojson" in result:
+            if isinstance(result.get("geojson"), dict):
                 geometry = result["geojson"]
-                logger.info(f"Got {geometry.get('type', 'unknown')} geometry for {country}")
+                logger.info("Got %s geometry for %s", geometry.get("type", "unknown"), country)
             else:
-                # Fallback to point if no polygon available
                 geometry = {"type": "Point", "coordinates": [lon, lat]}
-                logger.warning(f"No polygon available for {country}, using point")
+                logger.warning("No polygon available for %s, using point", country)
         else:
             geometry = {"type": "Point", "coordinates": [0, 0]}
-            logger.warning(f"No results from Nominatim for {country}")
-
+            logger.warning("No geocoding result for %s", country)
     except Exception as e:
-        logger.error(f"Error fetching country geometry: {e}")
+        logger.error("Error fetching country geometry: %s", e)
         geometry = {"type": "Point", "coordinates": [lon, lat]}
 
     # Build properties from indicators

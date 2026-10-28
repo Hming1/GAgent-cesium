@@ -44,7 +44,7 @@ test.describe("/map Routing Verification", () => {
     expect(html).toContain("_next/static"); // Next.js static assets
     
     // Should have our app title
-    expect(html).toContain("NaLaMap");
+    expect(html).toContain("GeoAgent");
   });
 
   test("root path / should serve content (development mode)", async ({ page }) => {

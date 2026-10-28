@@ -1,6 +1,6 @@
 # Backend Tests
 
-This directory contains the test suite for the NaLaMap backend, built with [pytest](https://docs.pytest.org/).
+This directory contains the test suite for the GeoAgent backend, built with [pytest](https://docs.pytest.org/).
 
 ## 🏃 Running Tests
 

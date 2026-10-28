@@ -13,6 +13,14 @@ import pytest
 from shapely.geometry import Point
 
 from models.geodata import DataOrigin, DataType, GeoDataObject
+from services.tools.tool_repeat_guard import reset_identical_call_counts
+
+
+@pytest.fixture(autouse=True)
+def _reset_tool_repeat_guard():
+    reset_identical_call_counts()
+    yield
+    reset_identical_call_counts()
 
 
 @pytest.fixture
@@ -387,3 +395,57 @@ class TestIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestPostGISLayerSupport:
+    @patch("services.tools.attribute_tool2._load_gdf")
+    def test_postgis_layer_uses_data_link(self, mock_load, sample_gdf, sample_layer):
+        from services.tools.attribute_tool2 import attribute_tool2
+
+        postgis_layer = sample_layer.model_copy(
+            update={
+                "data_type": DataType.POSTGIS,
+                "data_link": "http://localhost:8000/api/stream/postgis.geojson",
+                "name": "public.test_postgis",
+            }
+        )
+        state = {"geodata_layers": [postgis_layer], "geodata_results": [], "messages": []}
+        mock_load.return_value = sample_gdf
+
+        result = attribute_tool2.func(
+            state=state,
+            tool_call_id="postgis-call",
+            operation="list_fields",
+            target_layer_name="public.test_postgis",
+        )
+
+        mock_load.assert_called_once_with("http://localhost:8000/api/stream/postgis.geojson")
+        content = json.loads(result.update["messages"][0].content)
+        assert content["operation"] == "list_fields"
+
+    @patch("services.tools.attribute_tool2._load_gdf")
+    def test_postgis_layer_load_error_is_actionable(self, mock_load, sample_layer):
+        from services.tools.attribute_tool2 import attribute_tool2
+
+        postgis_layer = sample_layer.model_copy(
+            update={
+                "data_type": DataType.POSTGIS,
+                "data_link": "bad-link",
+                "name": "public.bad_postgis",
+            }
+        )
+        state = {"geodata_layers": [postgis_layer], "geodata_results": [], "messages": []}
+        mock_load.side_effect = IOError("cannot read stream")
+
+        result = attribute_tool2.func(
+            state=state,
+            tool_call_id="postgis-call",
+            operation="list_fields",
+            target_layer_name="public.bad_postgis",
+        )
+
+        message = result.update["messages"][0]
+        assert message.status == "error"
+        assert "public.bad_postgis" in message.content
+        assert "bad-link" in message.content
+        assert "GeoJSON stream" in message.content

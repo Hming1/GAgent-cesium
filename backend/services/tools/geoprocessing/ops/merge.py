@@ -43,6 +43,7 @@ def op_merge(
             }
 
         return [fc]
-    except Exception as e:
-        logger.exception(f"Error in op_merge: {e}")
-        return []
+    except Exception:
+        # Surface the failure instead of returning an empty
+        # result, which callers cannot distinguish from "no matches".
+        raise

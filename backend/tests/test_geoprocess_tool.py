@@ -99,6 +99,7 @@ def basic_agent_state(sample_geodata_layer):
         "geodata_last_results": [],
         "results_title": "",
         "options": {},
+        "execution_plan": None,
         "remaining_steps": 10,
     }
 
@@ -360,7 +361,7 @@ def test_geoprocess_tool_unique_names(basic_agent_state, temp_geojson_file):
         data_source_id="geoprocess",
         data_type=DataType.GEOJSON,
         data_origin=DataOrigin.TOOL,
-        data_source="NaLaMapGeoprocess",
+        data_source="GeoAgentGeoprocess",
         data_link=temp_geojson_file,
         name="1km-buffer",
         title="1km Buffer",
@@ -599,3 +600,66 @@ def test_geoprocess_tool_user_specified_crs_override(basic_agent_state):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.integration
+def test_geoprocess_tool_postgis_layer_uses_data_link(basic_agent_state, temp_geojson_file):
+    postgis_layer = basic_agent_state["geodata_layers"][0].model_copy(
+        update={
+            "data_type": DataType.POSTGIS,
+            "data_link": temp_geojson_file,
+            "name": "public.test_postgis",
+            "title": "PostGIS Test Layer",
+        }
+    )
+    basic_agent_state["geodata_layers"] = [postgis_layer]
+
+    def fake_executor(processing_state):
+        assert len(processing_state["input_layers"]) == 1
+        assert processing_state["layer_titles"] == ["PostGIS Test Layer"]
+        return {
+            "result_layers": processing_state["input_layers"],
+            "tool_sequence": ["describe"],
+            "operation_details": {"steps": [{"operation": "describe", "params": {}}]},
+            "result_name": "PostGIS Result",
+            "result_description": "Loaded from PostGIS stream.",
+        }
+
+    with (
+        patch("services.tools.geoprocess_tools.geoprocess_executor", fake_executor),
+        patch(
+            "services.tools.geoprocess_tools.store_file",
+            lambda filename, content: (f"http://localhost/api/stream/{filename}", filename),
+        ),
+    ):
+        result = geoprocess_tool.func(
+            state=basic_agent_state,
+            tool_call_id="postgis-geoprocess",
+            target_layer_names=["public.test_postgis"],
+            operation="describe",
+        )
+
+    assert isinstance(result, Command)
+    assert len(result.update["geodata_results"]) == 1
+    assert "Successfully processed" in result.update["messages"][0].content
+
+
+@pytest.mark.integration
+def test_geoprocess_tool_zero_output_is_error(basic_agent_state):
+    def fake_executor(_processing_state):
+        return {
+            "result_layers": [],
+            "tool_sequence": ["sjoin"],
+            "operation_details": {"steps": [{"operation": "sjoin", "params": {}}]},
+        }
+
+    with patch("services.tools.geoprocess_tools.geoprocess_executor", fake_executor):
+        result = geoprocess_tool.func(
+            state=basic_agent_state,
+            tool_call_id="zero-output",
+            operation="sjoin",
+        )
+
+    message = result.update["messages"][0]
+    assert message.status == "error"
+    assert "produced 0 output layers" in message.content

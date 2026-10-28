@@ -21,7 +21,7 @@ Example output:
 {"searchquery":"roads in africa","portal_filter":"fao","bbox_wkt":"POLYGON((...))"}
 """
 
-# Use LangChain chat generate methods since AzureChatOpenAI doesn't have .chat()
+# Use LangChain chat generate methods for provider-compatible model invocation
 
 llm = get_llm()
 

@@ -27,7 +27,7 @@ def get_available_models() -> list[ModelInfo]:
     """
     return [
         ModelInfo(
-            name="deepseek-chat",
+            name="deepseek-v4-pro",
             max_tokens=4096,
             input_cost_per_million=0.14,
             output_cost_per_million=0.28,
@@ -41,21 +41,7 @@ def get_available_models() -> list[ModelInfo]:
             reasoning_capability="intermediate",
         ),
         ModelInfo(
-            name="deepseek-coder",
-            max_tokens=4096,
-            input_cost_per_million=0.14,
-            output_cost_per_million=0.28,
-            cache_cost_per_million=0.014,
-            description="DeepSeek Coder - Specialized coding model",
-            supports_tools=True,
-            supports_vision=False,
-            context_window=32000,
-            supports_parallel_tool_calls=True,
-            tool_calling_quality="good",
-            reasoning_capability="advanced",
-        ),
-        ModelInfo(
-            name="deepseek-reasoner",
+            name="deepseek-v4-flash",
             max_tokens=8192,
             input_cost_per_million=0.55,
             output_cost_per_million=2.19,

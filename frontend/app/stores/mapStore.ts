@@ -2,11 +2,7 @@
 import { create } from "zustand";
 import Logger from "../utils/logger";
 import { getApiBase } from "../utils/apiBase";
-
-type BasemapInfo = {
-  url: string;
-  attribution: string;
-};
+import { DEFAULT_BASEMAP, getBasemapKey, getBasemapLabel, getFallbackBasemap, type BasemapInfo, type BasemapKey } from "../utils/basemaps";
 
 type MapRecord = {
   id: string;
@@ -16,6 +12,9 @@ type MapRecord = {
 
 type MapState = {
   basemap: BasemapInfo;
+  failedBasemaps: BasemapKey[];
+  basemapNotice: { message: string; retryKey: BasemapKey } | null;
+  reportBasemapFailure: (source: BasemapInfo) => void;
   maps: MapRecord[];
   currentMapId: string | null;
   setBasemap: (basemap: BasemapInfo) => void;
@@ -46,14 +45,30 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const useMapStore = create<MapState>((set) => ({
-  basemap: {
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>',
-  },
+  basemap: DEFAULT_BASEMAP,
+  failedBasemaps: [],
+  basemapNotice: null,
   maps: [],
   currentMapId: null,
-  setBasemap: (basemap) => set({ basemap }),
+  setBasemap: (basemap) => set({ basemap, failedBasemaps: [], basemapNotice: null }),
+  reportBasemapFailure: (source) => set((state) => {
+    if (state.basemap !== source) return state;
+    const failedKey = getBasemapKey(source);
+    if (state.failedBasemaps.includes(failedKey)) return state;
+    const failedBasemaps = [...state.failedBasemaps, failedKey];
+    const retryKey = state.basemapNotice?.retryKey ?? failedKey;
+    const next = getFallbackBasemap(retryKey, failedBasemaps);
+    return {
+      basemap: next ?? source,
+      failedBasemaps,
+      basemapNotice: {
+        retryKey,
+        message: next
+          ? getBasemapLabel(failedKey) + "加载失败，已切换到" + getBasemapLabel(getBasemapKey(next)) + "。"
+          : "当前底图及备用底图均加载失败，请检查网络后重试。",
+      },
+    };
+  }),
   setMaps: (maps) =>
     set((state) => ({
       maps,

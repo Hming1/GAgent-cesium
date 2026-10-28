@@ -64,15 +64,26 @@ services:
   backend:
     image: ghcr.io/geoweaveai/nalamap-backend:pr-123
     environment:
-      - DATABASE_AZURE_URL=${DATABASE_AZURE_URL}
+      - DATABASE_URL=postgresql://app:app@db:5432/app
+      - GEODATA_DATABASE_URL=postgresql://app:app@db:5432/layers
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
       - LLM_PROVIDER=${LLM_PROVIDER}
     ports:
       - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init-layers-db.sh:/docker-entrypoint-initdb.d/20-create-layers-db.sh:ro
+    ports:
+      - "5432:5432"
 
   nginx:
     image: ghcr.io/geoweaveai/nalamap-nginx:pr-123
@@ -86,6 +97,9 @@ services:
     depends_on:
       - frontend
       - backend
+
+volumes:
+  postgres-data:
 ```
 
 Then run: `docker-compose -f docker-compose.pr.yml up -d`

@@ -1,0 +1,152 @@
+[
+  {
+    "id": "postgis-routing-list-tables",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看数据库里有哪些空间表",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "geoprocess",
+      "attribute_tool2"
+    ],
+    "expect_required_tools": ["list_postgis_layers"],
+    "forbid_required_tools": ["get_custom_geoserver_data"]
+  },
+  {
+    "id": "postgis-routing-load-table",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "加载 PostGIS 的 public.city_parks 到地图",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data"
+    ],
+    "expect_required_tools": ["list_postgis_layers", "load_postgis_layer"]
+  },
+  {
+    "id": "postgis-routing-not-geoserver",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查询数据库空间表并导入到当前地图",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "search_metadata"
+    ],
+    "expect_required_tools": ["list_postgis_layers", "load_postgis_layer"],
+    "forbid_required_tools": ["get_custom_geoserver_data"]
+  },
+  {
+    "id": "registry-core-tools-present",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tools_present": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "geocode_nominatim",
+      "geocode_overpass",
+      "geoprocess",
+      "attribute_tool2",
+      "style_layers",
+      "search_metadata",
+      "list_user_layers",
+      "create_execution_plan",
+      "get_custom_geoserver_data"
+    ],
+    "forbid_tools_present": []
+  },
+  {
+    "id": "registry-osint-and-python-tools",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tools_present": [
+      "world_bank_indicators",
+      "ecmwf_weather",
+      "nasa_fire_data",
+      "nasa_gibs_layer",
+      "list_nasa_gibs_layers",
+      "run_python_analysis"
+    ]
+  },
+  {
+    "id": "registry-tool-metadata-categories",
+    "skill": "registry",
+    "mode": "registry_tools",
+    "expect_tool_metadata": {
+      "list_postgis_layers": {"category": "data_retrieval"},
+      "geoprocess": {"category": "geoprocessing"},
+      "attribute_tool2": {"category": "attributes"},
+      "style_layers": {"category": "styling"},
+      "search_metadata": {"category": "metadata"},
+      "create_execution_plan": {"category": "planning"}
+    }
+  },
+  {
+    "id": "system-prompt-core-rules",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "You MUST ALWAYS reply in Chinese",
+      "Skill 调用规则",
+      "geodata_layers",
+      "只问一个会真正阻塞执行的澄清问题",
+      "样式是 opt-in",
+      "工具失败收敛",
+      "最多再尝试 1 次合理回退",
+      "禁止空转"
+    ],
+    "forbid_contains": []
+  },
+  {
+    "id": "system-prompt-source-routing",
+    "skill": "registry",
+    "mode": "system_prompt",
+    "expect_contains": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "GeoServer",
+      "数据库",
+      "geoprocess",
+      "别管 GeoServer",
+      "不要把 GeoServer 当作默认兜底"
+    ]
+  },
+  {
+    "id": "plan-aliases-core-tools",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "database": "list_postgis_layers",
+      "postgis_layer": "load_postgis_layer",
+      "geoprocess_tool": "geoprocess",
+      "buffer": "geoprocess",
+      "clip": "geoprocess",
+      "attributes": "attribute_tool2",
+      "style_map_layers": "style_layers",
+      "metadata_search": "search_metadata",
+      "list_layers": "list_user_layers",
+      "geoserver": "get_custom_geoserver_data",
+      "nominatim": "geocode_nominatim",
+      "overpass": "geocode_overpass",
+      "weather": "ecmwf_weather"
+    }
+  },
+  {
+    "id": "plan-aliases-planning-and-osint",
+    "skill": "registry",
+    "mode": "plan_aliases",
+    "aliases": {
+      "create_execution_plan": "create_execution_plan",
+      "execution_plan": "create_execution_plan",
+      "world_bank": "world_bank_indicators",
+      "nasa_fire": "nasa_fire_data",
+      "nasa_gibs": "nasa_gibs_layer",
+      "wms": "get_custom_geoserver_data",
+      "wfs": "get_custom_geoserver_data"
+    }
+  }
+]

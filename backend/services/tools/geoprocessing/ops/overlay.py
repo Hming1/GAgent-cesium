@@ -59,9 +59,10 @@ def op_overlay(
 
     try:
         result_gdf = _layer_to_gdf(layers[0])
-    except Exception as exc:
-        logger.exception("Error preparing base layer for overlay: %s", exc)
-        return []
+    except Exception:
+        # Surface the failure instead of returning an empty
+        # result, which callers cannot distinguish from "no matches".
+        raise
 
     for layer in layers[1:]:
         try:
@@ -72,9 +73,10 @@ def op_overlay(
             if result_gdf.empty:
                 return [{"type": "FeatureCollection", "features": []}]
 
-        except Exception as exc:
-            logger.exception("Error during overlay with layer: %s", exc)
-            return []
+        except Exception:
+            # Surface the failure instead of returning an empty
+            # result, which callers cannot distinguish from "no matches".
+            raise
 
     try:
         if not result_gdf.empty:

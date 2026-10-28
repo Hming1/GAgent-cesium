@@ -2,7 +2,7 @@
 Deployment Configuration Models
 
 Defines the schema for custom deployment configurations that allow operators
-to customize NaLaMap deployments with pre-configured settings.
+to customize GeoAgent deployments with pre-configured settings.
 
 Configuration can be provided via JSON file (DEPLOYMENT_CONFIG_PATH env var)
 and is validated against these models on server startup.
@@ -82,7 +82,7 @@ class DeploymentModelSettings(BaseModel):
     """
 
     model_provider: Optional[str] = Field(
-        None, description="Provider name, e.g., openai, google, azure"
+        None, description="Provider name, e.g., deepseek, kimi, vllm"
     )
     model_name: Optional[str] = Field(None, description="Model identifier, e.g., gpt-4o")
     max_tokens: Optional[int] = Field(None, ge=1, description="Maximum tokens to generate")
@@ -95,6 +95,14 @@ class DeploymentModelSettings(BaseModel):
     )
     enable_performance_metrics: Optional[bool] = Field(
         None, description="Enable performance metrics tracking"
+    )
+    enable_agent_audit: Optional[bool] = Field(
+        None,
+        description="Persist agent run traces for process auditing and evaluation",
+    )
+    agent_audit_level: Optional[str] = Field(
+        None,
+        description="Agent audit detail level: summary, tool, or full",
     )
     enable_dynamic_tools: Optional[bool] = Field(None, description="Enable dynamic tool selection")
     tool_selection_strategy: Optional[str] = Field(
@@ -129,7 +137,7 @@ class DeploymentConfig(BaseModel):
     Root deployment configuration model.
 
     This represents the structure of a deployment configuration file that
-    operators can provide to customize NaLaMap for their specific needs.
+    operators can provide to customize GeoAgent for their specific needs.
 
     Example file: deployment-config.json
     ```json
@@ -143,8 +151,8 @@ class DeploymentConfig(BaseModel):
             }
         ],
         "model_settings": {
-            "model_provider": "azure",
-            "model_name": "gpt-4o"
+            "model_provider": "vllm",
+            "model_name": "Qwen3.8-27B"
         },
         "tools": [
             {"name": "geoprocess", "enabled": true}

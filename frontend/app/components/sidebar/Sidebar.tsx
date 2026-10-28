@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Head from "next/head";
-import { LogOut, Maximize, RefreshCcw, Settings, Home, Layers } from "lucide-react";
+import { LogOut, Maximize, RefreshCcw, Settings, Home, Layers, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useChatInterfaceStore } from "../../stores/chatInterfaceStore";
@@ -85,7 +85,7 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
   return (
     <>
       <Head>
-        <title>NaLaMapAI</title>
+        <title>GeoAgent</title>
         <meta name="description" content="轻松获取地理空间洞察" />
       </Head>
       {/* Top Icon Section */}
@@ -111,6 +111,16 @@ export default function Sidebar({ onLayerToggle }: { onLayerToggle?: () => void 
             <span className="md:hidden text-base">图层管理</span>
           </button>
         )}
+        {/* Inefficient space workspace */}
+        <Link href="/inefficient-space">
+          <button
+            className="hover:bg-secondary-800 rounded focus:outline-none text-white transition-colors cursor-pointer w-full md:w-auto flex items-center md:justify-center justify-start md:px-2 px-4 py-3 md:py-2"
+            title="低效空间判别"
+          >
+            <Building2 className="w-6 h-6 md:mr-0 mr-3" />
+            <span className="md:hidden text-base">低效空间判别</span>
+          </button>
+        </Link>
         {/* Sign out */}
         {user && (
           <button

@@ -12,19 +12,19 @@ class TestProviderOrdering:
     @pytest.mark.unit
     def test_default_llm_provider_puts_provider_first(self):
         """Test that DEFAULT_LLM_PROVIDER puts specified provider first in dict."""
-        with patch.dict(os.environ, {"DEFAULT_LLM_PROVIDER": "azure"}, clear=False):
+        with patch.dict(os.environ, {"DEFAULT_LLM_PROVIDER": "kimi"}, clear=False):
             from services.ai.provider_interface import get_all_providers
 
             providers = get_all_providers()
             provider_names = list(providers.keys())
 
-            # Azure should be first
-            assert provider_names[0] == "azure"
+            # Kimi should be first
+            assert provider_names[0] == "kimi"
 
     @pytest.mark.unit
     def test_llm_provider_fallback(self):
         """Test that LLM_PROVIDER is used when DEFAULT_LLM_PROVIDER not set."""
-        with patch.dict(os.environ, {"LLM_PROVIDER": "google"}, clear=True):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "vllm"}, clear=True):
             # Ensure DEFAULT_LLM_PROVIDER is not set
             os.environ.pop("DEFAULT_LLM_PROVIDER", None)
 
@@ -33,8 +33,8 @@ class TestProviderOrdering:
             providers = get_all_providers()
             provider_names = list(providers.keys())
 
-            # Google should be first
-            assert provider_names[0] == "google"
+            # vLLM should be first
+            assert provider_names[0] == "vllm"
 
     @pytest.mark.unit
     def test_no_env_var_uses_default_order(self):
@@ -49,8 +49,8 @@ class TestProviderOrdering:
             providers = get_all_providers()
             provider_names = list(providers.keys())
 
-            # Should be in natural order (openai first in code)
-            assert provider_names[0] == "openai"
+            # Should be in natural order (deepseek first in code)
+            assert provider_names[0] == "deepseek"
 
     @pytest.mark.unit
     def test_invalid_provider_ignored(self):
@@ -62,33 +62,33 @@ class TestProviderOrdering:
             provider_names = list(providers.keys())
 
             # Should fall back to natural order
-            assert provider_names[0] == "openai"
+            assert provider_names[0] == "deepseek"
             assert "nonexistent" not in provider_names
 
     @pytest.mark.unit
     def test_case_insensitive_provider_name(self):
         """Test that provider names are case-insensitive."""
-        with patch.dict(os.environ, {"DEFAULT_LLM_PROVIDER": "AZURE"}, clear=False):
+        with patch.dict(os.environ, {"DEFAULT_LLM_PROVIDER": "KIMI"}, clear=False):
             from services.ai.provider_interface import get_all_providers
 
             providers = get_all_providers()
             provider_names = list(providers.keys())
 
-            # Azure should be first (case-insensitive match)
-            assert provider_names[0] == "azure"
+            # Kimi should be first (case-insensitive match)
+            assert provider_names[0] == "kimi"
 
     @pytest.mark.unit
     def test_all_providers_still_included(self):
         """Test that reordering doesn't exclude any providers."""
-        with patch.dict(os.environ, {"DEFAULT_LLM_PROVIDER": "mistral"}, clear=False):
+        with patch.dict(os.environ, {"DEFAULT_LLM_PROVIDER": "vllm"}, clear=False):
             from services.ai.provider_interface import get_all_providers
 
             providers = get_all_providers()
             provider_names = list(providers.keys())
 
             # All providers should be present
-            expected_providers = {"openai", "azure", "google", "mistral", "deepseek"}
+            expected_providers = {"deepseek", "kimi", "vllm"}
             assert set(provider_names) == expected_providers
 
-            # Mistral should be first
-            assert provider_names[0] == "mistral"
+            # vLLM should be first
+            assert provider_names[0] == "vllm"

@@ -1,4 +1,4 @@
-# Changelog - NaLaMap
+# Changelog - GeoAgent
 
 ## [Unreleased] - Since v.0.1.0-beta.1
 
@@ -6,7 +6,7 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 
 ---
 
-## 🚀 NaLaMap Release Summary - October 2025
+## 🚀 GeoAgent Release Summary - October 2025
 
 ## Major Achievements Since v.0.1.0-beta.1
 
@@ -18,12 +18,11 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 
 ### ⚙️ Backend Powerhouse  
 - **File Streaming**: Gzip compression and range request support for large GeoJSON files
-- **Azure Integration**: Blob storage support with SAS URLs and CORS configuration
 - **Security Hardening**: Cookie security, session validation, and path traversal protection
 - **Performance Boost**: GeoJSON caching, background task management, and optimized embeddings
 
 ### 🤖 AI & Agent Evolution
-- **Multi-Provider LLM**: Support for OpenAI, Azure AI, Google, Mistral, and DeepSeek
+- **Multi-Provider LLM**: Support for OpenAI, Google, Mistral, and DeepSeek
 - **New Models**: GPT-5-nano/mini, o1-mini, o3-mini with advanced pricing and capabilities
 - **Smart Tools**: Enhanced attribute tools with LLM-powered layer naming and fuzzy matching
 
@@ -180,7 +179,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 #### ✨ New Features
 - **File Streaming**: Implemented streaming file endpoint for GeoJSON files with gzip compression
 - **Range Requests**: Added range request handling for file streaming
-- **File Metadata**: Added support for Azure Blob Storage in file metadata retrieval
 - **Runtime Config**: Implemented API route for serving runtime environment configuration
 - **Health Checks**: Added health check endpoints for Nginx and backend services
 - **Large Buffers**: Added large buffer configurations for chat and geoprocessing API endpoints
@@ -204,7 +202,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 ### Database & Storage
 
 #### ✨ New Features
-- **Azure Blob Storage**: Implemented Azure Blob Storage integration with SAS URL support
 - **Centralized Storage**: Refactored file handling to use centralized storage management
 - **GeoJSON Caching**: Implemented GeoJSON caching mechanism with size limit and expiration
 - **File Management**: Utilized central file management for saving GeoDataFrames
@@ -223,7 +220,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 
 #### ✨ New Features
 - **OpenAI Embeddings**: Added OpenAI embeddings support with fallback mechanism
-- **Azure Embeddings**: Integrated Azure OpenAI embeddings
 - **Hashing Embeddings**: Enhanced hashing embeddings with TF-IDF, stopword filtering, and n-gram support
 - **Semantic Similarity**: Improved semantic similarity through enhanced embedding techniques
 - **Background Tasks**: Implemented background task manager with priority-based thread pools
@@ -264,7 +260,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 
 #### ✨ New Features
 - **Multi-Provider Support**: Added support for Anthropic, Google, Mistral, and DeepSeek
-- **Azure AI**: Enhanced Azure AI integration with multi-model support
 - **OpenAI Models**: Added new OpenAI models 'o1-mini' and 'o3-mini' with pricing & model details
 - **Model Selection**: Implemented state-based model selection
 - **Max Tokens**: Enhanced LLM configuration with max_tokens validation
@@ -273,7 +268,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 
 #### 🐛 Bug Fixes
 - **Model Compatibility**: Fixed langchain-core MRO conflicts by pinning compatible version
-- **Azure Validation**: Added Azure provider validation and skip test if env vars not set
 
 #### 🧪 Tests
 - **Agent Tests**: Fixed flaky agent test
@@ -441,7 +435,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 ### Deployment
 
 #### ✨ New Features
-- **Azure Container Apps**: Enhanced configuration for Azure Container Apps deployment
 - **Terraform Docs**: Added Terraform configuration guidance for multi-model setup
 
 ---
@@ -457,7 +450,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 - **Zustand**: Bumped zustand from 5.0.6 to 5.0.8
 - **Simple-swizzle**: Bumped simple-swizzle from 0.2.2 to 0.2.4
 - **NumPy**: Bumped numpy from 2.3.1 to 2.3.3
-- **Azure Storage**: Bumped azure-storage-blob from 12.25.1 to 12.26.0
 - **HF-Xet**: Bumped hf-xet from 1.1.5 to 1.1.10
 - **Tailwind**: Bumped @tailwindcss/oxide-linux-x64-gnu to 4.1.13
 - **Package Security**: Applied package security updates
@@ -474,7 +466,6 @@ All notable changes since version 0.1.0-beta.1 (350+ commits from October 2025).
 - **Architecture Docs**: Added comprehensive architecture documentation
 - **README Updates**: Updated README with .env configuration section
 - **Port Information**: Added frontend port information to README
-- **Azure Docs**: Added Azure Storage Account CORS configuration documentation
 - **Attribute Tool Docs**: Added documentation for attribute_tool2
 
 ---

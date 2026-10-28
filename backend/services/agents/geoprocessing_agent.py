@@ -209,8 +209,7 @@ async def geoprocess_executor(state: Dict[str, Any]) -> Dict[str, Any]:
     }
     user_msg = json.dumps(user_payload)
 
-    # Use LangChain chat generate methods since AzureChatOpenAI doesn't
-    # have .chat()
+    # Use LangChain chat generate methods for provider-compatible model invocation
     from langchain_core.messages import HumanMessage, SystemMessage
 
     messages = [

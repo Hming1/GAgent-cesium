@@ -1,0 +1,135 @@
+[
+  {
+    "id": "ineff-routing-industrial",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "请识别工业低效用地",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space",
+      "list_postgis_layers",
+      "load_postgis_layer"
+    ],
+    "expect_required_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space"
+    ],
+    "forbid_required_tools": ["run_python_analysis"]
+  },
+  {
+    "id": "ineff-routing-idle-vacant",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "做一次闲置空地判别",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "ineff-routing-far",
+    "skill": "inefficient_space",
+    "mode": "routing",
+    "query": "按容积率判别低效空间",
+    "available_tools": [
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space"
+    ],
+    "expect_required_tools": [
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "postgis-routing-list",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "查看数据库里有哪些空间表",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data",
+      "analyze_inefficient_space"
+    ],
+    "expect_required_tools": ["list_postgis_layers"],
+    "forbid_required_tools": ["get_custom_geoserver_data"]
+  },
+  {
+    "id": "postgis-routing-load",
+    "skill": "postgis",
+    "mode": "routing",
+    "query": "加载 PostGIS 的 public.parcels 到地图",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_custom_geoserver_data"
+    ],
+    "expect_required_tools": ["list_postgis_layers", "load_postgis_layer"]
+  },
+  {
+    "id": "combo-routing-db-then-ineff",
+    "skill": "combined",
+    "mode": "routing",
+    "query": "从数据库加载地块后识别低效空间和闲置空地",
+    "available_tools": [
+      "list_postgis_layers",
+      "load_postgis_layer",
+      "get_inefficient_presets",
+      "infer_inefficient_field_mapping",
+      "analyze_inefficient_space"
+    ],
+    "expect_required_tools": [
+      "list_postgis_layers",
+      "analyze_inefficient_space"
+    ]
+  },
+  {
+    "id": "ineff-infer-chinese-fields",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": ["容积率", "建筑密度", "用地性质", "税收", "闲置年限"],
+    "expect_matched": {
+      "far": "容积率",
+      "building_density": "建筑密度",
+      "land_use": "用地性质",
+      "tax_output": "税收",
+      "idle_years": "闲置年限"
+    },
+    "expect_clarifying_question": false
+  },
+  {
+    "id": "ineff-infer-missing-critical",
+    "skill": "inefficient_space",
+    "mode": "infer_mapping",
+    "columns": ["name", "area_m2"],
+    "expect_critical_missing_contains": ["land_use"],
+    "expect_clarifying_question": true
+  },
+  {
+    "id": "ineff-analyze-fixture",
+    "skill": "inefficient_space",
+    "mode": "analyze_fixture",
+    "fixture": "inefficient_parcels.geojson",
+    "expect_min_matched": 2,
+    "expect_types_present": ["idle_vacant", "industrial"],
+    "expect_types_absent": ["efficient"]
+  },
+  {
+    "id": "postgis-plan-aliases",
+    "skill": "postgis",
+    "mode": "plan_aliases",
+    "aliases": {
+      "database": "list_postgis_layers",
+      "postgis_layer": "load_postgis_layer",
+      "低效空间": "analyze_inefficient_space",
+      "闲置空地": "analyze_inefficient_space",
+      "容积率判别": "analyze_inefficient_space"
+    }
+  }
+]

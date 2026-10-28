@@ -262,7 +262,7 @@ async def stream_file(filename: str, request: Request):
 
         # Do NOT set Content-Length for streaming responses!
         # This forces chunked transfer encoding which is required for proper
-        # async streaming in Azure Container Apps. Setting Content-Length can
+        # async streaming behind reverse proxies. Setting Content-Length can
         # cause nginx to see "upstream prematurely closed connection"
         return StreamingResponse(
             file_iterator(serve_path),

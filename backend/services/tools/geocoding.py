@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -16,6 +17,14 @@ from models.states import GeoDataAgentState
 from services.storage.file_management import store_file
 
 from .constants import AMENITY_MAPPING
+from .geocoding_fallback import (
+    geocode_boundary_with_amap,
+    geocode_with_fallbacks,
+    looks_like_china_query,
+    resolve_amap_poi_types,
+    search_amap_pois,
+)
+from .tool_repeat_guard import refuse_identical_tool_call
 from .overpass import (
     OverpassClient,
     OverpassLocation,
@@ -23,13 +32,61 @@ from .overpass import (
     OverpassResultConverter,
     create_feature_collection_geodata,
     is_highway_query,
+    spatial_scope_label,
 )
 
 logger = logging.getLogger(__name__)
 
 headers_nalamap = {
-    "User-Agent": "NaLaMap, github.com/nalamap, next generation geospatial analysis using agents"
+    "User-Agent": "GeoAgent, github.com/nalamap, next generation geospatial analysis using agents"
 }
+
+
+def _geocode_with_fallback(
+    query: str,
+    geojson: bool,
+    max_rows: int,
+    polygon_format: str = "geojson",
+    address_details: int = 0,
+    require_boundary: bool = False,
+) -> Optional[List[Dict[str, Any]]]:
+    """Search Nominatim, then a fallback matching the required geometry."""
+    if require_boundary:
+        geojson, polygon_format = True, "geojson"
+    if not query.strip() or max_rows < 1:
+        return []
+    url = (
+        f"https://nominatim.openstreetmap.org/search"
+        f"?q={query}&format=json&polygon_{polygon_format}={1 if geojson else 0}"
+        f"&addressdetails={address_details}&limit={max_rows}"
+    )
+    nominatim_results = None
+    try:
+        response = requests.get(url, headers=headers_nalamap, timeout=5)
+        if response.status_code == 200:
+            payload = response.json()
+            if isinstance(payload, list) and all(isinstance(item, dict) for item in payload):
+                if require_boundary:
+                    payload = [
+                        item
+                        for item in payload
+                        if isinstance(item.get("geojson"), dict)
+                        and item["geojson"].get("type") in ("Polygon", "MultiPolygon")
+                    ]
+                nominatim_results = payload
+                if payload:
+                    return payload
+        else:
+            logger.warning("Nominatim returned HTTP %s", response.status_code)
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("Nominatim request failed: %s", type(exc).__name__)
+
+    fallback = (
+        geocode_boundary_with_amap(query, max_rows)
+        if require_boundary
+        else geocode_with_fallbacks(query, max_rows)
+    )
+    return fallback or nominatim_results
 
 
 @tool
@@ -83,23 +140,13 @@ def geocode_using_geonames(location: str, maxRows: int = 3) -> str:
 # Note: Contains GeoJSON & Bounding Box: TODO: sidechannel GeoJSON to not overload our LLMs
 @tool
 def geocode_using_nominatim(query: str, geojson: bool = False, maxRows: int = 3) -> str:
-    """Geocoding user requests using the Open Street Map Nominatim API."""
-    # TODO: Add support for OSM tags.
-    url: str = (
-        f"https://nominatim.openstreetmap.org/search"
-        f"?q={query}&format=json&polygon_kml={1 if geojson else 0}"
-        f"&addressdetails=1&limit={maxRows}"
-    )
-    response = requests.get(url, headers=headers_nalamap)
-    if response.status_code == 200:
-        data = response.json()
-        if len(data):
-            return json.dumps(data)
-        else:
-            return "No results found."
-    else:
-        print(response.json())
-        return "Error querying the Nominatim API."
+    """Geocode with Nominatim, then configured Amap and Baidu services."""
+    data = _geocode_with_fallback(query, geojson, maxRows, polygon_format="kml", address_details=1)
+    if data:
+        return json.dumps(data, ensure_ascii=False)
+    if data == []:
+        return "No results found."
+    return "Error querying the Nominatim API."
 
 
 def create_geodata_object_from_geojson(
@@ -128,6 +175,7 @@ def create_geodata_object_from_geojson(
         "importance",
         "addresstype",
         "address",
+        "_provider",
     ]:
         if prop in nominatim_response:
             properties[prop] = nominatim_response[prop]
@@ -190,7 +238,9 @@ def create_geodata_object_from_geojson(
 
     geoobject: GeoDataObject = GeoDataObject(
         id=unique_id,
-        data_source_id="geocodeNominatim",
+        data_source_id={"Amap": "geocodeAmap", "Baidu": "geocodeBaidu"}.get(
+            nominatim_response.get("_provider"), "geocodeNominatim"
+        ),
         data_type=DataType.GEOJSON,
         data_origin=DataOrigin.TOOL,
         data_source=nominatim_response["licence"],
@@ -234,13 +284,19 @@ def geocode_using_nominatim_to_geostate(
     query: str,
     geojson: bool = True,
     maxRows: int = 5,
+    require_boundary: bool = False,
 ) -> Union[Dict[str, Any], Command]:
-    """Geocode an address using OpenStreetMap Nominatim API. Returns Bounding Box for further
+    """Geocode with Nominatim, then Amap and Baidu if configured. Returns Bounding Box for further
     request and GeoJson of the area to show to the user.
     Use for: Geocoding specific addresses or when detailed data (e.g., place types) is needed.
     Strengths:
     * Provides detailed polygon data as GeoJSON (e.g. polygons of countries, states, cities)
       which can be used for map visualization and further analysis.
+    * Set require_boundary=True for administrative boundaries, clipping or area analysis.
+      Pass only the administrative place name or adcode in query, and maxRows=1
+      for a single city. This uses Amap district boundaries when Nominatim fails
+      or returns points; it never substitutes address points for boundaries.
+    * Otherwise Amap and Baidu fallback results are address point layers.
     * For forward geocoding: Converts place names or addresses into geographic coordinates.
     * Detailed address data, including house numbers, street names, neighborhoods, and postcodes.
     * Provides the geographical extent (min/max latitude and longitude) for places, including
@@ -252,22 +308,38 @@ def geocode_using_nominatim_to_geostate(
     * Provides limited metadata. It does not include attributes like population, elevation, time zones, or weather data.
     * does not support broader geographical queries like finding nearby places, hierarchical relationships beyond administrative divisions
     """
-    url: str = (
-        f"https://nominatim.openstreetmap.org/search"
-        f"?q={query}&format=json&polygon_geojson={1 if geojson else 0}"
-        f"&addressdetails=0&limit={maxRows}"
+    blocked = refuse_identical_tool_call(
+        state,
+        "geocode_using_nominatim_to_geostate",
+        tool_call_id,
+        {
+            "query": query,
+            "geojson": geojson,
+            "maxRows": maxRows,
+            "require_boundary": require_boundary,
+        },
     )
-    response = requests.get(url, headers=headers_nalamap)
-    if response.status_code == 200:
-        data = response.json()
+    if blocked is not None:
+        return blocked
+
+    if require_boundary:
+        geojson = True
+    data = _geocode_with_fallback(query, geojson, maxRows, require_boundary=require_boundary)
+    if require_boundary and not data:
+        return {
+            "message": "No administrative boundary polygon was available from Nominatim or "
+            "configured Amap district search. Baidu geocoding returns points and cannot "
+            "supply a clipping boundary. Check backend keys, provider permissions and network."
+        }
+    if data is not None:
         if len(data):
             cleaned_data: List[Dict[str, Any]] = []
             for elem in data:
-                if "geojson" in elem:
+                if geojson and "geojson" in elem:
                     geocoded_object: Optional[GeoDataObject] = create_geodata_object_from_geojson(
                         elem
                     )
-                    del elem["geojson"]
+                    elem = {key: value for key, value in elem.items() if key != "geojson"}
                     if geocoded_object:
                         elem["id"] = geocoded_object.id
                         elem["data_source_id"] = geocoded_object.data_source_id
@@ -304,9 +376,13 @@ def geocode_using_nominatim_to_geostate(
                             )
 
                 if not actionable_layers_info:
-                    tool_message_content = "Successfully geocoded '{query}'. Found {len(cleaned_data)} potential result(s), but no GeoData objects with full geometry were created or stored."
+                    tool_message_content = f"Successfully geocoded '{query}'. Found {len(cleaned_data)} potential result(s), but no GeoData objects were stored."
                 else:
-                    tool_message_content = "Successfully geocoded '{query}'. Found {len(cleaned_data)} potential result(s). {len(actionable_layers_info)} GeoData object(s) with full geometry created and stored in geodata_results. "
+                    tool_message_content = (
+                        f"Successfully geocoded '{query}' with {data[0].get('_provider', 'Nominatim')}. "
+                        f"Found {len(cleaned_data)} result(s) and stored {len(actionable_layers_info)} "
+                        "GeoData object(s) in geodata_results. "
+                    )
 
                     # Provide structured info for the agent and clear instructions
                     layer_details_for_agent = json.dumps(actionable_layers_info)
@@ -319,12 +395,13 @@ def geocode_using_nominatim_to_geostate(
                     )
 
                     user_response_guidance = (
-                        "Call 'set_result_list' to make these layer(s) available for the user to select. "
-                        + f"In your textual response to the user, confirm the geocoding success and mention the type of locations found (e.g., based on the query or results like '{example_name}'). "
-                        + "State that the found layers are now listed (e.g., in a list or panel) and can be selected by the user to be added to the map. "
-                        + "Ensure your response clearly indicates the user needs to take an action to add them to the map. "
-                        + "Do NOT state or imply that the layers have already been added to the map. "
-                        + "Do NOT include direct file paths, sandbox links, or any other internal storage paths in your textual response or as Markdown links."
+                        "Layers are already in geodata_results. "
+                        + f"Confirm geocoding success and mention what was found (e.g. '{example_name}'). "
+                        + "If the user only asked for a location/boundary, treat this result as final — "
+                        + "do NOT call geocode/overpass/attribute tools again to reconfirm. "
+                        + "To show on the map, call add_layers_to_map once with the layer name(s). "
+                        + "Do NOT ask the user to manually select/勾选 layers. "
+                        + "Do NOT include direct file paths, sandbox links, or internal storage paths."
                     )
                     tool_message_content += f"Actionable layer details: {layer_details_for_agent}. User response guidance: {user_response_guidance}"
 
@@ -339,7 +416,7 @@ def geocode_using_nominatim_to_geostate(
                             ),
                         ],
                         # "global_geodata": state["global_geodata"],
-                        "geodata_results": state["geodata_results"],
+                        "geodata_results": state.get("geodata_results", []),
                     }
                 )
             else:
@@ -364,8 +441,7 @@ def geocode_using_nominatim_to_geostate(
         else:
             return {"message": "No results found."}
     else:
-        print(response.json())
-        return {"message": "Error querying the Nominatim API."}
+        return {"message": "All configured geocoding providers failed."}
 
 
 # Helper function to convert a single Overpass API element to a GeoJSON Feature dictionary
@@ -562,10 +638,11 @@ def create_collection_geodata_object(
         min_lon, max_lon = min(all_lons), max(all_lons)
         min_lat, max_lat = min(all_lats), max(all_lats)
 
-        # Create a small buffer if all features are points and very close, to make bbox visible
+        # Pad tight/single-point collections so map "zoom to layer" does not
+        # fill the viewport with a ~100 m square (frontend also expands this).
         is_all_points = all(f["geometry"]["type"] == "Point" for f in features if f["geometry"])
-        if is_all_points and (max_lon - min_lon < 0.001) and (max_lat - min_lat < 0.001):
-            buffer = 0.001
+        if is_all_points and (max_lon - min_lon < 0.03) and (max_lat - min_lat < 0.03):
+            buffer = 0.015
             min_lon -= buffer
             max_lon += buffer
             min_lat -= buffer
@@ -653,7 +730,11 @@ def geocode_using_overpass_to_geostate(
     center_lon: Optional[float] = None,
 ) -> Union[Dict[str, Any], Command]:
     """
-    Geocode a location and search for amenities/POIs using the Overpass API.
+    Search amenities/POIs near a place.
+
+    For China locations with AMAP_WEB_SERVICE_KEY configured, Amap Place Search
+    is tried first. OpenStreetMap Overpass remains the fallback (and the default
+    overseas path).
 
     Args:
         state: The current agent state containing geodata and messages.
@@ -670,11 +751,29 @@ def geocode_using_overpass_to_geostate(
     Returns:
         A Command object to update the agent state or a dictionary with results.
     """
-    # 1. Map amenity_key to OSM tag
+    blocked = refuse_identical_tool_call(
+        state,
+        "geocode_using_overpass_to_geostate",
+        tool_call_id,
+        {
+            "query": query,
+            "amenity_key": amenity_key,
+            "location_name": location_name,
+            "radius_meters": radius_meters,
+            "max_results": max_results,
+            "center_lat": center_lat,
+            "center_lon": center_lon,
+        },
+    )
+    if blocked is not None:
+        return blocked
+
+    # 1. Map amenity_key to OSM tag (also used as Overpass fallback identity)
     amenity_key_cleaned = amenity_key.lower().replace(" ", "_")
     osm_tag_kv = AMENITY_MAPPING.get(amenity_key_cleaned)
+    amap_types = resolve_amap_poi_types(amenity_key_cleaned, query)
 
-    if not osm_tag_kv:
+    if not osm_tag_kv and not amap_types:
         return Command(
             update={
                 "messages": [
@@ -691,8 +790,14 @@ def geocode_using_overpass_to_geostate(
             }
         )
 
-    amenity_key_display = amenity_key_cleaned.replace("_", " ").title()
-    osm_query_key, osm_query_value = osm_tag_kv.split("=", 1)
+    # Keep Overpass identity when the key is OSM-known; otherwise label from amenity.
+    if osm_tag_kv:
+        amenity_key_display = amenity_key_cleaned.replace("_", " ").title()
+        osm_query_key, osm_query_value = osm_tag_kv.split("=", 1)
+    else:
+        amenity_key_display = amenity_key_cleaned.replace("_", " ").title()
+        osm_tag_kv = f"amap={amap_types}"
+        osm_query_key, osm_query_value = "amap", amap_types or amenity_key_cleaned
 
     # 2. Create location object - use explicit coordinates if provided
     if center_lat is not None and center_lon is not None:
@@ -723,6 +828,134 @@ def geocode_using_overpass_to_geostate(
                 }
             )
         search_mode_description = _get_search_mode_description(location, radius_meters)
+
+    # 2b. China POI: prefer Amap Place Search when a key is configured.
+    use_amap = looks_like_china_query(
+        location_name,
+        display_name=getattr(location, "display_name", None),
+        lat=getattr(location, "lat", None),
+        lon=getattr(location, "lon", None),
+    ) and bool(os.getenv("AMAP_WEB_SERVICE_KEY"))
+    if use_amap:
+        try:
+            # Amap ignores location+radius on place/text, so a "within N m of X"
+            # request needs its around endpoint. But only for a real *point*
+            # landmark: when the user names an administrative area (深圳市/广东省)
+            # a radius around the city centre would wrongly clip the results, so
+            # keep the city-filtered search there.
+            amap_center: Optional[tuple] = None
+            if not _is_administrative_area(location):
+                if (
+                    getattr(location, "lat", None) is not None
+                    and getattr(location, "lon", None) is not None
+                ):
+                    amap_center = (float(location.lon), float(location.lat))
+
+            amap_features = search_amap_pois(
+                amenity_key=amenity_key,
+                query=query,
+                location_name=location_name,
+                max_results=max_results,
+                city=location_name,
+                center=amap_center,
+                radius_meters=radius_meters,
+            )
+        except Exception as exc:
+            logger.warning("Amap POI search failed, falling back to Overpass: %s", exc)
+            amap_features = []
+
+        if amap_features:
+            scope = spatial_scope_label(location_name or location.display_name, mode="area")
+            collection_obj = create_feature_collection_geodata(
+                amap_features,
+                "Points",
+                amenity_key_display,
+                location.display_name,
+                osm_tag_kv,
+                location_name,
+                scope_label=scope,
+                data_source_id="geocodeAmapCollection",
+                data_source="Amap",
+            )
+            if collection_obj:
+                current_geodata = state.get("geodata_results", [])
+                if not isinstance(current_geodata, list):
+                    current_geodata = []
+                current_geodata = list(current_geodata) + [collection_obj]
+                layers_info = [
+                    {
+                        "name": collection_obj.name,
+                        "type": "Points",
+                        "count": len(amap_features),
+                        "id": collection_obj.id,
+                        "data_source_id": "geocodeAmapCollection",
+                        "provider": "Amap",
+                    }
+                ]
+                msg = (
+                    f"Found {len(amap_features)} '{amenity_key_display}' feature(s) "
+                    f"via Amap within '{location_name}'. "
+                    f"Created 1 collection layer(s). "
+                )
+                if len(amap_features) >= max_results:
+                    msg += (
+                        f"LIMIT_INFO: Result count reached max_results ({max_results}); "
+                        "more features may exist. "
+                    )
+                elif amap_center is None:
+                    msg += (
+                        "City-wide Amap searches are collected district by district and "
+                        "merged, so this count is not truncated by an API page limit. "
+                    )
+                msg += (
+                    f"Actionable layer details: {json.dumps(layers_info, ensure_ascii=False)}. "
+                    "User response guidance: Feature count above is authoritative. "
+                    "If the user asked how many / 有多少, answer with that count now — "
+                    "do NOT call geocode/overpass/attribute tools again to reconfirm. "
+                    "To show on the map, call add_layers_to_map once. "
+                    "Do NOT ask the user to manually select/勾选 layers."
+                )
+                logger.info(
+                    "Amap POI search returned %s features for %s in %s",
+                    len(amap_features),
+                    amenity_key,
+                    location_name,
+                )
+                return Command(
+                    update={
+                        "messages": [
+                            *state["messages"],
+                            ToolMessage(
+                                name="geocode_using_overpass_to_geostate",
+                                content=msg,
+                                tool_call_id=tool_call_id,
+                            ),
+                        ],
+                        "geodata_results": current_geodata,
+                    }
+                )
+        logger.info(
+            "Amap POI search empty for %s in %s; falling back to Overpass",
+            amenity_key,
+            location_name,
+        )
+
+    if not osm_tag_kv or osm_query_key == "amap":
+        return Command(
+            update={
+                "messages": [
+                    *state["messages"],
+                    ToolMessage(
+                        name="geocode_using_overpass_to_geostate",
+                        content=(
+                            f"No '{amenity_key_display}' found via Amap for '{location_name}', "
+                            "and this amenity has no OpenStreetMap mapping for Overpass fallback."
+                        ),
+                        tool_call_id=tool_call_id,
+                    ),
+                ]
+            }
+        )
 
     # 3. Build and execute Overpass query
     query_builder = OverpassQueryBuilder(timeout=timeout, max_results=max_results)
@@ -838,6 +1071,14 @@ def geocode_using_overpass_to_geostate(
         (linestring_features, "Lines"),
     ]:
         if features:
+            if location.has_area:
+                scope_mode = "area"
+            elif location.has_bbox:
+                scope_mode = "bbox"
+            elif location.has_point:
+                scope_mode = "radius"
+            else:
+                scope_mode = "near"
             collection_obj = create_feature_collection_geodata(
                 features,
                 collection_type,
@@ -845,6 +1086,11 @@ def geocode_using_overpass_to_geostate(
                 location.display_name,
                 osm_tag_kv,
                 location_name,
+                scope_label=spatial_scope_label(
+                    location.display_name or location_name,
+                    scope_mode,
+                    radius_meters,
+                ),
             )
             if collection_obj:
                 created_collections.append(collection_obj)
@@ -908,61 +1154,80 @@ def geocode_using_overpass_to_geostate(
     )
 
 
+def _parse_place_bbox(location_data: Dict[str, Any]) -> Optional[tuple]:
+    """Nominatim order is south, north, west, east. Drop a zero-area point box."""
+    raw_bbox = location_data.get("boundingbox")
+    if not isinstance(raw_bbox, list) or len(raw_bbox) != 4:
+        return None
+    try:
+        south, north, west, east = (
+            float(raw_bbox[0]),
+            float(raw_bbox[1]),
+            float(raw_bbox[2]),
+            float(raw_bbox[3]),
+        )
+    except (TypeError, ValueError):
+        return None
+    if abs(north - south) < 1e-5 and abs(east - west) < 1e-5:
+        return None
+    return (south, west, north, east)
+
+
+def resolve_place(query: str, *, require_boundary: bool = False) -> Optional[Dict[str, Any]]:
+    """Nominatim first, then Amap, then Baidu. One result or None."""
+    results = _geocode_with_fallback(
+        query,
+        geojson=require_boundary,
+        max_rows=1,
+        address_details=1,
+        require_boundary=require_boundary,
+    )
+    if results:
+        return results[0]
+    return None
+
+
 def _geocode_location_for_overpass(
     location_name: str,
 ) -> tuple[Optional[OverpassLocation], Optional[str]]:
     """
-    Geocode a location name for use with Overpass queries.
+    Geocode a location name for Overpass queries.
+
+    Nominatim is tried first. On failure or an empty result, Amap then Baidu
+    supply a center point so a radius search can continue.
 
     Returns:
         Tuple of (OverpassLocation, None) on success or (None, error_message) on failure.
     """
-    nominatim_url = (
-        f"https://nominatim.openstreetmap.org/search"
-        f"?q={location_name}&format=json&limit=1&addressdetails=1&polygon_geojson=0"
-    )
-
     try:
-        response = requests.get(nominatim_url, headers=headers_nalamap, timeout=20)
-        response.raise_for_status()
-        location_data_list = response.json()
+        location_data = resolve_place(location_name)
+        if not location_data:
+            return None, (
+                f"Could not find location: {location_name}. "
+                "Nominatim, Amap and Baidu were all unavailable or returned nothing."
+            )
 
-        if not location_data_list:
-            return None, f"Could not find location: {location_name}"
-
-        location_data = location_data_list[0]
         display_name = location_data.get("display_name", location_name)
+        provider = location_data.get("_provider") or location_data.get("licence")
+        if provider and provider not in {"Nominatim", display_name}:
+            display_name = f"{display_name} ({provider})"
 
-        # Try to get OSM relation ID for area-based search
         osm_relation_id = None
         if location_data.get("osm_type") == "relation" and "osm_id" in location_data:
             try:
                 osm_relation_id = int(location_data["osm_id"])
-            except ValueError:
+            except (TypeError, ValueError):
                 pass
 
-        # Try to get bounding box
-        bbox = None
-        if "boundingbox" in location_data and len(location_data["boundingbox"]) == 4:
-            try:
-                raw_bbox = location_data["boundingbox"]
-                bbox = (
-                    float(raw_bbox[0]),  # south
-                    float(raw_bbox[2]),  # west
-                    float(raw_bbox[1]),  # north
-                    float(raw_bbox[3]),  # east
-                )
-            except ValueError:
-                pass
+        bbox = _parse_place_bbox(location_data)
 
-        # Try to get center point
         lat = None
         lon = None
         if "lat" in location_data and "lon" in location_data:
             try:
                 lat = float(location_data["lat"])
                 lon = float(location_data["lon"])
-            except ValueError:
+            except (TypeError, ValueError):
                 pass
 
         if osm_relation_id is None and bbox is None and lat is None:
@@ -981,11 +1246,51 @@ def _geocode_location_for_overpass(
             ),
             None,
         )
+    except (KeyError, IndexError, ValueError) as exc:
+        return None, f"Could not parse geocoding result for '{location_name}': {exc}"
 
-    except requests.exceptions.RequestException as e:
-        return None, f"Error geocoding '{location_name}': {str(e)}"
-    except (KeyError, IndexError, ValueError) as e:
-        return None, f"Could not parse geocoding result for '{location_name}': {str(e)}"
+
+_ADMIN_AREA_SUFFIXES = (
+    "省",
+    "市",
+    "区",
+    "县",
+    "镇",
+    "乡",
+    "自治区",
+    "旗",
+    "盟",
+)
+_ADMIN_AREA_WORDS = (
+    "中国",
+    "全国",
+    "province",
+    "city",
+    "county",
+    "district",
+)
+
+
+def _is_administrative_area(location: OverpassLocation) -> bool:
+    """Heuristically decide whether the resolved place is an administrative area.
+
+    The distinction matters for Amap searches: an administrative area should be
+    searched with a city/area filter, while a landmark (天安门, 广州塔) needs a
+    radius around its centre. Applying a radius to an administrative area clips
+    results to a disc around the city centre, which silently drops valid POIs in
+    the surrounding districts.
+    """
+    raw = (getattr(location, "display_name", "") or "").strip()
+    if not raw:
+        return False
+    # Take the most specific chunk: "深圳市, 广东省, 中国" -> "深圳市"
+    name = raw.split(",")[0].strip()
+    if not name:
+        return False
+    lowered = name.lower()
+    if any(word in lowered for word in _ADMIN_AREA_WORDS):
+        return True
+    return name.endswith(_ADMIN_AREA_SUFFIXES)
 
 
 def _get_search_mode_description(location: OverpassLocation, radius_meters: int) -> str:
@@ -1034,17 +1339,14 @@ def _build_overpass_response_message(
     example_name = layers_info[0].get("name", "Unknown Layer") if layers_info else ""
 
     guidance = (
-        "Call 'set_result_list' to make these layers available for the user to select. "
-        f"In your textual response to the user, mention the type of amenities and "
-        f"location searched (e.g., '{amenity_display}' near '{location_display}'). "
-        f"You can cite an example layer name like '{example_name}'. "
-        "State that the found layers are now listed and can be selected by the user "
-        "to be added to the map. "
-        "Ensure your response clearly indicates the user needs to take an action "
-        "to add them to the map. "
-        "Do NOT state or imply that the layers have already been added to the map. "
-        "Do NOT include direct file paths, sandbox links, or any other internal "
-        "storage paths in your textual response or as Markdown links."
+        f"Mention amenities and location (e.g. '{amenity_display}' near "
+        f"'{location_display}'); you may cite layer '{example_name}'. "
+        "The feature count above is authoritative. "
+        "If the user asked how many / 有多少, answer with that count now — "
+        "do NOT call geocode/overpass/attribute tools again to reconfirm. "
+        "To show on the map, call add_layers_to_map once with the layer name(s). "
+        "Do NOT ask the user to manually select/勾选 layers. "
+        "Do NOT include direct file paths, sandbox links, or internal storage paths."
     )
 
     msg += f"Actionable layer details: {layer_details}. User response guidance: {guidance}"

@@ -24,7 +24,6 @@ from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 from typing_extensions import Annotated
 
-from models.geodata import DataType
 from models.states import GeoDataAgentState
 from services.tools.attribute_tools import (
     _clean_layer_name,
@@ -41,7 +40,8 @@ from services.tools.attribute_tools import (
     summarize_gdf,
     unique_values_gdf,
 )
-from services.tools.utils import match_layer_names
+from services.tools.tool_repeat_guard import refuse_identical_tool_call
+from services.tools.utils import resolve_input_layers
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,10 @@ def attribute_tool2(
         field: Single field name (for "unique_values" operation)
         top_k: Number of top values to return (for "unique_values", default: all)
         where: WHERE clause filter expression (for "filter_where" operation)
-            Examples: "value > 10", "name = 'Paris'", "type IN ('A', 'B')"
+            Examples: "value > 10", "name = 'Paris'", "type IN ('A', 'B')",
+            "name LIKE '%中学%'"
+            Use LIKE with % for a category such as all middle schools.
+            Do not enumerate individual feature names to represent a category.
         include_fields: Fields to include (for "select_fields",
             mutually exclusive with exclude_fields)
         exclude_fields: Fields to exclude (for "select_fields",
@@ -158,70 +161,91 @@ def attribute_tool2(
                        columns=["NAME", "DESIG_ENG", "REP_AREA"],
                        row_filter="WDPA_PID = '555555'")
     """
-    # Get layers from state
-    layers = state.get("geodata_layers") or []
-    if not layers:
-        return Command(
-            update={
-                "messages": [
-                    ToolMessage(
-                        name="attribute_tool2",
-                        content=(
-                            "Error: No geodata layers found in state. "
-                            "Add or select a layer first."
-                        ),
-                        tool_call_id=tool_call_id,
-                        status="error",
-                    )
-                ]
-            }
-        )
+    blocked = refuse_identical_tool_call(
+        state,
+        "attribute_tool2",
+        tool_call_id,
+        {
+            "operation": operation,
+            "target_layer_name": target_layer_name,
+            "fields": fields,
+            "field": field,
+            "top_k": top_k,
+            "where": where,
+            "include_fields": include_fields,
+            "exclude_fields": exclude_fields,
+            "keep_geometry": keep_geometry,
+            "sort_fields": sort_fields,
+            "columns": columns,
+            "row_filter": row_filter,
+        },
+    )
+    if blocked is not None:
+        return blocked
 
-    # Select target layer
+    def _available_layers() -> List[Any]:
+        seen_ids = set()
+        pool: List[Any] = []
+        for source in ("geodata_layers", "geodata_results", "geodata_last_results"):
+            for layer in state.get(source) or []:
+                layer_id = getattr(layer, "id", None)
+                if layer_id is not None:
+                    if layer_id in seen_ids:
+                        continue
+                    seen_ids.add(layer_id)
+                pool.append(layer)
+        return pool
+
+    # Named lookup also searches geodata_results so a freshly geocoded layer
+    # is visible even when the map already has other layers.
     if target_layer_name:
-        selected = match_layer_names(layers, [target_layer_name])
+        selected = resolve_input_layers(state, [target_layer_name])
+        if not selected:
+            avail = [{"name": layer.name, "title": layer.title} for layer in _available_layers()]
+            return Command(
+                update={
+                    "messages": [
+                        ToolMessage(
+                            name="attribute_tool2",
+                            content=(
+                                f"Error: Target layer '{target_layer_name}' not found. "
+                                f"Available layers: {json.dumps(avail)}. "
+                                "Do NOT re-fetch with geocode/overpass. "
+                                "Pick an available name, call add_layers_to_map, or answer "
+                                "from the previous tool result."
+                            ),
+                            tool_call_id=tool_call_id,
+                            status="error",
+                        )
+                    ]
+                }
+            )
     else:
-        selected = layers[:1]  # Default to first layer
-
-    if not selected:
-        avail = [{"name": layer.name, "title": layer.title} for layer in layers]
-        return Command(
-            update={
-                "messages": [
-                    ToolMessage(
-                        name="attribute_tool2",
-                        content=(
-                            f"Error: Target layer '{target_layer_name}' not found. "
-                            f"Available layers: {json.dumps(avail)}"
-                        ),
-                        tool_call_id=tool_call_id,
-                        status="error",
-                    )
-                ]
-            }
-        )
+        layers = resolve_input_layers(state)
+        if not layers:
+            return Command(
+                update={
+                    "messages": [
+                        ToolMessage(
+                            name="attribute_tool2",
+                            content=(
+                                "Error: No geodata layers found in state. "
+                                "Do NOT re-run geocode/overpass to invent one. "
+                                "Call list_user_layers or add_layers_to_map, or tell the user "
+                                "nothing is loaded."
+                            ),
+                            tool_call_id=tool_call_id,
+                            status="error",
+                        )
+                    ]
+                }
+            )
+        selected = layers[:1]
 
     layer = selected[0]
 
-    # Validate layer type
-    if layer.data_type not in (DataType.GEOJSON, DataType.UPLOADED):
-        return Command(
-            update={
-                "messages": [
-                    ToolMessage(
-                        name="attribute_tool2",
-                        content=(
-                            f"Error: Layer '{layer.name}' is not a GeoJSON-like dataset. "
-                            f"Type: {layer.data_type}"
-                        ),
-                        tool_call_id=tool_call_id,
-                        status="error",
-                    )
-                ]
-            }
-        )
-
-    # Load GeoDataFrame
+    # Load GeoDataFrame. PostGIS-backed layers are accepted when their data_link
+    # exposes a readable GeoJSON stream.
     try:
         gdf = _load_gdf(layer.data_link)
     except Exception as e:
@@ -230,7 +254,13 @@ def attribute_tool2(
                 "messages": [
                     ToolMessage(
                         name="attribute_tool2",
-                        content=f"Error loading GeoJSON into GeoDataFrame: {e}",
+                        content=(
+                            f"Error loading layer '{layer.name}' into GeoDataFrame "
+                            f"from data_link '{layer.data_link}'. "
+                            f"Layer type: {layer.data_type}. "
+                            "The layer could not be read through the GeoJSON stream. "
+                            f"Details: {e}"
+                        ),
                         tool_call_id=tool_call_id,
                         status="error",
                     )
@@ -560,7 +590,7 @@ def _handle_filter_where(
     suggestion_info = ""
     if field_suggestions:
         suggestion_info = "\n\nNote: Field name corrections were applied:\n" + "\n".join(
-            [f"  - '{req}' → '{actual}'" for req, actual in field_suggestions.items()]
+            [f"  - '{req}' 鈫?'{actual}'" for req, actual in field_suggestions.items()]
         )
 
     # Provide user guidance

@@ -43,6 +43,40 @@ tests/
 
 ## 🧪 Test Coverage
 
+### Plan Mode Tests (plan-mode.spec.ts)
+
+`npx playwright test tests/plan-mode.spec.ts` checks ordinary multi-turn chat,
+enabling plan mode, confirming a plan, switching it off and on again, and cancelling
+the next plan. Mocked SSE responses verify that each request carries the current
+mode and that an old confirmed plan is not sent with a new task. Actual tool
+execution restrictions are tested by `backend/tests/test_plan_mode_flow.py`.
+
+### Cesium Vector Layer Tests (cesium-point-layer.spec.ts)
+
+Run `npx playwright test tests/cesium-point-layer.spec.ts`. The tests use mocked
+GeoJSON, PostGIS APIs and decodable basemap tiles to verify point selection,
+polygon visibility before any style interaction, default/explicit/zero opacity,
+and PostGIS loading without a bounding box or a successful AI styling response.
+They also cover style updates while data is loading and changing opacity to zero
+and back in the style panel. GeoJSON sources are parsed and styled before being
+added to the viewer; layers without bounds fit their loaded geometry. Polygon
+fill defaults to 30%, matching the style panel, and an explicit 0 remains 0.
+
+Point and MultiPoint regressions require Cesium `scene.pick` to hit every rendered
+symbol, including PostGIS layers without bounds, radius changes and hide/show.
+Selecting an entity through the coordinate fallback is not proof of visibility.
+GeoJSON's default billboard is removed when converting to a ground-clamped point:
+leaving a hidden billboard makes its visualizer clear the primitive shared with
+the point visualizer.
+Point-only layers without bounds are fitted from their coordinates with a
+top-down view and a minimum 500 m bounding-sphere radius, so a single point does
+not place the camera at ground level. Visibility assertions wait for camera
+flights to finish before checking the rendered symbols.
+
+### Cesium Basemap Tests (cesium-basemap.spec.ts)
+
+These tests use decodable tile images to verify the Amap default, all 12 basemaps and their annotation overlays, runtime Tianditu token loading, missing-token behavior, tile-error fallback, stalled-request fallback, retrying the original source, annotation failures, and preserving the selected basemap when changing the interface theme. No Cesium ion imagery is requested. Run against a separate development server with `npx cross-env BASEMAP_TEST_URL=http://localhost:3002 playwright test tests/cesium-basemap.spec.ts`.
+
 ### Leaflet Map Tests (leaflet-map.spec.ts)
 - **Geocoding**: Germany, Brazil boundary rendering
 - **Overpass**: Hospital/restaurant POI display
@@ -56,6 +90,16 @@ tests/
 - AI conversation flow
 - Message history
 - Tool invocations
+
+`npx playwright test tests/chat-history-roundtrip.spec.ts` covers the Guangzhou →
+Shenzhen follow-up: empty tool-call messages, call IDs, arguments and reasoning
+metadata must survive into the second request. Previous progress stays grouped,
+tool results do not become user bubbles, and current tool events belong only to
+the new turn. Message visibility is handled by `ChatMessages`, without filtering
+the history stored for subsequent model requests.
+
+The same suite checks that an SSE model error on turn three is shown as an alert,
+the input becomes usable again, and turn four can succeed without clearing history.
 
 ### Settings Tests (settings.spec.ts)
 - User preferences

@@ -9,13 +9,24 @@ import {
   GripVertical,
   Palette,
   Download,
+  Database,
   Info,
   X,
   BarChart3,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { getApiBase } from "../../utils/apiBase";
+import { resolveLayerDataUrl } from "../../utils/geoMapHelpers";
 import Logger from "../../utils/logger";
 import WorldBankChart, { ChartDataItem, ChartByCategory } from "../charts/WorldBankChart";
+
+const DEFAULT_STYLE_COLOR = "#3388ff";
+
+function colorInputValue(value: string | undefined): string {
+  if (!value) return DEFAULT_STYLE_COLOR;
+  return /^#[0-9a-fA-F]{6}$/.test(value) ? value : DEFAULT_STYLE_COLOR;
+}
 
 // Dynamic drag handle component - simple fixed size with responsive spacing
 // Uses 5 dot rows for visual clarity, spacing adjusts when style panel is open
@@ -26,11 +37,11 @@ interface DragHandleProps {
 const DragHandle: React.FC<DragHandleProps> = ({ isStylePanelOpen }) => {
   // Fixed number of dot rows for consistency
   const dotRows = 5;
-  
+
   return (
-    <div 
+    <div
       className={`flex flex-col items-center text-neutral-400 cursor-grab flex-shrink-0 px-1 ${isStylePanelOpen ? 'justify-around py-2' : 'justify-center py-1'} gap-0.5`}
-      style={{ 
+      style={{
         minHeight: '32px',
         alignSelf: 'stretch'
       }}
@@ -156,7 +167,7 @@ interface LayerListProps {
   removeLayer: (layerId: string) => void;
   reorderLayers: (fromIndex: number, toIndex: number) => void;
   updateLayerStyle: (layerId: string, style: any) => void;
-  setZoomTo: (layerId: string) => void;
+  setZoomTo: (layerId: string | number) => void;
 }
 
 // Check if a layer is from World Bank and has chart data
@@ -203,6 +214,8 @@ export default function LayerList({
   const [activeMetadataId, setActiveMetadataId] = useState<string | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
   const [activeChartId, setActiveChartId] = useState<string | null>(null);
+  // PostGIS save status: 'idle' | 'saving' | 'saved' | 'error'
+  const [postgisSaveStatus, setPostgisSaveStatus] = useState<{ [layerId: string]: string }>({});
   const infoButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const chartButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const popupRef = useRef<HTMLDivElement | null>(null);
@@ -214,34 +227,34 @@ export default function LayerList({
       const rect = popup.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      
+
       let { top, left } = popupPosition;
       let adjusted = false;
-      
+
       // Check if popup overflows right edge
       if (rect.right > viewportWidth - 8) {
         left = Math.max(8, viewportWidth - rect.width - 8);
         adjusted = true;
       }
-      
+
       // Check if popup overflows bottom edge
       if (rect.bottom > viewportHeight - 8) {
         top = Math.max(8, viewportHeight - rect.height - 8);
         adjusted = true;
       }
-      
+
       // Check if popup overflows top edge
       if (top < 8) {
         top = 8;
         adjusted = true;
       }
-      
+
       // Check if popup overflows left edge
       if (left < 8) {
         left = 8;
         adjusted = true;
       }
-      
+
       // Update position if adjustments were needed
       if (adjusted) {
         setPopupPosition({ top, left });
@@ -252,13 +265,13 @@ export default function LayerList({
   // Download layer as GeoJSON
   const downloadLayer = async (layer: any) => {
     try {
-      const apiBase = getApiBase();
-      const response = await fetch(layer.data_link.startsWith('http') ? layer.data_link : `${apiBase}${layer.data_link}`);
-      
+      const dataUrl = resolveLayerDataUrl(layer.data_link);
+      const response = await fetch(dataUrl);
+
       if (!response.ok) {
         throw new Error(`下载图层失败：${response.statusText}`);
       }
-      
+
       const data = await response.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -269,7 +282,7 @@ export default function LayerList({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       Logger.log(`Downloaded layer: ${layer.name}`);
     } catch (error) {
       Logger.error(`Error downloading layer ${layer.name}:`, error);
@@ -277,25 +290,64 @@ export default function LayerList({
     }
   };
 
+  // Save layer to PostGIS database
+  const saveToPostGIS = async (layer: any) => {
+    const layerId = layer.id;
+    setPostgisSaveStatus((prev) => ({ ...prev, [layerId]: "saving" }));
+    try {
+      const apiBase = getApiBase();
+      const response = await fetch(`${apiBase}/postgis/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data_link: layer.data_link,
+          name: layer.name || layer.title || "unnamed_layer",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `保存失败 (${response.status})`);
+      }
+
+      const result = await response.json();
+      Logger.log(`Saved layer to PostGIS: ${result.table_name} (${result.row_count} rows)`);
+      setPostgisSaveStatus((prev) => ({ ...prev, [layerId]: "saved" }));
+
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        setPostgisSaveStatus((prev) => ({ ...prev, [layerId]: "idle" }));
+      }, 3000);
+    } catch (error) {
+      Logger.error(`Error saving layer ${layer.name} to PostGIS:`, error);
+      setPostgisSaveStatus((prev) => ({ ...prev, [layerId]: "error" }));
+      alert(`保存到 PostGIS 失败：${error instanceof Error ? error.message : "未知错误"}`);
+
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        setPostgisSaveStatus((prev) => ({ ...prev, [layerId]: "idle" }));
+      }, 3000);
+    }
+  };
+
   // Handle drag start for download button - enables dragging to desktop/other apps
   const handleDownloadDragStart = async (e: React.DragEvent, layer: any) => {
     try {
-      const apiBase = getApiBase();
-      const response = await fetch(layer.data_link.startsWith('http') ? layer.data_link : `${apiBase}${layer.data_link}`);
-      
+      const response = await fetch(resolveLayerDataUrl(layer.data_link));
+
       if (!response.ok) {
         throw new Error(`获取图层失败：${response.statusText}`);
       }
-      
+
       const data = await response.json();
       const geoJsonString = JSON.stringify(data, null, 2);
       const fileName = `${layer.name || layer.title || 'layer'}.geojson`;
-      
+
       // Set drag data for file download
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('DownloadURL', `application/json:${fileName}:data:application/json;charset=utf-8,${encodeURIComponent(geoJsonString)}`);
       e.dataTransfer.setData('text/plain', geoJsonString);
-      
+
       Logger.log(`Started dragging layer: ${layer.name}`);
     } catch (error) {
       Logger.error(`Error preparing layer ${layer.name} for drag:`, error);
@@ -352,13 +404,12 @@ export default function LayerList({
               return (
                 <li
                   key={layer.id}
-                  className={`relative transition-all duration-200 ${
-                    isDropTarget
-                      ? showIndicatorAbove
-                        ? "mt-8"
-                        : "mb-8"
-                      : "mb-2"
-                  } ${isBeingDragged ? "opacity-50 z-10" : "opacity-100"}`}
+                  className={`relative transition-all duration-200 ${isDropTarget
+                    ? showIndicatorAbove
+                      ? "mt-8"
+                      : "mb-8"
+                    : "mb-2"
+                    } ${isBeingDragged ? "opacity-50 z-10" : "opacity-100"}`}
                   onDragOver={(e) => {
                     // This prevents the default behavior which would prevent drop
                     e.preventDefault();
@@ -375,9 +426,8 @@ export default function LayerList({
                   )}
 
                   <div
-                    className={`bg-neutral-50 rounded shadow transition-all ${
-                      isDropTarget ? "border-2 border-info-400" : ""
-                    } ${isRecentlyMoved ? "highlight-animation" : ""}`}
+                    className={`bg-neutral-50 rounded shadow transition-all ${isDropTarget ? "border-2 border-info-400" : ""
+                      } ${isRecentlyMoved ? "highlight-animation" : ""}`}
                     draggable
                     onDragStart={(e) => {
                       setDraggedIdx(idx);
@@ -472,7 +522,7 @@ export default function LayerList({
                     <div className="flex p-2 gap-2">
                       {/* Drag handle - dynamically fills height with dots */}
                       <DragHandle isStylePanelOpen={stylePanelOpen === layer.id} />
-                      
+
                       {/* Content area - title and icons */}
                       <div className="flex-1 min-w-0 flex flex-col gap-2 relative">
                         {/* Title row with info icon */}
@@ -486,22 +536,22 @@ export default function LayerList({
                               e.stopPropagation();
                               const newActiveId = activeMetadataId === layer.id ? null : layer.id;
                               setActiveMetadataId(newActiveId);
-                              
+
                               if (newActiveId && infoButtonRefs.current[layer.id]) {
                                 const rect = infoButtonRefs.current[layer.id]!.getBoundingClientRect();
                                 const viewportHeight = window.innerHeight;
                                 const viewportWidth = window.innerWidth;
                                 const popupWidth = 400; // max-w-[400px]
-                                
+
                                 // Calculate initial position
                                 let top = rect.bottom + 4;
                                 let left = rect.left;
-                                
+
                                 // Adjust horizontal position if popup would overflow right edge
                                 if (left + popupWidth > viewportWidth) {
                                   left = Math.max(8, viewportWidth - popupWidth - 8);
                                 }
-                                
+
                                 // Adjust vertical position if popup would overflow bottom
                                 // Reserve some space (estimate ~300px for popup, but will be constrained by max-height)
                                 if (top + 300 > viewportHeight) {
@@ -514,7 +564,7 @@ export default function LayerList({
                                     top = 8;
                                   }
                                 }
-                                
+
                                 setPopupPosition({
                                   top,
                                   left
@@ -527,11 +577,14 @@ export default function LayerList({
                             <Info size={16} />
                           </button>
                         </div>
-                        
+
                         {/* Action icons row - centered, wraps to single row on wide panels */}
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           <button
-                            onClick={() => setZoomTo(layer.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setZoomTo(layer.id);
+                            }}
                             title="缩放到此图层"
                             className="text-neutral-600 hover:text-info-600 p-1 hover:bg-neutral-100 rounded transition-colors cursor-pointer"
                           >
@@ -573,6 +626,34 @@ export default function LayerList({
                               <BarChart3 size={16} />
                             </button>
                           )}
+                          {/* Save to PostGIS button */}
+                          <button
+                            onClick={() => saveToPostGIS(layer)}
+                            disabled={postgisSaveStatus[layer.id] === "saving"}
+                            title={
+                              postgisSaveStatus[layer.id] === "saving"
+                                ? "正在保存到 PostGIS..."
+                                : postgisSaveStatus[layer.id] === "saved"
+                                  ? "已保存到 PostGIS"
+                                  : "保存到 PostGIS 数据库"
+                            }
+                            className={`p-1 rounded transition-colors cursor-pointer ${postgisSaveStatus[layer.id] === "saving"
+                              ? "text-warning-500 animate-pulse"
+                              : postgisSaveStatus[layer.id] === "saved"
+                                ? "text-success-600 bg-success-50"
+                                : postgisSaveStatus[layer.id] === "error"
+                                  ? "text-danger-500"
+                                  : "text-neutral-600 hover:text-primary-600 hover:bg-neutral-100"
+                              }`}
+                          >
+                            {postgisSaveStatus[layer.id] === "saving" ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : postgisSaveStatus[layer.id] === "saved" ? (
+                              <Check size={16} />
+                            ) : (
+                              <Database size={16} />
+                            )}
+                          </button>
                           <button
                             onClick={() => downloadLayer(layer)}
                             draggable="true"
@@ -608,7 +689,7 @@ export default function LayerList({
                           </label>
                           <input
                             type="color"
-                            value={layer.style?.stroke_color || "#3388ff"}
+                            value={colorInputValue(layer.style?.stroke_color)}
                             onChange={(e) =>
                               updateLayerStyle(layer.id, {
                                 stroke_color: e.target.value,
@@ -650,7 +731,7 @@ export default function LayerList({
                             min="0"
                             max="1"
                             step="0.1"
-                            value={layer.style?.stroke_opacity || 1.0}
+                            value={layer.style?.stroke_opacity ?? 1.0}
                             onChange={(e) =>
                               updateLayerStyle(layer.id, {
                                 stroke_opacity: parseFloat(e.target.value),
@@ -660,7 +741,7 @@ export default function LayerList({
                           />
                           <span className="text-gray-500">
                             {Math.round(
-                              (layer.style?.stroke_opacity || 1.0) * 100,
+                              (layer.style?.stroke_opacity ?? 1.0) * 100,
                             )}
                             %
                           </span>
@@ -726,7 +807,7 @@ export default function LayerList({
                           </label>
                           <input
                             type="color"
-                            value={layer.style?.fill_color || "#3388ff"}
+                            value={colorInputValue(layer.style?.fill_color)}
                             onChange={(e) =>
                               updateLayerStyle(layer.id, {
                                 fill_color: e.target.value,
@@ -746,7 +827,7 @@ export default function LayerList({
                             min="0"
                             max="1"
                             step="0.1"
-                            value={layer.style?.fill_opacity || 0.3}
+                            value={layer.style?.fill_opacity ?? 0.3}
                             onChange={(e) =>
                               updateLayerStyle(layer.id, {
                                 fill_opacity: parseFloat(e.target.value),
@@ -756,7 +837,7 @@ export default function LayerList({
                           />
                           <span className="text-gray-500">
                             {Math.round(
-                              (layer.style?.fill_opacity || 0.3) * 100,
+                              (layer.style?.fill_opacity ?? 0.3) * 100,
                             )}
                             %
                           </span>
@@ -1008,9 +1089,9 @@ export default function LayerList({
       {activeMetadataId && popupPosition && (() => {
         const layer = layers.find(l => l.id === activeMetadataId);
         if (!layer) return null;
-        
+
         return (
-          <div 
+          <div
             ref={popupRef}
             className="fixed bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-lg shadow-xl p-3 text-sm z-[100] min-w-[300px] max-w-[400px] overflow-y-auto"
             style={{
@@ -1028,7 +1109,7 @@ export default function LayerList({
             >
               <X size={16} />
             </button>
-            
+
             <div className="space-y-2">
               <div>
                 <span className="font-semibold text-neutral-700 dark:text-neutral-200">标题：</span>
@@ -1062,46 +1143,46 @@ export default function LayerList({
                 <div>
                   <span className="font-semibold text-neutral-700 dark:text-neutral-200">边界框：</span>
                   <p className="text-neutral-900 dark:text-neutral-100 text-xs font-mono">
-                    [{Array.isArray(layer.bounding_box) 
+                    [{Array.isArray(layer.bounding_box)
                       ? layer.bounding_box.join(', ')
                       : JSON.stringify(layer.bounding_box)
                     }]
                   </p>
                 </div>
               )}
-              
+
               {/* Processing Metadata Section */}
               {layer.processing_metadata && (
                 <div className="pt-3 mt-3 border-t border-neutral-200 dark:border-neutral-600">
                   <h4 className="font-semibold text-neutral-700 dark:text-neutral-200 mb-2">处理信息</h4>
-                  
+
                   {/* Source Layers - Prominently displayed */}
-                  {layer.processing_metadata.origin_layers && 
-                   layer.processing_metadata.origin_layers.length > 0 && (
-                    <div className="mb-3 p-2 bg-secondary-50 dark:bg-secondary-900 rounded border border-secondary-300 dark:border-secondary-600">
-                      <span className="font-semibold text-secondary-900 dark:text-secondary-100 text-xs uppercase tracking-wide">来源图层</span>
-                      <p className="text-sm text-neutral-900 dark:text-neutral-100 mt-1">
-                        {layer.processing_metadata.origin_layers.join(', ')}
-                      </p>
-                    </div>
-                  )}
-                  
+                  {layer.processing_metadata.origin_layers &&
+                    layer.processing_metadata.origin_layers.length > 0 && (
+                      <div className="mb-3 p-2 bg-secondary-50 dark:bg-secondary-900 rounded border border-secondary-300 dark:border-secondary-600">
+                        <span className="font-semibold text-secondary-900 dark:text-secondary-100 text-xs uppercase tracking-wide">来源图层</span>
+                        <p className="text-sm text-neutral-900 dark:text-neutral-100 mt-1">
+                          {layer.processing_metadata.origin_layers.join(', ')}
+                        </p>
+                      </div>
+                    )}
+
                   {/* Operation Summary */}
                   <div className="mb-3 p-2 bg-info-50 dark:bg-info-900 rounded border border-info-200 dark:border-info-700">
                     <p className="text-sm text-neutral-900 dark:text-neutral-100">
                       <strong className="text-info-800 dark:text-info-200">
-                        {layer.processing_metadata.operation.charAt(0).toUpperCase() + 
-                         layer.processing_metadata.operation.slice(1)}
+                        {layer.processing_metadata.operation.charAt(0).toUpperCase() +
+                          layer.processing_metadata.operation.slice(1)}
                       </strong> 操作
-                      {layer.processing_metadata.operation === 'buffer' && 
-                       layer.description?.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i) && 
-                       `，距离 ${layer.description.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i)![0]}`}
+                      {layer.processing_metadata.operation === 'buffer' &&
+                        layer.description?.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i) &&
+                        `，距离 ${layer.description.match(/\d+\.?\d*\s*(m|km|meters|kilometers)/i)![0]}`}
                       {'，使用 '}
                       <strong className="text-info-800 dark:text-info-200">{layer.processing_metadata.crs_used}</strong>
                       {layer.processing_metadata.auto_selected && '（自动选择）'}
                     </p>
                   </div>
-                  
+
                   {/* CRS Details */}
                   <div className="space-y-1">
                     <div>
@@ -1118,8 +1199,8 @@ export default function LayerList({
                       <div>
                         <span className="font-semibold text-neutral-700 dark:text-neutral-200">自动选择：</span>
                         <p className="text-neutral-900 dark:text-neutral-100 text-sm">
-                          是 {layer.processing_metadata.selection_reason && 
-                               `- ${layer.processing_metadata.selection_reason}`}
+                          是 {layer.processing_metadata.selection_reason &&
+                            `- ${layer.processing_metadata.selection_reason}`}
                         </p>
                       </div>
                     )}

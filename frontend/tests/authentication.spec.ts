@@ -25,6 +25,7 @@ test.describe('Authentication flow', () => {
     await page.fill('input[name="email"]', 'alice@example.com');
     await page.fill('input[name="displayName"]', 'Alice');
     await page.fill('input[name="password"]', 'password123');
+    await page.fill('input[name="inviteToken"]', 'one-time-invitation');
     await page.click('button[type="submit"]');
     await page.waitForURL('**/map');
     expect(page.url()).toContain('/map');

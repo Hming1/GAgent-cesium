@@ -4,12 +4,12 @@ In-memory metrics storage for performance monitoring.
 Provides storage, retrieval, and aggregation of historical performance metrics.
 """
 
-import time
 import logging
-from typing import Any, Dict, List, Optional, Union
+import statistics
+import time
 from collections import defaultdict
 from datetime import datetime
-import statistics
+from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +42,22 @@ class MetricsStorage:
             f"Initialized metrics storage (max_age={max_age_hours}h, max_entries={max_entries})"
         )
 
-    def store(self, session_id: str, metrics: Dict[str, Any]) -> None:
-        """Store metrics for a session.
+    def store(
+        self,
+        session_id: str,
+        metrics: Dict[str, Any],
+        conversation_id: Optional[str] = None,
+    ) -> None:
+        """Store metrics for a session and optional conversation.
 
         Args:
             session_id: Unique session identifier
             metrics: Performance metrics dictionary
+            conversation_id: Optional chat conversation identifier
         """
         entry = {
             "session_id": session_id,
+            "conversation_id": conversation_id,
             "timestamp": time.time(),
             "datetime": datetime.utcnow().isoformat(),
             "metrics": metrics,
@@ -63,7 +70,10 @@ class MetricsStorage:
             self._cleanup()
 
         logger.debug(
-            f"Stored metrics for session {session_id} (total entries: {len(self._metrics)})"
+            "Stored metrics for session %s conversation %s (total entries: %s)",
+            session_id,
+            conversation_id,
+            len(self._metrics),
         )
 
     def _cleanup(self) -> None:
@@ -83,12 +93,18 @@ class MetricsStorage:
 
         self._last_cleanup = time.time()
 
-    def get_recent(self, hours: int = 1, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_recent(
+        self,
+        hours: int = 1,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Get recent metrics entries.
 
         Args:
             hours: Number of hours to look back
             session_id: Optional filter by session ID
+            conversation_id: Optional filter by conversation ID
 
         Returns:
             List of metrics entries
@@ -98,6 +114,8 @@ class MetricsStorage:
 
         if session_id:
             recent = [m for m in recent if m["session_id"] == session_id]
+        if conversation_id:
+            recent = [m for m in recent if m.get("conversation_id") == conversation_id]
 
         return recent
 
@@ -105,21 +123,29 @@ class MetricsStorage:
         """Get all stored metrics entries.
 
         Returns:
-            List of all metrics entries
+            List of all stored metrics entries
         """
         return self._metrics.copy()
 
-    def get_statistics(self, hours: int = 24, session_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_statistics(
+        self,
+        hours: int = 24,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Calculate aggregated statistics for recent metrics.
 
         Args:
             hours: Number of hours to analyze
             session_id: Optional filter by session ID
+            conversation_id: Optional filter by conversation ID
 
         Returns:
             Dictionary with aggregated statistics
         """
-        recent = self.get_recent(hours=hours, session_id=session_id)
+        recent = self.get_recent(
+            hours=hours, session_id=session_id, conversation_id=conversation_id
+        )
 
         if not recent:
             return {
@@ -128,13 +154,17 @@ class MetricsStorage:
                 "error": "No metrics available for this period",
             }
 
-        # Extract metric values
         total_times = []
         agent_times = []
         llm_calls = []
         llm_times = []
         tool_calls = []
+        token_inputs = []
+        token_outputs = []
         token_totals = []
+        conversation_tokens = defaultdict(
+            lambda: {"requests": 0, "input": 0, "output": 0, "total": 0}
+        )
         message_reductions = []
         errors_count = 0
         tool_stats_all = defaultdict(list)
@@ -154,26 +184,37 @@ class MetricsStorage:
                 llm_times.append(m["llm_time"])
             if "tool_calls" in m:
                 tool_calls.append(m["tool_calls"])
-            if "token_usage" in m and "total" in m["token_usage"]:
-                token_totals.append(m["token_usage"]["total"])
+
+            token_usage = self._extract_token_usage(m)
+            if token_usage["input"]:
+                token_inputs.append(token_usage["input"])
+            if token_usage["output"]:
+                token_outputs.append(token_usage["output"])
+            if token_usage["total"]:
+                token_totals.append(token_usage["total"])
+
+            conversation_key = entry.get("conversation_id") or "unknown"
+            conversation_bucket = conversation_tokens[conversation_key]
+            conversation_bucket["requests"] += 1
+            conversation_bucket["input"] += token_usage["input"]
+            conversation_bucket["output"] += token_usage["output"]
+            conversation_bucket["total"] += token_usage["total"]
+
             if "message_reduction" in m:
                 message_reductions.append(m["message_reduction"])
             if "errors" in m:
                 errors_count += len(m["errors"])
 
-            # Tool statistics
             if "tool_stats" in m:
                 for tool_name, stats in m["tool_stats"].items():
                     tool_stats_all[tool_name].append(stats)
 
-            # Tool usage tracking (Week 3)
             if "tool_usage" in m:
                 for tool_name, usage in m["tool_usage"].items():
                     tool_usage_all[tool_name]["invocations"] += usage.get("invocations", 0)
                     tool_usage_all[tool_name]["successes"] += usage.get("successes", 0)
                     tool_usage_all[tool_name]["failures"] += usage.get("failures", 0)
 
-            # Tool selector metrics (Week 3)
             if "tool_selector" in m:
                 sel = m["tool_selector"]
                 if "total_selections" in sel and sel["total_selections"] > 0:
@@ -181,7 +222,6 @@ class MetricsStorage:
                     tool_selector_metrics["tools_selected"].append(sel["avg_tools_selected"])
                     tool_selector_metrics["fallbacks"] += sel.get("fallback_count", 0)
 
-        # Calculate statistics
         stats = {
             "period_hours": hours,
             "total_requests": len(recent),
@@ -205,9 +245,12 @@ class MetricsStorage:
             "tool_usage": self._get_tool_usage_stats(tool_usage_all),
             "tool_selector": self._get_tool_selector_stats(tool_selector_metrics),
             "tokens": {
+                "input": sum(token_inputs) if token_inputs else 0,
+                "output": sum(token_outputs) if token_outputs else 0,
                 "total": sum(token_totals) if token_totals else 0,
                 "avg_per_request": (statistics.mean(token_totals) if token_totals else 0),
                 "stats": self._calculate_stats(token_totals, "tokens"),
+                "by_conversation": self._get_conversation_token_stats(conversation_tokens),
             },
             "message_pruning": {
                 "total_reduction": (sum(message_reductions) if message_reductions else 0),
@@ -217,6 +260,35 @@ class MetricsStorage:
         }
 
         return stats
+
+    @staticmethod
+    def _safe_int(value: Any) -> int:
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    def _extract_token_usage(self, metrics: Dict[str, Any]) -> Dict[str, int]:
+        usage = metrics.get("token_usage") or {}
+        input_tokens = self._safe_int(
+            usage.get("input", usage.get("input_tokens", usage.get("prompt_tokens", 0)))
+        )
+        output_tokens = self._safe_int(
+            usage.get("output", usage.get("output_tokens", usage.get("completion_tokens", 0)))
+        )
+        total_tokens = self._safe_int(
+            usage.get("total", usage.get("total_tokens", input_tokens + output_tokens))
+        )
+        return {"input": input_tokens, "output": output_tokens, "total": total_tokens}
+
+    def _get_conversation_token_stats(
+        self, conversation_tokens: Dict[str, Dict[str, int]]
+    ) -> List[Dict[str, Any]]:
+        rows = []
+        for conversation_id, usage in conversation_tokens.items():
+            rows.append({"conversation_id": conversation_id, **usage})
+        rows.sort(key=lambda row: row["total"], reverse=True)
+        return rows
 
     def _calculate_stats(self, values: List[float], unit: str = "") -> Dict[str, float]:
         """Calculate statistical measures for a list of values.
@@ -281,22 +353,13 @@ class MetricsStorage:
             }
             top_tools.append(tool_info)
 
-        # Sort by total calls
         top_tools.sort(key=lambda x: x["total_calls"], reverse=True)
         return top_tools[:limit]
 
     def _get_tool_usage_stats(
         self, tool_usage_all: Dict[str, Dict[str, int]], limit: int = 20
     ) -> Dict[str, Any]:
-        """Get tool usage statistics (Week 3 - Tool Usage Analytics).
-
-        Args:
-            tool_usage_all: Aggregated tool usage data
-            limit: Maximum number of tools to return
-
-        Returns:
-            Dictionary with tool usage statistics
-        """
+        """Get tool usage statistics (Week 3 - Tool Usage Analytics)."""
         if not tool_usage_all:
             return {
                 "top_tools": [],
@@ -304,7 +367,6 @@ class MetricsStorage:
                 "success_rate": 0.0,
             }
 
-        # Calculate total invocations and success rate
         total_invocations = sum(t["invocations"] for t in tool_usage_all.values())
         total_successes = sum(t["successes"] for t in tool_usage_all.values())
         total_failures = sum(t["failures"] for t in tool_usage_all.values())
@@ -313,7 +375,6 @@ class MetricsStorage:
             round(total_successes / total_invocations, 3) if total_invocations > 0 else 0.0
         )
 
-        # Build top tools list
         top_tools = []
         for tool_name, usage in tool_usage_all.items():
             inv = usage["invocations"]
@@ -328,7 +389,6 @@ class MetricsStorage:
                 }
             )
 
-        # Sort by invocation count
         top_tools.sort(key=lambda x: x["invocations"], reverse=True)
 
         return {
@@ -340,14 +400,7 @@ class MetricsStorage:
         }
 
     def _get_tool_selector_stats(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
-        """Get tool selector statistics (Week 3 - Performance Monitoring).
-
-        Args:
-            metrics: Tool selector metrics data
-
-        Returns:
-            Dictionary with tool selector statistics
-        """
+        """Get tool selector statistics (Week 3 - Performance Monitoring)."""
         if not metrics["selections"]:
             return {
                 "enabled": False,
@@ -384,7 +437,6 @@ class MetricsStorage:
         return len(self._metrics)
 
 
-# Global storage instance
 _storage: Optional[MetricsStorage] = None
 
 

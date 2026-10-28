@@ -708,3 +708,62 @@ class TestMetricsStorage:
         assert selector_stats["avg_tools_selected"] > 0
         assert selector_stats["fallback_count"] == 3  # 0, 2, 4 have fallbacks
         assert selector_stats["fallback_rate"] == 3 / 5
+
+    def test_get_recent_with_conversation_filter(self):
+        """Test filtering recent metrics by conversation ID."""
+        from utility.metrics_storage import MetricsStorage
+
+        storage = MetricsStorage()
+        storage.store(
+            session_id="session1",
+            conversation_id="conversation1",
+            metrics={"total_time": 1.0},
+        )
+        storage.store(
+            session_id="session1",
+            conversation_id="conversation1",
+            metrics={"total_time": 2.0},
+        )
+        storage.store(
+            session_id="session1",
+            conversation_id="conversation2",
+            metrics={"total_time": 3.0},
+        )
+
+        recent = storage.get_recent(hours=1, conversation_id="conversation1")
+
+        assert len(recent) == 2
+        assert {entry["conversation_id"] for entry in recent} == {"conversation1"}
+
+    def test_get_statistics_groups_tokens_by_conversation(self):
+        """Test token aggregation by conversation ID."""
+        from utility.metrics_storage import MetricsStorage
+
+        storage = MetricsStorage()
+        storage.store(
+            session_id="session1",
+            conversation_id="conversation1",
+            metrics={"token_usage": {"input": 10, "output": 5, "total": 15}},
+        )
+        storage.store(
+            session_id="session1",
+            conversation_id="conversation1",
+            metrics={"token_usage": {"input_tokens": 20, "output_tokens": 10}},
+        )
+        storage.store(
+            session_id="session1",
+            conversation_id="conversation2",
+            metrics={"token_usage": {"prompt_tokens": 7, "completion_tokens": 3}},
+        )
+
+        stats = storage.get_statistics(hours=1)
+        by_conversation = {
+            row["conversation_id"]: row for row in stats["tokens"]["by_conversation"]
+        }
+
+        assert stats["tokens"]["input"] == 37
+        assert stats["tokens"]["output"] == 18
+        assert stats["tokens"]["total"] == 55
+        assert by_conversation["conversation1"]["requests"] == 2
+        assert by_conversation["conversation1"]["total"] == 45
+        assert by_conversation["conversation2"]["total"] == 10

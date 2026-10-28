@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
 
 from langchain_core.messages import BaseMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, SerializeAsAny
 
 from models.geodata import GeoDataObject
 from models.settings_model import SettingsSnapshot
@@ -31,10 +31,10 @@ class ChatResponse(BaseModel):
     messages: List[BaseMessage]
 
 
-# NaLaMap Messages
-class NaLaMapRequest(BaseModel):
+# GeoAgent Messages
+class GeoAgentRequest(BaseModel):
     """
-    Request of the Frontend to the NaLaMap, which contains the message history,
+    Request of the Frontend to the GeoAgent, which contains the message history,
     a request and geodata related to the query
     """
 
@@ -42,19 +42,23 @@ class NaLaMapRequest(BaseModel):
     query: Optional[str] = None
     geodata_last_results: Optional[List[GeoDataObject]] = None
     geodata_layers: Optional[List[GeoDataObject]] = None
+    execution_plan: Optional[Dict[str, Any]] = None
     # global_geodata: Optional[List[GeoDataObject]] = None
     options: Optional[Union[Dict[str, Any], SettingsSnapshot]] = None
 
 
-class NaLaMapResponse(BaseModel):
+class GeoAgentResponse(BaseModel):
     """
-    Response of the NaLaMap, which contains the message history,
+    Response of the GeoAgent, which contains the message history,
     a response and geodata related to the query
     """
 
-    messages: Optional[List[BaseMessage]] = None
+    # Pydantic otherwise serializes only BaseMessage fields and silently drops
+    # subclass fields such as AIMessage.tool_calls and ToolMessage.tool_call_id.
+    messages: Optional[List[SerializeAsAny[BaseMessage]]] = None
     results_title: Optional[str] = None
     geodata_results: Optional[List[GeoDataObject]] = None
     geodata_layers: Optional[List[GeoDataObject]] = None  # Uncommented for styling support
+    execution_plan: Optional[Dict[str, Any]] = None
     global_geodata: Optional[List[GeoDataObject]] = None
     options: Optional[Union[Dict[str, Any], SettingsSnapshot]] = None

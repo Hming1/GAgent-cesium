@@ -27,6 +27,15 @@ export default function AgentSettingsComponent() {
   const setEnableSmartCrs = useInitializedSettingsStore(
     (s) => s.setEnableSmartCrs,
   );
+  const setEnableMemory = useInitializedSettingsStore(
+    (s) => s.setEnableMemory,
+  );
+  const setEnableShortTermMemory = useInitializedSettingsStore(
+    (s) => s.setEnableShortTermMemory,
+  );
+  const setEnableLongTermMemory = useInitializedSettingsStore(
+    (s) => s.setEnableLongTermMemory,
+  );
 
   const toolStrategies = [
     { value: "all", label: "全部工具", description: "提供所有可用工具（默认行为）" },
@@ -75,7 +84,7 @@ export default function AgentSettingsComponent() {
               <input
                 type="checkbox"
                 id="enable-dynamic-tools"
-                checked={modelSettings.enable_dynamic_tools ?? false}
+                checked={modelSettings.enable_dynamic_tools ?? true}
                 onChange={(e) => setEnableDynamicTools(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-primary-300 dark:border-primary-700 text-tertiary-600 focus:ring-tertiary-500"
               />
@@ -271,6 +280,90 @@ export default function AgentSettingsComponent() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Memory Settings */}
+          <div className="col-span-2 border-t border-primary-200 dark:border-primary-800 pt-4 space-y-4">
+            <h3 className="text-sm font-semibold text-primary-900 dark:text-primary-200">
+              记忆与上下文设置
+            </h3>
+
+            {/* Enable Memory Context Toggle */}
+            <div className="col-span-2">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="enable-memory"
+                  checked={modelSettings.enable_memory ?? true}
+                  onChange={(e) => setEnableMemory(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-primary-300 dark:border-primary-700 text-tertiary-600 focus:ring-tertiary-500"
+                />
+                <div className="flex-1">
+                  <label
+                    htmlFor="enable-memory"
+                    className="text-sm font-medium text-primary-900 dark:text-primary-300 cursor-pointer"
+                  >
+                    启用整体记忆注入
+                  </label>
+                  <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
+                    控制是否向大模型注入上下文记忆块（包括短期与长期记忆）。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Render sub-toggles only when enable_memory is true */}
+            {(modelSettings.enable_memory ?? true) && (
+              <div className="pl-6 space-y-4 border-l-2 border-primary-200 dark:border-primary-800">
+                {/* Enable Short-Term Memory Toggle */}
+                <div className="col-span-2">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="enable-short-term-memory"
+                      checked={modelSettings.enable_short_term_memory ?? true}
+                      onChange={(e) => setEnableShortTermMemory(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-primary-300 dark:border-primary-700 text-tertiary-600 focus:ring-tertiary-500"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="enable-short-term-memory"
+                        className="text-sm font-medium text-primary-900 dark:text-primary-300 cursor-pointer"
+                      >
+                        启用短期会话记忆 (Short-Term Memory)
+                      </label>
+                      <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
+                        自动收集当前地图图层、近期的工具结果和对话，并作为 Markdown 上下文注入模型。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enable Long-Term Memory Toggle */}
+                <div className="col-span-2">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="enable-long-term-memory"
+                      checked={modelSettings.enable_long_term_memory ?? false}
+                      onChange={(e) => setEnableLongTermMemory(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-primary-300 dark:border-primary-700 text-tertiary-600 focus:ring-tertiary-500"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="enable-long-term-memory"
+                        className="text-sm font-medium text-primary-900 dark:text-primary-300 cursor-pointer"
+                      >
+                        启用长期持久记忆 (Long-Term Memory)
+                      </label>
+                      <p className="text-xs text-primary-700 dark:text-primary-400 mt-1">
+                        从数据库检索该用户的历史偏好与已知事实。需要数据库服务支持。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

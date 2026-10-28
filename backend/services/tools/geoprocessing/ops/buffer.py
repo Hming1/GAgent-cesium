@@ -195,6 +195,7 @@ def op_buffer(
 
         logger.info("op_buffer: Buffer operation completed successfully")
         return [fc]  # Return a list containing the single FeatureCollection
-    except Exception as e:
-        logger.exception(f"Error in op_buffer: {e}")
-        return []
+    except Exception:
+        # Surface the failure instead of returning an empty
+        # result, which callers cannot distinguish from "no matches".
+        raise

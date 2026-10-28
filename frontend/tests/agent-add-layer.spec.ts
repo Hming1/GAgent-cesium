@@ -565,4 +565,90 @@ test.describe("Agent Chat Interface - Add Layer Button", () => {
     const features = await countRenderedFeatures(page);
     expect(features).toBeGreaterThan(0);
   });
+  test("BULK ACTION: Load all search layers adds every result, including hidden overflow", async ({
+    page,
+  }) => {
+    const bulkLayers = Array.from({ length: 6 }, (_, index) => ({
+      ...mockHospitalPointsLayer,
+      id: `bulk-layer-${index + 1}`,
+      name: `Bulk Layer ${index + 1}`,
+      title: `Bulk Layer ${index + 1}`,
+      data_link: "/uploads/test_hospital_points_brazil.geojson",
+    }));
+
+    const mockChatResponse = {
+      messages: [
+        { type: "human", content: "show bulk layers" },
+        { type: "ai", content: "I found 6 layers." },
+      ],
+      geodata_results: bulkLayers,
+      geodata_layers: [],
+      metrics: {
+        agent_execution_time: 2.5,
+        token_usage: { total: 100, prompt: 50, completion: 50 },
+      },
+    };
+
+    await page.addInitScript((response) => {
+      const originalFetch = window.fetch;
+      (window as any).fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+        if (url.includes('/chat/stream')) {
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            async start(controller) {
+              const resultMessage = `event: result\ndata: ${JSON.stringify(response)}\n\n`;
+              controller.enqueue(encoder.encode(resultMessage));
+              const doneMessage = `event: done\ndata: ${JSON.stringify({ status: 'complete' })}\n\n`;
+              controller.enqueue(encoder.encode(doneMessage));
+              controller.close();
+            }
+          });
+          return new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' }
+          });
+        }
+        return originalFetch(input, init);
+      };
+    }, mockChatResponse);
+
+    await page.goto("/map");
+    await page.waitForLoadState("networkidle");
+
+    const chatInput = page.locator("textarea").first();
+    await expect(chatInput).toBeVisible();
+    await chatInput.fill("show bulk layers");
+    await chatInput.press("Enter");
+
+    await expect(page.getByText("I found 6 layers.")).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByText("搜索结果：")).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByText("Bulk Layer 1")).toBeVisible();
+    await expect(page.getByText("Bulk Layer 6")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "加载所有搜索图层" }).click();
+
+    await expect.poll(() => getLayerCount(page)).toBe(6);
+
+    const layerIds = await page.evaluate(() => {
+      const store = (window as any).useLayerStore;
+      return store.getState().layers.map((layer: any) => layer.id).sort();
+    });
+    expect(layerIds).toEqual([
+      "bulk-layer-1",
+      "bulk-layer-2",
+      "bulk-layer-3",
+      "bulk-layer-4",
+      "bulk-layer-5",
+      "bulk-layer-6",
+    ]);
+
+    await page.getByRole("button", { name: "加载所有搜索图层" }).click();
+    await expect.poll(() => getLayerCount(page)).toBe(6);
+  });
 });

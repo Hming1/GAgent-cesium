@@ -189,5 +189,4 @@ After establishing baseline performance:
 ## 📚 Related Documentation
 
 - [Large Dataset Transfer Analysis](../docs/large-dataset-transfer-analysis.md)
-- [Azure Blob Storage Security](../docs/azure-blob-storage-security.md)
 - [Runtime Environment](../docs/runtime-environment.md)

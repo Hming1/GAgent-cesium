@@ -13,6 +13,7 @@ Components:
 import hashlib
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Default headers for Overpass API requests
 OVERPASS_HEADERS = {
-    "User-Agent": "NaLaMap, github.com/nalamap, next generation geospatial analysis using agents",
+    "User-Agent": "GeoAgent, github.com/nalamap, next generation geospatial analysis using agents",
     "Content-Type": "application/x-www-form-urlencoded",
 }
 
@@ -459,6 +460,37 @@ class OverpassResultConverter:
         return unique_features
 
 
+def spatial_scope_label(
+    display_name: str,
+    mode: str = "near",
+    radius_meters: Optional[int] = None,
+) -> str:
+    """Short label for where a spatial search was limited.
+
+    Examples: ``深圳市范围内``, ``深圳市中心40公里内``.
+    """
+    place = display_name or ""
+    place = re.sub(r"\s*\(Data ©[^)]*\)", "", place, flags=re.IGNORECASE)
+    place = re.sub(r"https?://\S+", "", place)
+    place = place.split(",")[0].strip() or "未知地点"
+    place = place[:16]
+
+    if mode == "area":
+        return f"{place}范围内"
+    if mode == "bbox":
+        return f"{place}范围框内"
+    if mode == "radius":
+        meters = radius_meters or 0
+        if meters >= 1000 and meters % 1000 == 0:
+            distance = f"{meters // 1000}公里"
+        elif meters > 0:
+            distance = f"{meters}米"
+        else:
+            distance = ""
+        return f"{place}中心{distance}内" if distance else f"{place}附近"
+    return f"{place}附近"
+
+
 def create_feature_collection_geodata(
     features: List[Dict[str, Any]],
     collection_type: str,  # "Points", "Areas", "Lines"
@@ -466,6 +498,9 @@ def create_feature_collection_geodata(
     location_display: str,
     osm_tag_kv: str,
     location_filename: str,
+    scope_label: Optional[str] = None,
+    data_source_id: str = "geocodeOverpassCollection",
+    data_source: str = "OpenStreetMap contributors",
 ) -> Optional[GeoDataObject]:
     """
     Create a GeoDataObject for a FeatureCollection of a specific geometry type.
@@ -477,6 +512,9 @@ def create_feature_collection_geodata(
         location_display: User-friendly location name (e.g., "Paris, France")
         osm_tag_kv: OSM tag key=value (e.g., "amenity=restaurant")
         location_filename: Clean location name for filenames
+        scope_label: Optional short spatial-scope title fragment
+        data_source_id: Layer provenance id (Overpass or Amap)
+        data_source: Human-readable data source label
 
     Returns:
         GeoDataObject or None if no features
@@ -509,18 +547,22 @@ def create_feature_collection_geodata(
     # Calculate bounding box
     bounding_box_str = _calculate_bbox_string(features)
 
-    collection_name = f"{amenity_display} ({collection_type}) near {location_display}"
+    scope = scope_label or spatial_scope_label(location_display)
+    geometry_label = {"Points": "点", "Areas": "面", "Lines": "线"}.get(
+        collection_type, collection_type
+    )
+    collection_name = f"{scope} · {amenity_display} · {geometry_label}"
     description = (
         f"{len(features)} {amenity_display.lower()} ({collection_type.lower()}) "
-        f"found matching '{osm_tag_kv}' near {location_display}. Data from OpenStreetMap."
+        f"found matching '{osm_tag_kv}' near {location_display}. Data from {data_source}."
     )
 
     return GeoDataObject(
         id=unique_id,
-        data_source_id="geocodeOverpassCollection",
+        data_source_id=data_source_id,
         data_type=DataType.GEOJSON,
         data_origin=DataOrigin.TOOL,
-        data_source="OpenStreetMap contributors",
+        data_source=data_source,
         data_link=data_url,
         name=collection_name,
         title=collection_name,
@@ -535,6 +577,7 @@ def create_feature_collection_geodata(
             "query_location": location_display,
             "query_osm_tag": osm_tag_kv,
             "geometry_type_collected": collection_type,
+            "provider": data_source,
         },
         sha256=sha256_hex,
         size=size_bytes,
@@ -570,9 +613,9 @@ def _calculate_bbox_string(features: List[Dict[str, Any]]) -> Optional[str]:
     min_lon, max_lon = min(all_lons), max(all_lons)
     min_lat, max_lat = min(all_lats), max(all_lats)
 
-    # Add buffer for point clusters
-    if (max_lon - min_lon < 0.001) and (max_lat - min_lat < 0.001):
-        buffer = 0.001
+    # Pad tight/single-point clusters so zoom-to-layer keeps city-block context.
+    if (max_lon - min_lon < 0.03) and (max_lat - min_lat < 0.03):
+        buffer = 0.015
         min_lon -= buffer
         max_lon += buffer
         min_lat -= buffer

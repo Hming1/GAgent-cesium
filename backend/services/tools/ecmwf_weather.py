@@ -130,30 +130,17 @@ def geocode_location(location: str) -> Optional[Dict[str, float]]:
         except (ValueError, IndexError):
             pass
 
-    # Use Nominatim geocoding
+    from services.tools.geocoding import resolve_place
+
+    place = resolve_place(location)
+    if not place:
+        logger.error("Geocoding failed for %s", location)
+        return None
     try:
-        url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            "q": location,
-            "format": "json",
-            "limit": 1,
-        }
-        headers = {"User-Agent": "NaLaMap-Weather/1.0"}
-
-        response = requests.get(url, params=params, headers=headers, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-
-        if data:
-            return {
-                "lat": float(data[0]["lat"]),
-                "lon": float(data[0]["lon"]),
-            }
-
-    except Exception as e:
-        logger.error(f"Geocoding failed for {location}: {e}")
-
-    return None
+        return {"lat": float(place["lat"]), "lon": float(place["lon"])}
+    except (KeyError, TypeError, ValueError) as exc:
+        logger.error("Geocoding failed for %s: %s", location, exc)
+        return None
 
 
 def get_weather_data_simple(

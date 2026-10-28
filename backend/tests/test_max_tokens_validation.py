@@ -1,7 +1,5 @@
 """Tests for max_tokens validation in LLM configuration."""
 
-import os
-import pytest
 from services.ai.llm_config import _validate_max_tokens, get_llm_for_provider
 
 
@@ -110,20 +108,3 @@ class TestGetLLMWithValidation:
         assert capabilities.supports_parallel_tool_calls is True
         assert capabilities.context_window > 0
         assert capabilities.max_tokens > 0
-
-    @pytest.mark.skipif(
-        not os.getenv("OPENAI_API_VERSION") or not os.getenv("AZURE_OPENAI_ENDPOINT"),
-        reason="Azure environment variables not configured",
-    )
-    def test_get_llm_for_provider_azure(self):
-        """Test validation works with Azure provider."""
-        # Azure has max_tokens=6000 by default
-        llm, capabilities = get_llm_for_provider("azure", max_tokens=5000)
-        assert llm is not None
-        assert capabilities is not None
-
-        # Exceeding Azure's limit
-        llm, capabilities = get_llm_for_provider("azure", max_tokens=20000)
-        assert llm is not None
-        assert capabilities is not None
-        assert llm.max_tokens == 6000  # Should be clamped to Azure's limit

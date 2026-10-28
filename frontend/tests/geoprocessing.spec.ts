@@ -25,6 +25,7 @@ const mockSettings = {
       description: "Example GeoServer",
     },
   ],
+  example_mcp_servers: [],
   model_options: {
     MockProvider: [{ name: "mock-model", max_tokens: 999 }],
   },
@@ -113,8 +114,26 @@ const hospitalBufferGeoJSON = {
 
 // Helper function to setup API mocks
 async function setupMocks(page: Page) {
+
+  await page.route("**/auth/me", route => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ id: "test-user", email: "test@example.com" }),
+  }));
+
+  await page.route("**/maps/", route => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify([{ id: "test-map", name: "Test Map" }]),
+  }));
+  await page.route("**/maps/test-map/layers", route => route.fulfill({
+    status: 200, contentType: "application/json", body: "[]",
+  }));
+  await page.route("**/layers/**", route => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ id: "created-layer" }),
+  }));
+
   // Mock settings endpoint
-  await page.route("**/api/settings", (route) => {
+  await page.route("**/settings/options", (route) => {
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -131,9 +150,9 @@ async function setupMocks(page: Page) {
     });
   });
 
-  // Mock Azure Blob Storage hospital data
+  // Mock External HTTP hospital data
   await page.route(
-    "**/*.blob.core.windows.net/data/*hospitals*.json*",
+    "https://data.example.test/data/*hospitals*.json*",
     (route) => {
       route.fulfill({
         status: 200,
@@ -155,9 +174,9 @@ async function setupMocks(page: Page) {
     });
   });
 
-  // Mock Azure Blob Storage buffer data
+  // Mock External HTTP buffer data
   await page.route(
-    "**/*.blob.core.windows.net/data/*buffer*.json*",
+    "https://data.example.test/data/*buffer*.json*",
     (route) => {
       route.fulfill({
         status: 200,
@@ -204,7 +223,18 @@ async function addLayerToMap(page: Page, layerData: any) {
   return result;
 }
 
-// Helper function to check if layer is visible on map
+// Count entities from the current Cesium scene.
+async function renderedFeatures(page: Page, layerId: string): Promise<number> {
+  const count = () => page.evaluate((id) => {
+    const viewer = (window as any).__nalamapCesiumViewer;
+    const source = viewer?.dataSources?.getByName(id)?.[0];
+    return source?.entities?.values?.length ?? 0;
+  }, layerId);
+  await expect.poll(count, { timeout: 15000 }).toBeGreaterThan(0);
+  return count();
+}
+
+// Check the application layer visibility state.
 async function isLayerVisible(page: Page, layerId: string): Promise<boolean> {
   return await page.evaluate((id) => {
     const { useLayerStore } = window as any;
@@ -230,7 +260,7 @@ test.describe("Geoprocessing Operations", () => {
     await page.goto("/map");
 
     // Wait for map to be ready
-    await page.waitForSelector(".leaflet-container", { timeout: 10000 });
+    await page.waitForSelector(".cesium-widget canvas", { timeout: 10000 });
     await page.waitForTimeout(2000);
   });
 
@@ -275,11 +305,7 @@ test.describe("Geoprocessing Operations", () => {
     expect(isVisible).toBe(true);
 
     // Check for map features (markers or paths)
-    const featureCount = await page
-      .locator(
-        ".leaflet-overlay-pane path, .leaflet-overlay-pane circle, .leaflet-marker-pane img, .leaflet-overlay-pane canvas",
-      )
-      .count();
+    const featureCount = await renderedFeatures(page, "hospitals-test");
     console.log("Feature count on map:", featureCount);
     expect(featureCount).toBeGreaterThan(0);
   });
@@ -352,9 +378,7 @@ test.describe("Geoprocessing Operations", () => {
     expect(bufferVisible).toBe(true);
 
     // Verify features are rendered
-    const featureCount = await page
-      .locator(".leaflet-overlay-pane path, .leaflet-overlay-pane polygon")
-      .count();
+    const featureCount = await renderedFeatures(page, "hospitals-buffer-100km");
     console.log("Feature count (including buffer):", featureCount);
     expect(featureCount).toBeGreaterThan(0);
   });
@@ -367,7 +391,7 @@ test.describe("Geoprocessing Operations", () => {
       name: "Toggle Test",
       title: "Toggle Test Layer",
       layer_type: "GEOJSON",
-      data_link: "/uploads/toggle_test.geojson",
+      data_link: "/uploads/hospitals_toggle_test.geojson",
       visible: true,
     };
 
@@ -404,40 +428,36 @@ test.describe("Geoprocessing Operations", () => {
     expect(isVisible).toBe(true);
   });
 
-  test("should support Azure Blob Storage URLs with SAS tokens", async ({
+  test("should support External HTTP URLs with query parameters", async ({
     page,
   }) => {
-    console.log("Test: Azure Blob Storage with SAS tokens");
+    console.log("Test: External HTTP with query parameters");
 
-    const azureBlobLayer = {
-      id: "azure-blob-test",
-      name: "Azure Blob Test",
-      title: "Azure Blob Storage Layer",
+    const externalLayer = {
+      id: "external-http-test",
+      name: "External HTTP Test",
+      title: "External HTTP Layer",
       layer_type: "GEOJSON",
       data_link:
-        "https://stnalamapdev.blob.core.windows.net/data/hospitals_abc123.json?sv=2021-06-08&se=2025-10-06T10%3A30%3A00Z&sr=b&sp=r&sig=test",
+        "https://data.example.test/data/hospitals_abc123.json?download=1&token=test",
       visible: true,
     };
 
-    // Add layer with Azure Blob URL
-    const result = await addLayerToMap(page, azureBlobLayer);
-    console.log("Add Azure Blob layer result:", result);
+    // Add layer with External HTTP URL
+    const result = await addLayerToMap(page, externalLayer);
+    console.log("Add External HTTP layer result:", result);
     expect(result.success).toBe(true);
 
     // Wait for layer to load and render
     await page.waitForTimeout(3000);
 
     // Verify layer is in store and visible
-    const isVisible = await isLayerVisible(page, "azure-blob-test");
+    const isVisible = await isLayerVisible(page, "external-http-test");
     expect(isVisible).toBe(true);
 
     // Check for rendered features
-    const featureCount = await page
-      .locator(
-        ".leaflet-overlay-pane path, .leaflet-overlay-pane circle, .leaflet-marker-pane img",
-      )
-      .count();
-    console.log("Azure Blob layer feature count:", featureCount);
+    const featureCount = await renderedFeatures(page, "external-http-test");
+    console.log("External HTTP layer feature count:", featureCount);
     expect(featureCount).toBeGreaterThan(0);
   });
 
@@ -486,7 +506,7 @@ test.describe("Geoprocessing Operations", () => {
     expect(layerInfo?.visible).toBe(true);
 
     // Check map has features rendered
-    const pathCount = await page.locator(".leaflet-overlay-pane path").count();
+    const pathCount = await renderedFeatures(page, "multi-buffer-result");
     console.log("Path count for multi-feature layer:", pathCount);
     expect(pathCount).toBeGreaterThan(0);
   });

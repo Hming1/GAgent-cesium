@@ -30,7 +30,7 @@ class SandboxExecutionRequest(BaseModel):
     max_output_bytes: Optional[int] = None
 
 
-app = FastAPI(title="NaLaMap Python Analysis Sandbox", version="0.1.0")
+app = FastAPI(title="GeoAgent Python Analysis Sandbox", version="0.1.0")
 
 
 @app.get("/health")

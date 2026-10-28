@@ -1,1 +1,1 @@
-"""NaLaMap Python analysis sandbox service."""
+"""GeoAgent Python analysis sandbox service."""

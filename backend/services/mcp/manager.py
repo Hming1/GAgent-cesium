@@ -14,7 +14,7 @@ class MCPManager:
     """Manages MCP server and external client connections.
 
     Coordinates initialization of MCP functionality:
-    - Loads external MCP tools for use by NaLaMap agents
+    - Loads external MCP tools for use by GeoAgent agents
     - Manages lifecycle of MCP client connections
     - Provides centralized access to external tools
     """

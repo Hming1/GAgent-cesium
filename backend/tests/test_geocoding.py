@@ -16,6 +16,13 @@ from services.tools.geocoding import (  # noqa: E402
 )
 
 
+@pytest.fixture(autouse=True)
+def clear_geocoding_provider_keys(monkeypatch):
+    """Keep URL tests independent of developer credentials."""
+    monkeypatch.delenv("AMAP_WEB_SERVICE_KEY", raising=False)
+    monkeypatch.delenv("BAIDU_GEOCODING_AK", raising=False)
+
+
 @pytest.fixture
 def mock_geonames_response():
     """Mock response for GeoNames API"""
@@ -187,7 +194,7 @@ class TestGeocodingBasicFunctions:
 
             # Verify headers are set
             headers = call_args[1]["headers"]
-            assert headers["User-Agent"].startswith("NaLaMap")
+            assert headers["User-Agent"].startswith("GeoAgent")
 
             # Verify result is valid JSON
             parsed_result = json.loads(result)

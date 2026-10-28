@@ -1,8 +1,8 @@
-# NaLaMap E2E Tests
+# GeoAgent E2E Tests
 
 > **End-to-end tests for real user workflows with live backend**
 
-These tests validate complete user journeys through the NaLaMap application using a running stack (nginx → backend → frontend).
+These tests validate complete user journeys through the GeoAgent application using a running stack (nginx → backend → frontend).
 
 ---
 

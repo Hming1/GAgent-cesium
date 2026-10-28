@@ -1,5 +1,6 @@
+import json
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -11,6 +12,33 @@ logger = logging.getLogger(__name__)
 
 class SandboxClientError(RuntimeError):
     """Raised when the Python analysis sandbox cannot complete a request."""
+
+
+def _coerce_geojson_outputs(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Accept gdf.to_json() strings that agents commonly append by mistake."""
+    outputs = payload.get("geojson_outputs")
+    if not isinstance(outputs, list):
+        return payload
+    fixed = []
+    for item in outputs:
+        if not isinstance(item, dict):
+            continue
+        entry = dict(item)
+        geojson = entry.get("geojson")
+        if isinstance(geojson, str):
+            try:
+                entry["geojson"] = json.loads(geojson)
+            except Exception:
+                logger.warning(
+                    "Dropping sandbox geojson_output %s: geojson is not valid JSON",
+                    entry.get("name"),
+                )
+                continue
+        if isinstance(entry.get("geojson"), dict):
+            fixed.append(entry)
+    payload = dict(payload)
+    payload["geojson_outputs"] = fixed
+    return payload
 
 
 class SandboxClient:
@@ -47,7 +75,10 @@ class SandboxClient:
             raise SandboxClientError(f"Python analysis sandbox request failed: {exc}") from exc
 
         try:
-            return SandboxExecutionResponse.model_validate(response.json())
+            raw = response.json()
+            if isinstance(raw, dict):
+                raw = _coerce_geojson_outputs(raw)
+            return SandboxExecutionResponse.model_validate(raw)
         except Exception as exc:
             logger.warning("Invalid Python analysis sandbox response: %s", exc)
             raise SandboxClientError(

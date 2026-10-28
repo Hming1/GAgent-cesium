@@ -2,7 +2,9 @@
 
 > **Target Audience**: AI coding assistants (Cursor, Copilot, etc.) and automated development tools.
 
-This document provides high-level context and specific instructions for AI agents working on the NaLaMap project. For standard development procedures, please refer to **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+This document provides high-level context and specific instructions for AI agents working on the GeoAgent project. For standard development procedures, please refer to **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
+> 🌐 **中文版**: [AGENTS.zh-CN.md](AGENTS.zh-CN.md)（规则与路径保持一致，中文协作者可优先阅读）
 
 ---
 
@@ -60,12 +62,12 @@ When asked to add a new capability to the AI assistant:
 1.  Create the tool function in `backend/services/tools/`.
 2.  Use the `@tool` decorator from `langchain.tools`.
 3.  Add unit tests in `backend/tests/`.
-4.  **Register the tool** in `backend/services/default_agent_settings.py`.
+4.  **Register the tool** in the matching Skill under `backend/services/agent_skills/` (`tools`, `tool_metadata`, `selector_metadata`, `prompt`, `plan_aliases`). `backend/services/default_agent_settings.py` only re-exports what the registry builds.
 5.  Document it in `backend/services/tools/README.md`.
 
 ### 2. Modifying the Agent Workflow
 The main agent logic is in `backend/services/single_agent.py` (LangGraph ReAct agent).
-*   If changing the system prompt, look for `DEFAULT_SYSTEM_PROMPT`.
+*   If changing the system prompt, edit `BASE_SYSTEM_PROMPT` or a Skill's `prompt` in `backend/services/agent_skills/`; `DEFAULT_SYSTEM_PROMPT` is composed from them.
 *   If changing tool selection logic, check `create_geo_agent`.
 
 ### 3. Debugging

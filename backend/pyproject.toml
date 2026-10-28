@@ -27,7 +27,6 @@ sqlite-vec = ">=0.1.5"
 
 langchain_google_genai = ">=2.1.12"
 langchain_mistralai = ">=0.2.12"
-azure-storage-blob = "*"
 python-multipart = "*"
 shapely = "*"
 kml2geojson = "*"

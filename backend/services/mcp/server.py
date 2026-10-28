@@ -1,4 +1,4 @@
-"""MCP Server implementation for exposing NaLaMap tools."""
+"""MCP Server implementation for exposing GeoAgent tools."""
 
 import asyncio
 import json
@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class MCPServer:
-    """Model Context Protocol server for NaLaMap tools.
+    """Model Context Protocol server for GeoAgent tools.
 
-    Exposes NaLaMap geospatial tools through the standardized MCP protocol,
+    Exposes GeoAgent geospatial tools through the standardized MCP protocol,
     allowing external AI assistants (Claude, ChatGPT, etc.) to use them.
     """
 
@@ -30,7 +30,7 @@ class MCPServer:
         self._initialize_tools()
 
     def _initialize_tools(self):
-        """Register all available NaLaMap tools in MCP format."""
+        """Register all available GeoAgent tools in MCP format."""
         from services.tools.geocoding import (
             geocode_using_nominatim_to_geostate,
             geocode_using_overpass_to_geostate,
@@ -185,7 +185,7 @@ class MCPServer:
             "serverInfo": {
                 "name": self.name,
                 "version": "1.0.0",
-                "description": "NaLaMap MCP Server - Geospatial AI tools for mapping and analysis",
+                "description": "GeoAgent MCP Server - Geospatial AI tools for mapping and analysis",
             },
         }
 

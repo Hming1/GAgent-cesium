@@ -9,12 +9,12 @@ from models.settings_model import ModelSettings
 from services.single_agent import create_geo_agent
 
 
-def _is_google_provider_available() -> bool:
-    """Check if Google provider is available."""
+def _is_deepseek_provider_available() -> bool:
+    """Check if DeepSeek provider is available."""
     try:
         from services.ai.provider_interface import get_provider_by_name
 
-        provider_info = get_provider_by_name("google")
+        provider_info = get_provider_by_name("deepseek")
         return provider_info.available
     except Exception:
         return False
@@ -25,20 +25,20 @@ class TestAgentModelSelection:
 
     @pytest.mark.asyncio
     @patch("services.single_agent.create_react_agent")
-    async def test_create_agent_with_openai_model_settings(self, mock_create_react):
-        """Test creating agent with specific OpenAI model."""
+    async def test_create_agent_with_kimi_model_settings(self, mock_create_react):
+        """Test creating agent with specific KIMI model."""
         # Mock the create_react_agent to avoid actual LangGraph setup
         mock_agent = MagicMock()
         mock_create_react.return_value = mock_agent
 
         model_settings = ModelSettings(
-            model_provider="openai",
-            model_name="gpt-5-nano",
+            model_provider="kimi",
+            model_name="kimi-k2.6",
             max_tokens=4000,
             system_prompt="Test prompt",
         )
 
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key"}):
+        with patch.dict(os.environ, {"KIMI_API_KEY": "sk-test-key"}):
             agent, llm = await create_geo_agent(model_settings=model_settings)
 
         assert agent is not None
@@ -47,27 +47,33 @@ class TestAgentModelSelection:
 
         # Get the call arguments
         call_kwargs = mock_create_react.call_args[1]
-        assert call_kwargs["prompt"] == "Test prompt"
+        prompt_arg = call_kwargs["prompt"]
+        if callable(prompt_arg):
+            dummy_state = {"geodata_layers": [], "geodata_last_results": [], "messages": []}
+            result_messages = prompt_arg(dummy_state)
+            assert "Test prompt" in result_messages[0].content
+        else:
+            assert prompt_arg == "Test prompt"
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(
-        not _is_google_provider_available(),
-        reason="Google Gemini provider not available (missing langchain_google_genai)",
+        not _is_deepseek_provider_available(),
+        reason="DeepSeek provider not available (missing environment variables)",
     )
     @patch("services.single_agent.create_react_agent")
-    async def test_create_agent_with_google_model_settings(self, mock_create_react):
-        """Test creating agent with Google Gemini model."""
+    async def test_create_agent_with_deepseek_model_settings(self, mock_create_react):
+        """Test creating agent with DeepSeek model."""
         mock_agent = MagicMock()
         mock_create_react.return_value = mock_agent
 
         model_settings = ModelSettings(
-            model_provider="google",
-            model_name="gemini-1.5-flash",
+            model_provider="deepseek",
+            model_name="deepseek-chat",
             max_tokens=8192,
             system_prompt="",
         )
 
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"}):
+        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "test-key"}):
             agent, llm = await create_geo_agent(model_settings=model_settings)
 
         assert agent is not None
@@ -81,19 +87,25 @@ class TestAgentModelSelection:
         mock_create_react.return_value = mock_agent
 
         model_settings = ModelSettings(
-            model_provider="openai",
-            model_name="gpt-5-mini",
+            model_provider="kimi",
+            model_name="kimi-k2.6",
             max_tokens=6000,
             system_prompt="",  # Empty prompt
         )
 
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key"}):
+        with patch.dict(os.environ, {"KIMI_API_KEY": "sk-test-key"}):
             agent, llm = await create_geo_agent(model_settings=model_settings)
 
         assert agent is not None
         call_kwargs = mock_create_react.call_args[1]
         # Should use default prompt, not empty string
-        assert call_kwargs["prompt"] != ""
+        prompt_arg = call_kwargs["prompt"]
+        if callable(prompt_arg):
+            dummy_state = {"geodata_layers": [], "geodata_last_results": [], "messages": []}
+            result_messages = prompt_arg(dummy_state)
+            assert result_messages[0].content != ""
+        else:
+            assert prompt_arg != ""
 
     @pytest.mark.asyncio
     @patch("services.single_agent.create_react_agent")
@@ -104,7 +116,7 @@ class TestAgentModelSelection:
 
         with patch.dict(
             os.environ,
-            {"LLM_PROVIDER": "openai", "OPENAI_API_KEY": "sk-test-key"},
+            {"LLM_PROVIDER": "kimi", "KIMI_API_KEY": "sk-test-key"},
         ):
             agent, llm = await create_geo_agent(model_settings=None)
 
@@ -115,17 +127,17 @@ class TestAgentModelSelection:
 class TestLLMConfigModelParameter:
     """Test that llm_config correctly passes model_name parameter."""
 
-    @patch("services.ai.openai.ChatOpenAI")
-    def test_get_llm_for_provider_openai_with_model_name(self, mock_chat_openai):
+    @patch("services.ai.kimi.ChatOpenAI")
+    def test_get_llm_for_provider_kimi_with_model_name(self, mock_chat_openai):
         """Test that specific model name is used when provided."""
         from services.ai.llm_config import get_llm_for_provider
 
         mock_instance = MagicMock()
         mock_chat_openai.return_value = mock_instance
 
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key"}):
+        with patch.dict(os.environ, {"KIMI_API_KEY": "sk-test-key"}):
             llm, capabilities = get_llm_for_provider(
-                "openai", max_tokens=4000, model_name="gpt-5-nano"
+                "kimi", max_tokens=4000, model_name="kimi-k2.6"
             )
 
         assert llm is not None
@@ -133,30 +145,26 @@ class TestLLMConfigModelParameter:
         # Verify ChatOpenAI was called with the correct model
         mock_chat_openai.assert_called_once()
         call_kwargs = mock_chat_openai.call_args[1]
-        assert call_kwargs["model"] == "gpt-5-nano"
+        assert call_kwargs["model"] == "kimi-k2.6"
         assert call_kwargs["max_tokens"] == 4000
 
-    @pytest.mark.skipif(
-        not _is_google_provider_available(),
-        reason="Google Gemini provider not available (missing langchain_google_genai)",
-    )
-    @patch("services.ai.google_genai.ChatGoogleGenerativeAI")
-    def test_get_llm_for_provider_google_with_model_name(self, mock_chat_google):
-        """Test that specific Google model name is used when provided."""
+    @patch("services.ai.deepseek.ChatOpenAI")
+    def test_get_llm_for_provider_deepseek_with_model_name(self, mock_chat_openai):
+        """Test that specific DeepSeek model name is used when provided."""
         from services.ai.llm_config import get_llm_for_provider
 
         mock_instance = MagicMock()
-        mock_chat_google.return_value = mock_instance
+        mock_chat_openai.return_value = mock_instance
 
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"}):
+        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "test-key"}):
             llm, capabilities = get_llm_for_provider(
-                "google", max_tokens=8000, model_name="gemini-1.5-flash"
+                "deepseek", max_tokens=8000, model_name="deepseek-chat"
             )
 
         assert llm is not None
-        mock_chat_google.assert_called_once()
-        call_kwargs = mock_chat_google.call_args[1]
-        assert call_kwargs["model"] == "gemini-1.5-flash"
+        mock_chat_openai.assert_called_once()
+        call_kwargs = mock_chat_openai.call_args[1]
+        assert call_kwargs["model"] == "deepseek-chat"
 
     def test_get_llm_for_provider_invalid_provider_raises(self):
         """Test that invalid provider name raises ValueError."""
@@ -179,12 +187,12 @@ class TestConversationSummarization:
         mock_create_react.return_value = mock_agent
 
         model_settings = ModelSettings(
-            model_provider="openai",
-            model_name="gpt-4o-mini",
+            model_provider="kimi",
+            model_name="kimi-k2.6",
             max_tokens=4000,
         )
 
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key"}):
+        with patch.dict(os.environ, {"KIMI_API_KEY": "sk-test-key"}):
             agent, llm = await create_geo_agent(
                 model_settings=model_settings,
                 session_id="test-session-123",
@@ -210,7 +218,7 @@ class TestConversationSummarization:
 
         with patch.dict(
             os.environ,
-            {"OPENAI_API_KEY": "sk-test-key", "MESSAGE_MANAGEMENT_MODE": "summarize"},
+            {"KIMI_API_KEY": "sk-test-key", "MESSAGE_MANAGEMENT_MODE": "summarize"},
         ):
             from services.single_agent import get_conversation_manager
 
@@ -275,7 +283,7 @@ class TestConversationSummarization:
         if session_id in conversation_managers:
             del conversation_managers[session_id]
 
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key"}):
+        with patch.dict(os.environ, {"KIMI_API_KEY": "sk-test-key"}):
             from services.single_agent import get_conversation_manager
 
             # Create session via get_conversation_manager

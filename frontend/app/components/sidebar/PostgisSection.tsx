@@ -13,7 +13,7 @@ export default function PostgisSection({
   addLayer,
   updateLayerStyle,
 }: PostgisSectionProps) {
-  const [tables, setTables] = useState<{ schema: string; table: string; geometry_column: string; type: string }[]>([]);
+  const [tables, setTables] = useState<{ schema: string; table: string; geometry_column: string; geom_column?: string; type: string }[]>([]);
   const [selectedTableIdx, setSelectedTableIdx] = useState<number>(-1);
   const [isLoadingTables, setIsLoadingTables] = useState<boolean>(false);
   const [isAdding, setIsAdding] = useState<boolean>(false);

@@ -8,7 +8,6 @@ RUN chmod +x /docker-entrypoint.sh
 # Copy loading page
 COPY loading.html /usr/share/nginx/html/loading.html
 
-EXPOSE 80
-
+EXPOSE 80 81
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

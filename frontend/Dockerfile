@@ -43,6 +43,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy rest of the project
 COPY . .
 
+ARG NEXT_PUBLIC_TIANDITU_TOKEN=""
+ENV NEXT_PUBLIC_TIANDITU_TOKEN=${NEXT_PUBLIC_TIANDITU_TOKEN}
+
 # Build your Next.js app
 RUN \
   if [ -f yarn.lock ]; then yarn build; \

@@ -16,11 +16,22 @@ import { test, expect } from "@playwright/test";
 
 test.describe("LayerManagement Component", () => {
   test.beforeEach(async ({ page }) => {
+    await page.route("**/auth/me", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "playwright-user",
+          email: "playwright@example.com",
+          display_name: "Playwright User",
+        }),
+      });
+    });
     // Navigate to map page
     await page.goto("/map");
     
-    // Wait for the map to load
-    await page.waitForSelector(".leaflet-container", { timeout: 10000 });
+    // Wait for either supported map implementation to load
+    await page.waitForSelector(".cesium-widget, .leaflet-container", { timeout: 10000 });
     await page.waitForTimeout(1000);
   });
 
@@ -76,9 +87,13 @@ test.describe("LayerManagement Component", () => {
     const selectedValue = await basemapSelect.inputValue();
     expect(selectedValue).toBe("osm");
     
-    // Verify basemap change was triggered (checking if tiles are being loaded)
-    const hasLeafletTiles = await page.locator(".leaflet-tile-pane").count();
-    expect(hasLeafletTiles).toBeGreaterThan(0);
+    // The app can render either map implementation.
+    const hasCesium = await page.locator(".cesium-widget").count();
+    if (hasCesium) {
+      await expect(page.locator(".cesium-widget")).toBeVisible();
+    } else {
+      await expect(page.locator(".leaflet-tile-pane")).toHaveCount(1);
+    }
   });
 
   test("should add a layer and display it in the list", async ({ page }) => {
@@ -463,7 +478,7 @@ test.describe("LayerManagement Component", () => {
     await page.waitForTimeout(2000);
 
     // Verify zoom button is present
-    const zoomButton = await page.locator("button[title='Zoom to this layer']").first();
+    const zoomButton = page.locator("button[title='缩放到此图层'], button[title='Zoom to this layer']").first();
     await expect(zoomButton).toBeVisible();
     
     // Click should not throw an error
