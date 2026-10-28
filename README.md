@@ -1,379 +1,337 @@
 # GeoAgent
 
-GeoAgent is an open-source platform that helps users find and analyze geospatial data in a natural way. It combines modern web technologies with AI capabilities to create an intuitive interface for interacting with geographic information.
+GeoAgent 是一个开源平台，用来以自然语言查找和分析地理空间数据。它把 Web 应用和智能体放在一起，让用户直接在地图上查看、检索和处理地理信息。
 
-## Features
+## 功能
 
-* Upload and display vector data on a map. 
-* Geocode Locations using OSM and GeoNames (e.g. hospitals, schools, roads, railways). Intelligent geometry filtering ensures queries return the correct feature types (e.g., road segments instead of bus stops). See [OSM Geometry Filtering Documentation](docs/geocoding-osm-geometry-filtering.md).
-* Find and integrate data from existing Open Data Portals or own databases.
-* **Urban inefficient-space identification**：独立工作台按容积率、建筑密度、闲置年限、税收产出、用地性质等指标识别工业/商业/居住低效与闲置空地。See [Inefficient Space](docs/inefficient-space.md).
-* Chat with AI-agent to retrieve information on data content and quality.
-* **Multi-Provider LLM Support**: Choose from vLLM, Kimi, or DeepSeek.
-* AI-assisted map and layer styling. 
-* Automated Geoprocessing using natural language (e.g buffer, centroids, intersections).
-* Create and share GIS-AI-Applications for people without geodata expertise based on custom use-cases, processing logic and data-sources.
-* Flexible Extension Possibilities of Toolbox e.g. for including document or web-search
-* **Color Customization**: Customize the application's color scheme to match corporate branding or personal preferences. See [Color Customization Guide](docs/color-customization.md).
+* 上传矢量数据并在地图上显示。
+* 用 OSM 和 GeoNames 做地理编码（例如医院、学校、道路、铁路）。几何类型过滤会把查询落到对应的要素类型上，例如返回道路线段而不是公交站。
+* 接入已有的开放数据门户，或使用自己的数据库。
+* **城市低效空间识别**：独立工作台按容积率、建筑密度、闲置年限、税收产出、用地性质等指标，识别工业、商业、居住低效用地和闲置空地。见 [低效空间说明](docs/inefficient-space.md)。
+* 通过对话向智能体询问数据内容和质量。
+* **多模型提供方**：可选 vLLM、Kimi 或 DeepSeek。
+* 用智能体辅助设置地图和图层样式。
+* 用自然语言做地理处理，例如缓冲区、质心、相交。
+* 按具体用途、处理逻辑和数据源，搭建并分享给非地理信息专业人员使用的 GIS 应用。
+* 工具箱可以继续扩展，例如接入文档或网页检索。
+* **配色**：可以按机构品牌或个人偏好调整界面颜色。见 [配色说明](docs/color-customization.md)。
 
+## 版本策略
 
+GeoAgent 的发布版本遵循 [语义化版本](https://semver.org/)，格式为 `MAJOR.MINOR.PATCH`：
 
+- **MAJOR**：不兼容的 API 变更、重大架构调整，或会破坏现有功能的改动
+- **MINOR**：向后兼容的新功能，例如新的地理工具、新数据源、界面改进
+- **PATCH**：向后兼容的缺陷修复、安全补丁和小改进
 
+**发布标签：** Git 标签格式为 `v{MAJOR}.{MINOR}.{PATCH}`，例如 `v1.0.0`、`v1.2.3`。
 
+**预发布版本**可以使用 `-alpha`、`-beta` 或 `-rc`，例如 `v1.1.0-beta.1`。
 
-## Versioning Strategy
+**当前版本：** 项目仍在开发中。核心功能完成并经过充分测试后，第一个稳定版会标为 `v1.0.0`。
 
-**GeoAgent follows [Semantic Versioning](https://semver.org/) for all releases using the format `MAJOR.MINOR.PATCH`:**
-
-- **MAJOR** version increments for incompatible API changes, significant architectural changes, or breaking changes to existing functionality
-- **MINOR** version increments for new features, enhancements, or backwards-compatible functionality additions (e.g., new geospatial tools, additional data sources, UI improvements)
-- **PATCH** version increments for backwards-compatible bug fixes, security patches, and minor improvements
-
-**Release Tags:** All releases are tagged in Git using the format `v{MAJOR}.{MINOR}.{PATCH}` (e.g., `v1.0.0`, `v1.2.3`).
-
-**Pre-release versions** may use suffixes like `-alpha`, `-beta`, or `-rc` for testing purposes (e.g., `v1.1.0-beta.1`).
-
-**Current Version:** The project is currently in active development. The first stable release will be tagged as `v1.0.0` once core functionality is complete and thoroughly tested.
-
-## Project Structure
+## 项目结构
 
 ```
-nalamap/
-├── backend/              # Python FastAPI backend
-│   ├── api/              # API endpoints
-│   ├── core/             # Core configurations
-│   ├── models/           # Data models
-│   ├── services/         # Business logic services
-│   │   ├── agents/       # AI agent implementations
-│   │   ├── ai/           # AI service providers
-│   │   ├── database/     # Database connectors
-│   │   └── tools/        # Utility tools
-│   └── main.py           # Application entry point
-├── frontend/             # Next.js frontend
-│   ├── app/              # Next.js application
-│   │   ├── components/   # React components
-│   │   ├── hooks/        # Custom React hooks
-│   │   └── page.tsx      # Main page component
-│   └── public/           # Static assets
-└── nginx/                # Nginx configuration for serving the application
+GAgent-cesium/
+├── backend/              # Python FastAPI 后端
+│   ├── api/              # API 端点
+│   ├── core/             # 核心配置
+│   ├── models/           # 数据模型
+│   ├── services/         # 业务逻辑
+│   │   ├── agents/       # 智能体实现
+│   │   ├── ai/           # 模型提供方
+│   │   ├── database/     # 数据库连接
+│   │   └── tools/        # 智能体工具
+│   └── main.py           # 应用入口
+├── frontend/             # Next.js 前端
+│   ├── app/              # Next.js 应用
+│   │   ├── components/   # React 组件
+│   │   ├── hooks/        # 自定义 Hooks
+│   │   └── page.tsx      # 主页面
+│   └── public/           # 静态资源
+└── nginx/                # 对外提供服务的 Nginx 配置
 ```
 
-> 📖 **For detailed architecture documentation**, see [ARCHITECTURE.md](ARCHITECTURE.md)  
-> 🤖 **For AI agent development guidelines**, see [AGENTS.md](AGENTS.md)
-## Simplified Entitiy Relationship Model
-The following model was created to give you a high level overview of how GeoAgent works. It shows an example user-request to change the sytling of a vector layer in the map. 
-<img width="950" height="534" alt="image" src="https://github.com/user-attachments/assets/6a09918a-fbd0-4860-a362-a5d4f55e871a" />
+> 系统架构见 [ARCHITECTURE.md](ARCHITECTURE.md)，中文版见 [ARCHITECTURE.zh-CN.md](ARCHITECTURE.zh-CN.md)。  
+> 给 AI 编程助手的仓库说明见 [AGENTS.md](AGENTS.md)，中文版见 [AGENTS.zh-CN.md](AGENTS.zh-CN.md)。
 
+## 简化关系示意
 
-## Getting Started
+下图概括 GeoAgent 的工作方式，例子是用户要求修改地图上某个矢量图层的样式。
 
-### ⚙️ Prerequisites
+<img width="950" height="534" alt="GeoAgent 处理图层样式请求的关系示意" src="https://github.com/user-attachments/assets/6a09918a-fbd0-4860-a362-a5d4f55e871a" />
 
-- **Git**  
-- **Python 3.10+**  
-- **Node.js 18+**  
-- **Docker & Docker Compose** (optional)  
-- **[Poetry](https://python-poetry.org/docs/)** (for backend)
+## 开始使用
 
-### Quick Setup (Recommended)
+### 环境要求
 
-Follow these steps to get the application running locally:
+- **Git**
+- **Python 3.10+**
+- **Node.js 18+**
+- **Docker 与 Docker Compose**（可选）
+- **[Poetry](https://python-poetry.org/docs/)**（后端依赖）
 
-#### 1. Clone the Repository
+### 快速开始
+
+按下面的步骤在本机运行。
+
+#### 1. 克隆仓库
+
 ```bash
-git clone git@github.com:nalamap/nalamap.git
-cd nalamap
+git clone https://github.com/Hming1/GAgent-cesium.git
+cd GAgent-cesium
 ```
 
-#### 2. Environment Configuration
+#### 2. 配置环境变量
 
-**Create your environment file:**
-Create a `.env` file in the root directory based on the provided `.env.example`:
+在仓库根目录根据 `.env.example` 创建 `.env`：
+
 ```bash
 cp .env.example .env
 ```
 
-**Configure your environment variables:**
-Edit the `.env` file to include your configuration. The environment file contains several categories of settings:
+`.env` 里主要有这些配置：
 
-- **AI Provider Configuration**: Choose between vLLM, Kimi, or DeepSeek and provide the corresponding API keys
-- **Database Settings**: Local PostGIS databases provided by Docker Compose (`app` and `layers`)
-- **API Endpoints**: Backend API base URL configuration
-- **Registration Security**: New accounts require one-time invitations by default. See [Invitation-only registration](docs/invite-registration.md).
-- **Optional Services**: LangSmith tracing for monitoring AI interactions
-- **Geocoding fallbacks**: Set `AMAP_WEB_SERVICE_KEY` (Web Service key) and/or `BAIDU_GEOCODING_AK` in `.env`. Nominatim is tried first for place/boundary lookup, then Amap, then Baidu. For **domestic POI search** (schools, hospitals, etc.), Amap Place Search is preferred when the location looks Chinese and `AMAP_WEB_SERVICE_KEY` is set; Overpass/OSM is the fallback overseas or when Amap returns nothing. Coordinates from Chinese providers are converted to WGS84 for GeoJSON.
+- **模型提供方**：选择 vLLM、Kimi 或 DeepSeek，并填写对应密钥
+- **数据库**：Docker Compose 提供的本地 PostGIS（`app` 和 `layers`）
+- **API 地址**：后端 API 的基地址
+- **注册安全**：默认新账号需要一次性邀请码。见 [邀请注册](docs/invite-registration.md)
+- **可选服务**：可用 LangSmith 追踪智能体调用
+- **地理编码回退**：在 `.env` 中设置 `AMAP_WEB_SERVICE_KEY`（高德 Web 服务密钥）和/或 `BAIDU_GEOCODING_AK`。地名和边界查询先走 Nominatim，再试高德，最后试百度。**国内 POI**（学校、医院等）在地点像中国地名且已设置 `AMAP_WEB_SERVICE_KEY` 时，优先用高德 Place Search；海外或高德无结果时回退到 Overpass/OSM。国内服务返回的坐标会转成 WGS84 再写入 GeoJSON。
 
-**Map / WMTS Projection Safety**:
+**地图 / WMTS 投影：**
 
-To avoid rendering projection-mismatched WMTS layers, the backend filters out any WMTS layer that lacks a WebMercator (EPSG:3857 family) TileMatrixSet by default.
+后端默认丢弃没有 WebMercator（EPSG:3857 系列）TileMatrixSet 的 WMTS 图层，避免投影不一致的瓦片被画出来。
 
-Environment variable to control this behavior:
+控制这个行为的环境变量：
 
-`NALAMAP_FILTER_NON_WEBMERCATOR_WMTS` (default: `true`)
+`NALAMAP_FILTER_NON_WEBMERCATOR_WMTS`（默认 `true`）
 
-Set to `false` to allow all WMTS layers (may lead to visual misalignment unless tiles are in WebMercator).
+设为 `false` 会放行全部 WMTS 图层。瓦片若不是 WebMercator，画面可能对不齐。
 
-Details: see `docs/wmts.md`.
+细节见 `docs/wmts.md`。
 
-> **Note**: The default database URLs connect only to the local PostGIS container. Change the local credentials before exposing the deployment beyond your machine.
+默认数据库地址只连接本机的 PostGIS 容器。如果部署要暴露到本机以外，先改掉本地数据库凭据。
 
-**⚠️ Important: Single Provider Selection**
-Configure any available providers. The UI prioritizes `DEFAULT_LLM_PROVIDER` or `LLM_PROVIDER`; explicit model selections override environment fallbacks.
+**同一时间以一个提供方为准。** 可以配置多个可用提供方。界面优先使用 `DEFAULT_LLM_PROVIDER` 或 `LLM_PROVIDER`；在界面里明确选择的模型会覆盖环境变量里的回退值。
 
-**Supported LLM_PROVIDER values and their models:**
+**支持的 `LLM_PROVIDER` 及模型：**
 
-| Provider | LLM_PROVIDER Value | Default Model | Model Configuration | Additional Configuration |
+| 提供方 | LLM_PROVIDER | 默认模型 | 模型变量 | 其他配置 |
 |----------|-------------------|---------------|-------------------|--------------------------|
-| vLLM | `vllm` | `Qwen3.8-27B` | `VLLM_MODEL` | `VLLM_BASE_URL`, optional `VLLM_API_KEY` |
+| vLLM | `vllm` | `Qwen3.8-27B` | `VLLM_MODEL` | `VLLM_BASE_URL`，可选 `VLLM_API_KEY` |
 | Kimi | `kimi` | `kimi-k2.6` | `KIMI_MODEL` | `KIMI_API_KEY` |
 | DeepSeek | `deepseek` | `deepseek-chat` | `DEEPSEEK_MODEL` | `DEEPSEEK_API_KEY` |
 
-**Example configuration:**
+**配置示例：**
+
 ```bash
-# Choose your provider
+# 选择提供方
 LLM_PROVIDER=vllm
 DEFAULT_LLM_PROVIDER=vllm
 VLLM_BASE_URL=http://localhost:18000/v1
 VLLM_MODEL=Qwen3.8-27B
 VLLM_API_KEY=none
-# In Docker, use an endpoint reachable from the backend container.
+# 在 Docker 里，这个地址必须从后端容器访问得到。
 ```
 
-**🎯 Model Selection:**
-All providers now support configurable model selection via environment variables. If you don't specify a model, GeoAgent uses cost-effective default models optimized for geospatial tasks.
+各提供方都可以通过环境变量指定模型。未指定时，GeoAgent 使用面向地理任务、成本较低的默认模型。
 
-**⚙️ Advanced Parameter Customization:**
-To modify advanced LLM parameters (temperature, max_tokens, timeout, etc.), edit the provider files in `backend/services/ai/`:
-- `vllm.py` - vLLM configuration
-- `kimi.py` - Kimi configuration
-- `deepseek.py` - DeepSeek configuration
+要改温度、`max_tokens`、超时等参数，编辑 `backend/services/ai/` 下对应文件：
 
-Each file contains a `get_llm()` function where you can adjust parameters like `temperature`, `max_tokens`, `max_retries`, etc.
+- `vllm.py`
+- `kimi.py`
+- `deepseek.py`
 
-#### 3. Setup Backend (Python/FastAPI)
+每个文件里的 `get_llm()` 可以调整 `temperature`、`max_tokens`、`max_retries` 等参数。
+
+#### 3. 启动后端（Python / FastAPI）
+
 ```bash
-# Navigate to backend directory
 cd backend
 
-# We recommend poetry config virtualenvs.create true to manage your .venv inside the repo
+# 建议把虚拟环境创建在仓库内
+poetry config virtualenvs.create true
 poetry install
 
-# Start the backend server
 poetry run python main.py
 ```
 
-The frontend will be available at `http://localhost:3000`
+后端地址：`http://localhost:8000`  
+API 文档：`http://localhost:8000/docs`
 
-The backend will be available at `http://localhost:8000`
-- API Documentation: `http://localhost:8000/docs`
+#### 4. 启动前端（Next.js）
 
-#### 4. Setup Frontend (Next.js)
-Open a new terminal and run:
+另开一个终端：
+
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
 npm i
-
-# Start development server
 npm run dev
 ```
 
-### Alternative: Docker Deployment
+前端地址：`http://localhost:3000`
 
-If you prefer using Docker:
+### 使用 Docker 部署
 
-1. Configure your environment variables as described above.
+1. 按上一节配好环境变量。
+2. 启动：
 
-2. Start the application using Docker Compose:
    ```bash
    docker-compose up
    ```
 
-3. Access the application at `http://localhost:80`.
+3. 在 `http://localhost:80` 打开应用。
 
-   Nginx also exposes a second frontend proxy at `http://localhost:8081`. By
-   default it forwards to `http://host.docker.internal:3001`. Override the
-   ports or upstream with `SECOND_FRONTEND_PROXY_PORT`,
-   `SECOND_FRONTEND_PROTOCOL`, and `SECOND_FRONTEND_URL`.
-### Docker Development Environment
+Nginx 还在 `http://localhost:8081` 提供第二个前端代理，默认转发到 `http://host.docker.internal:3001`。端口和上游可以用 `SECOND_FRONTEND_PROXY_PORT`、`SECOND_FRONTEND_PROTOCOL`、`SECOND_FRONTEND_URL` 覆盖。
 
-For a complete development environment with hot-reload capabilities:
+### Docker 开发环境
+
+需要热重载的完整开发环境：
 
 ```bash
 docker-compose -f dev.docker-compose.yml up --build
 ```
 
-Local debugging and external deployment use separate URL and cookie profiles.
-See [Docker environment profiles](docs/environment-profiles.md) before starting
-the corresponding Compose stack.
+本地调试和对外部署使用不同的 URL 与 Cookie 配置。启动对应的 Compose 栈之前，先看 [Docker 环境配置](docs/environment-profiles.md)。
 
-## Technologies Used
+## 技术栈
 
-### Backend
-- **FastAPI**: Modern, fast web framework for building APIs
-- **LangChain**: Framework for developing applications powered by language models
-- **LangGraph**: For building complex AI agent workflows
-- **vLLM/Kimi/DeepSeek**: AI model providers for natural language processing
-- **Uvicorn**: ASGI server for serving the FastAPI application
+### 后端
 
-### Frontend
-- **Next.js 15**: React framework for building web applications
-- **React 19**: JavaScript library for building user interfaces
-- **Leaflet**: Open-source JavaScript library for interactive maps
-- **Tailwind CSS**: Utility-first CSS framework
-- **TypeScript**: Typed JavaScript for safer code
+- **FastAPI**：用来构建 API 的 Web 框架
+- **LangChain**：组织语言模型应用
+- **LangGraph**：编排智能体工作流
+- **vLLM / Kimi / DeepSeek**：自然语言处理的模型提供方
+- **Uvicorn**：运行 FastAPI 的 ASGI 服务器
 
-### Infrastructure
-- **Docker**: Container platform
-- **Nginx**: Web server and reverse proxy
+### 前端
 
-## Tests
+- **Next.js 15**
+- **React 19**
+- **Cesium**：三维地图
+- **Tailwind CSS**
+- **TypeScript**
 
-The project includes comprehensive test suites for both backend and frontend components.
+### 基础设施
 
-### Backend Tests (pytest)
+- **Docker**
+- **Nginx**：Web 服务器和反向代理
 
-Navigate to the backend directory and run the tests:
+## 测试
+
+后端和前端都有测试。
+
+### 后端（pytest）
+
 ```bash
 cd backend
 poetry run pytest tests/
 
-# Run with verbose output
+# 更详细的输出
 poetry run pytest tests/ -v
 
-# Run specific test markers (unit, integration, styling, etc.)
+# 按标记运行，例如 unit、integration、styling
 poetry run pytest tests/ -m unit
 ```
 
-### Frontend Tests (Playwright)
+### 前端（Playwright）
 
-Navigate to the frontend directory and run the E2E tests:
 ```bash
 cd frontend
 
-# Install Playwright browsers (first time only)
+# 首次需要安装浏览器
 npx playwright install --with-deps
 
-# Run all tests
 npm test
 
-# Run in interactive UI mode
+# 交互式界面
 npx playwright test --ui
 ```
 
-> 📖 **For detailed testing guidelines**, see [CONTRIBUTING.md](CONTRIBUTING.md#testing-guidelines)  
-> 📖 **For frontend test documentation**, see [frontend/tests/README.md](frontend/tests/README.md)
+测试约定见 [CONTRIBUTING.md](CONTRIBUTING.md#testing-guidelines)，前端测试说明见 [frontend/tests/README.md](frontend/tests/README.md)。
 
-**Note**: Some tests may require environment variables (e.g., `OPENAI_API_KEY`). Mock data is used where possible to avoid external dependencies.
+部分测试会读取环境变量（例如 `OPENAI_API_KEY`）。能用模拟数据的地方会避免访问外部服务。
 
-## Troubleshooting
+## 常见问题
 
-### Common Issues
+**后端报 “Address already in use”：**
 
-**Backend fails to start with "Address already in use" error:**
-- Check if port 8000 is already in use: `lsof -i :8000`
-- Kill any existing processes: `kill <PID>`
+- 查看 8000 端口：`lsof -i :8000`
+- 结束占用进程：`kill <PID>`
 
-**LLM API errors:**
-- Verify your `.env` file is in the root directory
-- Check that your provider's API key is set correctly (e.g., `KIMI_API_KEY`, `DEEPSEEK_API_KEY`; also check `VLLM_BASE_URL`)
-- Ensure `LLM_PROVIDER` matches your chosen provider (vllm, kimi, or deepseek)
+**模型接口报错：**
 
-**Frontend fails to start:**
-- Ensure Node.js 18+ is installed: `node --version`
-- Clear npm cache: `npm cache clean --force`
-- Delete node_modules and reinstall: `rm -rf node_modules && npm i`
+- 确认仓库根目录有 `.env`
+- 确认对应密钥或地址已填写，例如 `KIMI_API_KEY`、`DEEPSEEK_API_KEY`、`VLLM_BASE_URL`
+- `LLM_PROVIDER` 必须是 `vllm`、`kimi` 或 `deepseek` 之一
 
-## Security
+**前端起不来：**
 
-🔒 **Important Security Notes:**
+- 确认 Node.js 18+：`node --version`
+- 清缓存：`npm cache clean --force`
+- 重装依赖：`rm -rf node_modules && npm i`
 
-* **Never commit `.env` files** with real API keys to version control
-* **Use `.env.example`** as a template and add your own credentials  
-* **Rotate API keys regularly** and monitor usage
-* **File uploads are not committed** to version control for privacy
+## 安全
 
-**For production deployments:**
+不要把带有真实密钥的 `.env` 提交进版本库。以 `.env.example` 为模板，在本地填写自己的凭据。定期轮换密钥并查看用量。用户上传的文件也不应提交进版本库。
 
-* Use environment variables or secure secret management
-* Enable HTTPS/TLS encryption  
-* Implement proper authentication and authorization
-* Regular security audits and dependency updates
+生产部署时：
 
-**Reporting Security Vulnerabilities:**
-If you discover a security vulnerability, please send an email to [info@nalamap.org] instead of using the issue tracker.
+* 用环境变量或密钥管理系统保存凭据
+* 启用 HTTPS/TLS
+* 配置身份验证和授权
+* 定期做安全检查并更新依赖
 
-## Documentation
+发现安全漏洞时，请发邮件到 [info@nalamap.org](mailto:info@nalamap.org)，不要在 Issue 里公开。
 
-GeoAgent has comprehensive documentation to help you get started and contribute:
+## 文档
 
-### Core Documentation
-- **[README.md](README.md)** (this file) - Project overview and quick start guide
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Main development guide
-  - Environment setup and running components
-  - Testing guidelines (pytest, Playwright)
-  - Code quality & linting
-  - Workflow and troubleshooting
-- **[AGENTS.md](AGENTS.md)** - Context for AI coding assistants
-  - Repository map and architecture context
-  - Agent-specific best practices
-  - Core directives for AI tools
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
-  - High-level architecture overview
-  - Backend and frontend structure
-  - AI agent system (LangGraph)
-  - Data flow and communication patterns
-  - Deployment architecture
+- **[README.md](README.md)**：项目概览和快速开始（本文件）
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**：开发、测试、代码检查和排错
+- **[AGENTS.md](AGENTS.md)** / **[AGENTS.zh-CN.md](AGENTS.zh-CN.md)**：给 AI 编程助手的仓库说明
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** / **[ARCHITECTURE.zh-CN.md](ARCHITECTURE.zh-CN.md)**：系统架构、智能体、数据流和部署
+- **[backend/tests/README.md](backend/tests/README.md)**：后端测试
+- **[backend/services/tools/README.md](backend/services/tools/README.md)**：智能体工具
+- **[frontend/tests/README.md](frontend/tests/README.md)**：前端测试
+- **[docs/](docs/)**：专项说明
+  - 配色
+  - [本地存储与矢量检索](docs/local-storage-and-search.md)
+  - [城市低效空间识别](docs/inefficient-space.md)
+  - [对话历史](docs/conversation-history.md)
 
-### Additional Documentation
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history
-- **[backend/tests/README.md](backend/tests/README.md)** - Backend testing guide
-- **[backend/services/tools/README.md](backend/services/tools/README.md)** - AI tools documentation
-- **[frontend/tests/README.md](frontend/tests/README.md)** - Frontend testing guide
-- **[docs/](docs/)** - Feature-specific documentation
-  - Color customization
-  - [Local storage and vector search](docs/local-storage-and-search.md)
-  - [Urban inefficient-space identification](docs/inefficient-space.md)
-  - [Conversation history persistence](docs/conversation-history.md)
-  - Performance optimizations
-  - And more...
+## 参与贡献
 
-## Contributing
+欢迎提交改进。开发与测试约定见：
 
-We welcome contributions from the community! If you're interested in helping improve GeoAgent, please check out our documentation:
+- **[贡献指南](CONTRIBUTING.md)**
+- **[AGENTS.md](AGENTS.md)**
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**
+- **[行为准则](CODE_OF_CONDUCT.md)**
 
-- **[Contributing Guide](CONTRIBUTING.md)** - Guidelines for development and testing
-- **[AGENTS.md](AGENTS.md)** - Context for AI coding assistants
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and component structure
-- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community guidelines
+也可以加入 [Discord](http://discord.nalamap.org/)。社区会定期讨论路线图、功能需求和正在进行的工作。
 
-Feel also free to join our [community channel (Discord)](http://discord.nalamap.org/) to get to know us. We have regular meetings where we discuss the roadmap, feature requirements and ongoing work. 
+## 许可证
 
-## License
+本项目使用 MIT 许可证，详见 LICENSE 文件。
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 致谢
 
-## Acknowledgments
+这个项目来自一个具体需求：让地理数据探索少一些专业门槛。地图和模型能力都建立在开源组件上。感谢贡献者和开源社区。
 
-- Inspired by the need for more intuitive geospatial data exploration
-- Built with open-source mapping libraries and AI technologies
-- Special thanks to all contributors and the open-source community
+### 本地存储与检索
 
-### Local storage and search
-
-Files use local storage. GeoServer search defaults to hashing embeddings and SQLite-vec; custom local embedding factories remain supported. See [local storage and search](docs/local-storage-and-search.md) for persistence and index migration.
+文件使用本地存储。GeoServer 检索默认用哈希嵌入和 SQLite-vec，也仍然支持自定义的本地嵌入实现。持久化和索引迁移见 [本地存储与检索](docs/local-storage-and-search.md)。
 
 ## 地图底图
 
-Cesium 默认使用高德标准地图；切换界面主题不会覆盖已选底图。可选底图包括 OSM、Carto 浅色/深色、Google 卫星/混合/地形、高德标准/卫星/混合、天地图矢量/卫星/混合。
+Cesium 默认使用高德标准地图。切换界面主题不会覆盖已经选中的底图。可选底图包括 OSM、Carto 浅色/深色、Google 卫星/混合/地形、高德标准/卫星/混合、天地图矢量/卫星/混合。
 
-天地图需要浏览器类型令牌。Docker 部署请在根目录的 `.env`（或覆盖它的 `.env.external`）设置 `NEXT_PUBLIC_TIANDITU_TOKEN`，重建/替换前端容器后生效；仅修改令牌时重新创建容器即可。令牌由 `/runtime-env.js` 在运行时提供，无需写入镜像。`frontend/.env.local` 仅供本地开发使用，会被 Docker 构建排除。请在天地图控制台配置实际访问域名的限制。高德 Web 服务密钥和百度地理编码 AK 用于地址查询，不用于这里的瓦片底图。
+天地图需要浏览器类型令牌。Docker 部署请在根目录的 `.env`（或覆盖它的 `.env.external`）设置 `NEXT_PUBLIC_TIANDITU_TOKEN`。重建或替换前端容器后生效；只改令牌时，重新创建容器即可。令牌由 `/runtime-env.js` 在运行时提供，不必写进镜像。`frontend/.env.local` 只给本地开发用，Docker 构建会排除它。请在天地图控制台为实际访问域名配置限制。高德 Web 服务密钥和百度地理编码 AK 用于地址查询，不用于这里的瓦片底图。
 
-首次瓦片请求持续 12 秒未成功，或重试一次仍失败时，页面会尝试备用底图并明确显示实际使用的来源，可点击“重试原底图”恢复。卫星底图优先回退到卫星来源。备用来源不会循环重试；全部失败时提示检查网络。天地图从第 1 级请求，并限制各来源最大瓦片级别，避免请求不支持的级别。
+首次瓦片请求持续 12 秒仍未成功，或重试一次仍失败时，页面会改用备用底图，并标明实际使用的来源。可以点击「重试原底图」恢复。卫星底图优先回退到卫星来源。备用来源不会循环重试；全部失败时，页面会提示检查网络。天地图从第 1 级请求，并限制各来源的最大瓦片级别，避免请求不受支持的级别。
 
-各来源仍需浏览器能正常访问其服务域名；配置正确和自动回退无法替代服务商权限、有效令牌或网络连通性。高德标准瓦片使用[官方示例中的 wprd 地址](https://lbs.amap.com/api/maps-javascript-api/reference/layer/tilelayer)。
+各来源仍要求浏览器能访问对应的服务域名。配置正确和自动回退不能代替服务商权限、有效令牌或网络连通性。高德标准瓦片使用[官方示例中的 wprd 地址](https://lbs.amap.com/api/maps-javascript-api/reference/layer/tilelayer)。
 
-若高德和天地图经系统代理出现 `ERR_CONNECTION_CLOSED`，而直连正常，可在代理软件中为 `*.is.autonavi.com` 和 `*.tianditu.gov.cn` 配置直连，或加入 Windows 当前用户的代理绕过列表。此项属于访问地图的电脑网络设置，不由前端容器修改；代理软件重设系统代理时可能覆盖绕过列表。
+若高德和天地图经系统代理出现 `ERR_CONNECTION_CLOSED`，而直连正常，可在代理软件中为 `*.is.autonavi.com` 和 `*.tianditu.gov.cn` 配置直连，或加入 Windows 当前用户的代理绕过列表。这是访问地图的电脑网络设置，前端容器不会改它。代理软件重设系统代理时，可能会覆盖绕过列表。
